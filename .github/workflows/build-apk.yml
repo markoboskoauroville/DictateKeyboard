@@ -30,6 +30,9 @@ jobs:
       - name: Fetch sherpa-onnx native libs
         run: bash tools/fetch-sherpa-onnx.sh
 
+      - name: Apply MA TWIST
+        run: python3 ma_twist.py
+
       - name: Create signing key
         run: |
           keytool -genkeypair -v -keystore mantra.jks -alias mantra -keyalg RSA -keysize 2048 -validity 10000 -storepass mantra12345 -keypass mantra12345 -dname "CN=Mantra Productions, O=Mantra, C=HR"
@@ -43,5 +46,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          cp "$APK" dictate-keyboard-build-${{ github.run_number }}.apk
-          gh release create "build-${{ github.run_number }}" dictate-keyboard-build-${{ github.run_number }}.apk --title "Dictate APK build ${{ github.run_number }}" --notes "Self built release APK, AssemblyAI ready"
+          cp "$APK" dictate-ma-twist-build-${{ github.run_number }}.apk
+          gh release create "build-${{ github.run_number }}" dictate-ma-twist-build-${{ github.run_number }}.apk --title "Dictate MA TWIST build ${{ github.run_number }}" --notes "AssemblyAI, Gemini, Anthropic only. Oscilloscope recording bar."
