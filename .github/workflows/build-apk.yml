@@ -27,6 +27,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Fetch sherpa-onnx native libs
+        run: bash tools/fetch-sherpa-onnx.sh
+
       - name: Create signing key
         run: |
           keytool -genkeypair -v -keystore mantra.jks -alias mantra -keyalg RSA -keysize 2048 -validity 10000 -storepass mantra12345 -keypass mantra12345 -dname "CN=Mantra Productions, O=Mantra, C=HR"
