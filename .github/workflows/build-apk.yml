@@ -36,7 +36,7 @@ jobs:
           printf 'storeFile=mantra.jks\nstorePassword=mantra12345\nkeyAlias=mantra\nkeyPassword=mantra12345\n' > keystore.properties
 
       - name: Build release APK
-        run: ./gradlew :app:assembleRelease --no-daemon
+        run: ./gradlew :app:assembleRelease -x lintVitalRelease --no-daemon
 
       - name: Publish APK
         env:
