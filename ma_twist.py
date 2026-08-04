@@ -43,9 +43,11 @@ def swap(text, old, new, label):
 
 
 def ensure_import(text, statement):
-    if statement in text:
-        return text
     lines = text.split("\n")
+    # Whole line comparison, never a substring: "layout.height" is a substring of the
+    # "layout.heightIn" this file already imports, which silently skipped the import.
+    if statement in lines:
+        return text
     last = max(i for i, l in enumerate(lines) if l.startswith("import "))
     lines.insert(last + 1, statement)
     return "\n".join(lines)
