@@ -308,7 +308,7 @@ fun LegacyDictateLayout(
                 )
 
                 // Row 1c: the flat command bar, matching the keyboard view so both look the same.
-                MaCommandRow()
+                MaMacroBar()
 
                 // Row 2: editing actions (select-all first, so it sits in the row below the strip).
                 LegacyEditRow(

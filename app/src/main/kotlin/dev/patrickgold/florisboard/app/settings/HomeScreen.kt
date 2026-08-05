@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Spellcheck
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Keyboard
@@ -210,6 +211,12 @@ fun HomeScreen() = FlorisScreen {
             title = stringRes(R.string.dictate__history_title),
             summary = "Every transcription, re-insert or re-transcribe",
             onClick = { navController.navigate(Routes.Settings.DictateHistory) },
+        )
+        Preference(
+            icon = Icons.Default.Bolt,
+            title = "Macro bar",
+            summary = "Buttons that type text or press keys",
+            onClick = { navController.navigate(Routes.Settings.DictateMacros) },
         )
         Preference(
             icon = Icons.Default.Restore,

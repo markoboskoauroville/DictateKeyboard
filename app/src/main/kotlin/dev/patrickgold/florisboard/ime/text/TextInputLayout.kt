@@ -33,7 +33,7 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
-import dev.patrickgold.florisboard.dictate.ui.MaCommandRow
+import dev.patrickgold.florisboard.dictate.ui.MaMacroBar
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
 import dev.patrickgold.florisboard.dictate.ui.MaPinButton
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
@@ -98,12 +98,12 @@ fun TextInputLayout(
                 }
             }
         }
-        // Command bar (Marko): flat editing commands directly under the Smartbar, in the same style
-        // as the arrow strip at the bottom. Hidden while the overflow panel is open, which owns the
-        // whole area below it.
-        val maCursorRowEnabled by prefs.dictate.maCursorRow.collectAsState()
-        if (maCursorRowEnabled && !state.isActionsOverflowVisible) {
-            MaCommandRow()
+        // Macro bar (Marko): user-defined buttons directly under the Smartbar, in the same flat
+        // style as the arrow strip at the bottom. Hidden while the overflow panel is open, which
+        // owns the whole area below it. It draws nothing when the active preset has no rows, so it
+        // needs no toggle of its own: emptying it is how it is turned off.
+        if (!state.isActionsOverflowVisible) {
+            MaMacroBar()
         }
         if (state.isActionsOverflowVisible) {
             QuickActionsOverflowPanel()
@@ -125,6 +125,7 @@ fun TextInputLayout(
             }
             // Arrow strip along the very bottom, below the letters, exactly where the reference
             // keyboard puts it.
+            val maCursorRowEnabled by prefs.dictate.maCursorRow.collectAsState()
             if (maCursorRowEnabled) {
                 MaCursorRow()
             }

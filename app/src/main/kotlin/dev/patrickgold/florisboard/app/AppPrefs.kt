@@ -803,6 +803,19 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_sunrise_applied",
             default = false,
         )
+        // The macro bar: every preset, serialized by MaMacros. One string because that is all a
+        // macro bar is, and because a control-character encoding lets a macro contain commas,
+        // quotes, newlines and braces without any escaping to get wrong.
+        val maMacroBar = string(
+            key = "dictate__ma_macro_bar",
+            default = "",
+        )
+        // Which preset the bar is showing, as an index into that list. Out of range falls back to
+        // the first, so deleting a preset can never leave the bar pointing at nothing.
+        val maMacroPreset = int(
+            key = "dictate__ma_macro_preset",
+            default = 0,
+        )
         // The pinned view, set by the pin in each view's top-left corner. "TEXT" or "TRANSCRIBE"
         // means always open there; empty means nothing is pinned and the last-used view wins, which
         // is the behaviour that existed before the pin and is still a reasonable default.
