@@ -19,6 +19,8 @@ import sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 REG = "lib/dictate-core/src/main/kotlin/dev/patrickgold/florisboard/dictate/provider/ProviderRegistry.kt"
 UI = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/ui/DictateSmartbarUi.kt"
+CTRL = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/DictateController.kt"
+OPUS = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/audio/MaOpus.kt"
 
 changes = []
 
@@ -61,10 +63,11 @@ reg = swap(
         OPENAI, GROQ, OPENROUTER, GEMINI, ANTHROPIC, TOGETHER, DEEPINFRA, MISTRAL, SONIOX,
         ELEVENLABS, DEEPGRAM, ASSEMBLYAI, XAI, DEEPSEEK, OLLAMA, LOCAL,
     )""",
-    """    // MA TWIST: three providers, nothing else. The other presets stay defined above so the
-    // rest of the code that references them by name still compiles, they are simply not offered.
+    """    // MA TWIST: three cloud providers plus the on-device engine, nothing else. LOCAL is the
+    // offline Whisper/Parakeet runner that needs no key and no network. The other presets stay
+    // defined above so code referencing them by name still compiles, they are simply not offered.
     val presets: List<ProviderPreset> = listOf(
-        ASSEMBLYAI, GEMINI, ANTHROPIC,
+        ASSEMBLYAI, GEMINI, ANTHROPIC, LOCAL,
     )""",
     "provider list",
 )
@@ -207,6 +210,182 @@ private fun MaRecordingScope(paused: Boolean, frozen: Boolean, elapsedMs: Long) 
 '''
 changes.append("oscilloscope composable")
 write(UI, ui)
+
+
+# --------------------------------------------------------------- 3. OPUS UPLOAD
+# The recorder produces 16 kHz mono 16 bit WAV, about 1.9 MB a minute, and all of that
+# uncompressed stream goes up the mobile connection. Opus at 20 kbps carries speech at the
+# same intelligibility for roughly a tenth of the bytes, which is less waiting and less
+# data. Any failure returns null and the original WAV is sent, so this can only help.
+
+MA_OPUS_SOURCE = r'''/*
+ * MA TWIST, Mantra Productions.
+ * Licensed under the Apache License, Version 2.0.
+ */
+
+package dev.patrickgold.florisboard.dictate.audio
+
+import android.media.MediaCodec
+import android.media.MediaFormat
+import android.media.MediaMuxer
+import android.os.Build
+import java.io.File
+import java.io.RandomAccessFile
+import java.nio.ByteBuffer
+
+/**
+ * Compresses the recorded WAV to Ogg Opus before a cloud upload.
+ *
+ * Speech recognition needs intelligibility, not fidelity. Opus at 20 kbps mono keeps every cue a
+ * recogniser uses while cutting roughly nine tenths of the bytes off a 16 kHz PCM stream, so the
+ * upload finishes sooner and costs less data. This is Android's own encoder, no ffmpeg and no
+ * native library.
+ *
+ * Requires API 29, where MediaCodec gained an Opus encoder and MediaMuxer gained the Ogg container.
+ * Below that, or on any failure at all, this returns null and the caller sends the original WAV, so
+ * the worst case is exactly the behaviour that existed before.
+ */
+object MaOpus {
+
+    /** Speech stays intelligible well below this; 20 kbps is a comfortable margin. */
+    private const val BITRATE = 20_000
+
+    /** Not worth the encoder setup for a very short take. */
+    private const val MIN_BYTES = 48_000L
+
+    private const val TIMEOUT_US = 10_000L
+
+    private const val WAV_HEADER_BYTES = 44
+
+    fun compress(wav: File): File? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        if (!wav.exists() || wav.length() < MIN_BYTES) return null
+        val out = File(wav.parentFile, wav.nameWithoutExtension + ".ogg")
+        return try {
+            encode(wav, out)
+            if (out.length() > 0L && out.length() < wav.length()) {
+                out
+            } else {
+                out.delete()
+                null
+            }
+        } catch (t: Throwable) {
+            runCatching { out.delete() }
+            null
+        }
+    }
+
+    private fun encode(wav: File, out: File) {
+        val raf = RandomAccessFile(wav, "r")
+        try {
+            val header = ByteArray(WAV_HEADER_BYTES)
+            raf.readFully(header)
+            val sampleRate = le32(header, 24)
+            val channels = le16(header, 22)
+            if (sampleRate <= 0 || channels <= 0) throw IllegalStateException("bad wav header")
+            val format = MediaFormat.createAudioFormat(
+                MediaFormat.MIMETYPE_AUDIO_OPUS,
+                sampleRate,
+                channels,
+            ).apply {
+                setInteger(MediaFormat.KEY_BIT_RATE, BITRATE)
+            }
+            val codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS)
+            codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            codec.start()
+            val muxer = MediaMuxer(out.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_OGG)
+            var track = -1
+            var muxing = false
+            val info = MediaCodec.BufferInfo()
+            var presentationUs = 0L
+            var eof = false
+            val bytesPerFrame = channels * 2
+            try {
+                while (true) {
+                    if (!eof) {
+                        val inIndex = codec.dequeueInputBuffer(TIMEOUT_US)
+                        if (inIndex >= 0) {
+                            val buffer: ByteBuffer = codec.getInputBuffer(inIndex)!!
+                            buffer.clear()
+                            val chunk = ByteArray(buffer.capacity())
+                            val read = raf.read(chunk)
+                            if (read <= 0) {
+                                codec.queueInputBuffer(
+                                    inIndex,
+                                    0,
+                                    0,
+                                    presentationUs,
+                                    MediaCodec.BUFFER_FLAG_END_OF_STREAM,
+                                )
+                                eof = true
+                            } else {
+                                buffer.put(chunk, 0, read)
+                                codec.queueInputBuffer(inIndex, 0, read, presentationUs, 0)
+                                presentationUs += 1_000_000L * (read / bytesPerFrame) / sampleRate
+                            }
+                        }
+                    }
+                    val outIndex = codec.dequeueOutputBuffer(info, TIMEOUT_US)
+                    if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                        track = muxer.addTrack(codec.outputFormat)
+                        muxer.start()
+                        muxing = true
+                    } else if (outIndex >= 0) {
+                        val encoded = codec.getOutputBuffer(outIndex)
+                        val isConfig = (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0
+                        if (encoded != null && muxing && !isConfig && info.size > 0) {
+                            encoded.position(info.offset)
+                            encoded.limit(info.offset + info.size)
+                            muxer.writeSampleData(track, encoded, info)
+                        }
+                        codec.releaseOutputBuffer(outIndex, false)
+                        if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) break
+                    }
+                }
+            } finally {
+                runCatching { if (muxing) muxer.stop() }
+                runCatching { muxer.release() }
+                runCatching { codec.stop() }
+                runCatching { codec.release() }
+            }
+        } finally {
+            runCatching { raf.close() }
+        }
+    }
+
+    private fun le16(b: ByteArray, at: Int): Int =
+        (b[at].toInt() and 0xFF) or ((b[at + 1].toInt() and 0xFF) shl 8)
+
+    private fun le32(b: ByteArray, at: Int): Int =
+        (b[at].toInt() and 0xFF) or ((b[at + 1].toInt() and 0xFF) shl 8) or
+            ((b[at + 2].toInt() and 0xFF) shl 16) or ((b[at + 3].toInt() and 0xFF) shl 24)
+}
+'''
+
+os.makedirs(os.path.dirname(os.path.join(ROOT, OPUS)), exist_ok=True)
+write(OPUS, MA_OPUS_SOURCE)
+changes.append("MaOpus encoder written")
+
+ctrl = read(CTRL)
+ctrl = ensure_import(ctrl, "import dev.patrickgold.florisboard.dictate.audio.MaOpus")
+ctrl = swap(
+    ctrl,
+    """                val request = TranscriptionRequest(
+                    audioFile = uploadFile,""",
+    """                // MA TWIST: shrink the upload. Cloud only, never the on-device engine, which is
+                // handed the audio locally. Null on anything unexpected, and the WAV goes as before.
+                if (preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE) {
+                    MaOpus.compress(uploadFile)?.let { small ->
+                        if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
+                        uploadFile = small
+                    }
+                }
+                val request = TranscriptionRequest(
+                    audioFile = uploadFile,""",
+    "opus upload hook",
+)
+write(CTRL, ctrl)
+
 
 print("MA TWIST applied:")
 for c in changes:
