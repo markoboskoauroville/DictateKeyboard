@@ -419,7 +419,7 @@ object MaKeys {
     private val HEX32 = Regex("(?<![0-9A-Za-z])[0-9a-fA-F]{32}(?![0-9A-Za-z])")
 
     /** Fallback shape for anything else key-like, used only when no hex key is present. */
-    private val LOOSE = Regex("[A-Za-z0-9_\-]{24,80}")
+    private val LOOSE = Regex("[A-Za-z0-9_-]{24,80}")
 
     /** Prefixes belonging to other services, never imported. */
     private val FOREIGN = listOf(
@@ -484,7 +484,8 @@ object MaKeys {
 }
 
 /** Failures that mean this particular key is the problem, so the next one is worth trying. */
-private val KEY_PROBLEMS = setOf(
+@PublishedApi
+internal val KEY_PROBLEMS = setOf(
     DictateApiException.Kind.INVALID_API_KEY,
     DictateApiException.Kind.QUOTA_EXCEEDED,
 )
