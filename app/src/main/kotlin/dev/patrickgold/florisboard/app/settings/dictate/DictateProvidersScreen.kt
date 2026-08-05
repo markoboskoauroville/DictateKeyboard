@@ -607,6 +607,7 @@ private fun ProviderEditorDialog(
             // ignored, and several keys are kept so a rate limited one rolls to the next.
             val maFileContext = LocalContext.current
             var maImportNote by remember { mutableStateOf("") }
+            val maScope = rememberCoroutineScope()
             // Voice Type: reading the picked file, shared by the picker and the automatic reload.
             fun maReadKeys(uri: android.net.Uri): List<String> {
                 val text = runCatching {
@@ -634,7 +635,7 @@ private fun ProviderEditorDialog(
                         "No keys found in that file"
                     } else {
                         apiKey = MaKeys.join(keys)
-                        prefs.dictate.maKeysFileUri.set(uri.toString())
+                        maScope.launch { prefs.dictate.maKeysFileUri.set(uri.toString()) }
                         if (keys.size == 1) "1 key imported" else "${keys.size} keys imported, tried in order"
                     }
                 }
