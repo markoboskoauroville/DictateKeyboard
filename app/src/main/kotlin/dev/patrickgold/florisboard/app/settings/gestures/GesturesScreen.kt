@@ -161,6 +161,16 @@ fun GesturesScreen() = FlorisScreen {
                 title = stringRes(R.string.pref__gestures__delete_key_long_press__label),
                 entries = enumDisplayEntriesOf(SwipeAction::class, "deleteLongPress"),
             )
+            // Mantra Voice Type: the swipe-to-symbol switch, placed directly above the two
+            // thresholds that govern how far and how fast a swipe must be, since turning it on
+            // and then tuning those two is one continuous task rather than three separate ones.
+            SwitchPreference(
+                prefs.gestures.maSwipeToSymbol,
+                title = "Swipe to symbol",
+                summary = "Swipe from a key toward one of its printed symbols to type it, " +
+                    "instead of long pressing. Up types the hint, left, right and down type the " +
+                    "first three extras. Tune the two thresholds below if a flick reads as a tap.",
+            )
             DialogSliderPreference(
                 prefs.gestures.swipeVelocityThreshold,
                 modifier = Modifier.settingsSearchAnchor("pref__gestures__swipe_velocity_threshold__label"),
