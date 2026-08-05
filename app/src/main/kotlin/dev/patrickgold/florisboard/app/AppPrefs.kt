@@ -779,12 +779,27 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__legacy_action_row",
             default = "SELECT_ALL,UNDO,REDO,CUT,COPY,PASTE,EMOJI,NUMBERS",
         )
+        // Sticky panel: when on, whichever of the two main views was last used comes back the next
+        // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
+        // transcribe view far more than the keyboard, so being returned to the keyboard every time
+        // was a click tax on every single field. See FlorisImeService.onStartInputView.
+        val maStickyTranscribeView = boolean(
+            key = "dictate__ma_sticky_transcribe_view",
+            default = true,
+        )
         // Dedicated cursor row above the keyboard: line start, four arrows, line end, all repeating
         // when held. Off by default so the stock keyboard is unchanged; switched on in Settings under
         // Gestures. See MaCursorRow.
         val maCursorRow = boolean(
             key = "dictate__ma_cursor_row",
             default = false,
+        )
+        // Which panel was showing when the keyboard was last closed. Written by FlorisImeService,
+        // read back on the next open when maStickyTranscribeView is on. Stored as the enum name so a
+        // future panel that no longer exists simply fails to resolve and falls back to the keyboard.
+        val maLastImeUiMode = string(
+            key = "dictate__ma_last_ime_ui_mode",
+            default = "TEXT",
         )
         // How many rows of prompt/revision buttons the legacy prompt strip shows (1 or 2, issue #194/#8).
         val legacyPromptRows = int(

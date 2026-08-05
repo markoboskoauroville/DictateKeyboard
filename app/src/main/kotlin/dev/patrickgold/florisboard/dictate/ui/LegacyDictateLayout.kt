@@ -300,6 +300,13 @@ fun LegacyDictateLayout(
                     }
                 }
 
+                // Row 1b: the quick row. Language buttons, one per enabled language, and the current
+                // transcription model as a dropdown, so both can be checked and changed in the second
+                // before speaking rather than by leaving for the settings app.
+                MaQuickRow(
+                    modifier = Modifier.fillMaxWidth().height(EditRowHeight),
+                )
+
                 // Row 2: editing actions (select-all first, so it sits in the row below the strip).
                 LegacyEditRow(
                     keyboardManager = keyboardManager,

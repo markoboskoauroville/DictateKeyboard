@@ -68,6 +68,7 @@ import dev.patrickgold.florisboard.lib.util.launchActivity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.florisboard.lib.android.AndroidInternalR
 import org.florisboard.lib.android.AndroidVersion
 import org.florisboard.lib.android.showShortToastSync
@@ -374,7 +375,11 @@ class FlorisImeService : LifecycleInputMethodService() {
             // don't reappear on an unrelated field. imeUiMode is reset to TEXT just below anyway.
             keyboardManager.closeEmojiSearch(returnToMedia = false)
             if (activeState.imeUiMode != ImeUiMode.CLIPBOARD || prefs.clipboard.historyHideOnNextTextField.get()) {
-                activeState.imeUiMode = ImeUiMode.TEXT
+                // Sticky panel: come back to whichever view was last in use rather than always to the
+                // typing keyboard. Only TEXT and TRANSCRIBE are ever restored; the clipboard, emoji,
+                // GIF and history panels are transient by nature and would be wrong to reopen on an
+                // unrelated field.
+                activeState.imeUiMode = maRestoredUiMode()
             }
             activeState.isSelectionMode = editorInfo.initialSelection.isSelectionMode
             editorInstance.handleStartInputView(editorInfo, isRestart = restarting)
@@ -484,6 +489,30 @@ class FlorisImeService : LifecycleInputMethodService() {
         dev.patrickgold.florisboard.dictate.DictateController.consumePendingFileTranscription(this)
     }
 
+    /**
+     * Records which panel was showing when the keyboard closed, so the next open can return to it.
+     * Only the two views worth returning to are stored; anything else is remembered as the keyboard.
+     */
+    private fun maRememberUiMode(mode: ImeUiMode) {
+        val keep = when (mode) {
+            ImeUiMode.TRANSCRIBE -> ImeUiMode.TRANSCRIBE
+            else -> ImeUiMode.TEXT
+        }
+        runCatching {
+            lifecycleScope.launch { prefs.dictate.maLastImeUiMode.set(keep.name) }
+        }
+    }
+
+    /** The panel a fresh editor field should open in. */
+    private fun maRestoredUiMode(): ImeUiMode {
+        if (!prefs.dictate.maStickyTranscribeView.get()) return ImeUiMode.TEXT
+        return if (prefs.dictate.maLastImeUiMode.get() == ImeUiMode.TRANSCRIBE.name) {
+            ImeUiMode.TRANSCRIBE
+        } else {
+            ImeUiMode.TEXT
+        }
+    }
+
     override fun onWindowHidden() {
         super.onWindowHidden()
         // Collapsing the keyboard during a recording finalizes and keeps the audio so far (instead of
@@ -492,6 +521,7 @@ class FlorisImeService : LifecycleInputMethodService() {
         dev.patrickgold.florisboard.dictate.DictateController.stashRecordingOnHide(this)
         if (windowController.onWindowHidden()) {
             flogInfo(LogTopic.IMS_EVENTS)
+            maRememberUiMode(activeState.imeUiMode)
             activeState.batchEdit {
                 activeState.imeUiMode = ImeUiMode.TEXT
                 activeState.isActionsOverflowVisible = false

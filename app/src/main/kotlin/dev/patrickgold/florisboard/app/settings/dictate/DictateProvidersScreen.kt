@@ -659,8 +659,9 @@ private fun ProviderEditorDialog(
                     }
                     val text = maReadText(uri)
                     val keys = MaKeys.extract(text, effectivePreset.id)
+                    val mismatch = MaKeys.mismatchWarning(text, effectivePreset.id, keys)
                     maImportNote = if (keys.isEmpty()) {
-                        "No keys found in that file"
+                        mismatch ?: "No keys found in that file"
                     } else {
                         apiKey = MaKeys.join(keys)
                         maScope.launch { prefs.dictate.maKeysFileUri.set(uri.toString()) }

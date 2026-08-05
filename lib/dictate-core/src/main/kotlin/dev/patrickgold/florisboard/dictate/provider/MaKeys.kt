@@ -123,6 +123,46 @@ object MaKeys {
     }
 
     /**
+     * True when a token carries another provider's unmistakable prefix.
+     *
+     * This is the fix for a real failure: a keys file holding Anthropic, Gemini and AssemblyAI keys
+     * was imported for AssemblyAI, no bare 32 hex token matched, the generic tier ran, and the
+     * Anthropic key was handed to AssemblyAI. Transcription then failed on every attempt while the
+     * dialog cheerfully reported a stored key.
+     *
+     * It does not contradict the rule that a key is never rejected for its shape. That rule protects
+     * keys whose format is unknown or newly changed, and everything unrecognised still passes. What
+     * is filtered here is the opposite case: a token that positively identifies itself as belonging
+     * to a different service. "sk-ant-" is not an unfamiliar AssemblyAI key, it is Anthropic's.
+     */
+    private fun belongsToAnotherProvider(token: String, providerId: String): Boolean {
+        if (providerId.isBlank()) return false
+        if (providerId != "anthropic" && ANTHROPIC.matches(token)) return true
+        if (providerId != "gemini" && GEMINI.matches(token)) return true
+        if (providerId != "openai" && providerId != "groq" && OPENAI.matches(token)) return true
+        return false
+    }
+
+    /**
+     * Warning shown after an import, or null when nothing looks wrong. Silence when a key is simply
+     * unusual; a sentence only when the file plainly held keys for other services and none for this
+     * one, which is the case that used to pass unnoticed.
+     */
+    fun mismatchWarning(text: String, providerId: String, imported: List<String>): String? {
+        if (imported.isNotEmpty()) return null
+        val others = buildSet {
+            if (providerId != "anthropic" && ANTHROPIC.containsMatchIn(text)) add("Anthropic")
+            if (providerId != "gemini" && GEMINI.containsMatchIn(text)) add("Gemini")
+            if (providerId != "openai" && providerId != "groq" && OPENAI.containsMatchIn(text)) {
+                add("OpenAI")
+            }
+        }
+        if (others.isEmpty()) return null
+        return "No key for this provider in that file. Keys for " +
+            others.joinToString(", ") + " were found and left alone."
+    }
+
+    /**
      * Pulls keys out of an arbitrary text file, in order, without duplicates.
      *
      * Tier one takes bare 32 character hex tokens, the AssemblyAI shape, which walks straight past
@@ -167,6 +207,8 @@ object MaKeys {
             for (m in LOOSE.findAll(line)) {
                 val token = m.value
                 if (foreign(token, line)) continue
+                // A token wearing another provider's prefix is not an unfamiliar key for this one.
+                if (belongsToAnotherProvider(token, providerId)) continue
                 if (!token.any { it.isDigit() }) continue
                 found.add(token)
             }
