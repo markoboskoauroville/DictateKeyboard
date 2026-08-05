@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Mic
