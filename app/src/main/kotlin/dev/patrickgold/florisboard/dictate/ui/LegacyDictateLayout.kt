@@ -674,7 +674,7 @@ private fun LegacyRecordRow(
                     recording = recording,
                     segmentsInFlight = segmentsInFlight,
                     tint = onAccent,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 4.dp),
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp),
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1314,13 +1314,9 @@ private fun MaScopeCanvas(active: Boolean, tint: Color) {
                 )
             }
         }
-        Text(
-            text = if (smoothed <= FLOOR_DB + 0.5f) "-∞" else "%.0f dB".format(smoothed),
-            color = tint.copy(alpha = 0.85f),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(end = 14.dp),
-        )
+        // No dB readout. A number nobody reads, sitting where the timer belongs. The bar itself
+        // already answers the only question being asked while speaking, which is whether anything is
+        // arriving at all, and it answers it by moving.
     }
 }
 
