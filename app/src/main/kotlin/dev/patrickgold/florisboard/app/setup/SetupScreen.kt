@@ -56,6 +56,8 @@ import androidx.navigation.NavController
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisAppActivity
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
+import dev.patrickgold.florisboard.dictate.MaVault
+import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.app.Routes
@@ -195,11 +197,7 @@ private fun FlorisScreenScope.content(
         !isFlorisBoardEnabled -> Steps.EnableIme.id
         !isFlorisBoardSelected -> Steps.SelectIme.id
         !isMicGranted -> Steps.GrantMicPermission.id
-        hasNotificationPermission == NotificationPermissionState.NOT_SET && AndroidVersion.ATLEAST_API33_T -> Steps.SelectNotification.id
         !isProviderConfigured && !providerSkipped -> Steps.SetUpProvider.id
-        // Land on the optional floating-button step first, only moving on to the final page once the
-        // user has explicitly decided to skip it or set it up.
-        !floatingButtonStepPassed -> Steps.FloatingButton.id
         else -> Steps.FinishUp.id
     }
 
@@ -336,17 +334,6 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
                 requestMic.launch(Manifest.permission.RECORD_AUDIO)
             }
         },
-        if (AndroidVersion.ATLEAST_API33_T) {
-            FlorisStep(
-                id = Steps.SelectNotification.id,
-                title = stringRes(R.string.setup__grant_notification_permission__title),
-            ) {
-                StepText(stringRes(R.string.setup__grant_notification_permission__description))
-                StepButton(stringRes(R.string.setup__grant_notification_permission__btn)) {
-                    requestNotification.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-        } else null,
         FlorisStep(
             id = Steps.SetUpProvider.id,
             title = stringRes(R.string.setup__provider__title),
@@ -355,41 +342,6 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
                 onSaveKey = ::saveKey,
                 onSkip = onSkipProvider,
             )
-        },
-        FlorisStep(
-            id = Steps.FloatingButton.id,
-            title = stringRes(R.string.setup__floating_button__title),
-        ) {
-            StepText(stringRes(R.string.setup__floating_button__intro))
-            Spacer(modifier = Modifier.height(8.dp))
-            StepText(stringRes(R.string.setup__floating_button__accessibility_note))
-            Spacer(modifier = Modifier.height(8.dp))
-            StepText(
-                text = stringRes(R.string.setup__floating_button__optional_note),
-                fontStyle = FontStyle.Italic,
-            )
-            StepButton(label = stringRes(R.string.setup__floating_button__btn)) {
-                // Finishing setup flips isImeSetUp, which resets the nav back stack to Home; the flag
-                // makes FlorisAppActivity continue on to the floating-button settings afterwards.
-                scope.launch {
-                    this@steps.prefs.internal.openFloatingButtonAfterSetup.set(true)
-                    this@steps.prefs.internal.isImeSetUp.set(true)
-                }
-                navController.navigate(Routes.Settings.Home) {
-                    popUpTo(Routes.Setup.Screen) { inclusive = true }
-                }
-            }
-            TextButton(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 4.dp),
-                onClick = onPassFloatingButton,
-            ) {
-                Text(
-                    text = stringRes(R.string.setup__floating_button__skip_btn),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         },
         FlorisStep(
             id = Steps.FinishUp.id,
@@ -417,11 +369,15 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
 }
 
 /**
- * The Dictate onboarding step that gets a non-technical user from "what is an API key" to a working
- * provider. It defaults to the recommended free provider (Groq) with a plain-language explanation and a
- * step-by-step mini guide, lets the user open the provider's sign-up page and paste the resulting key,
- * and offers an advanced picker for anyone who prefers a different provider. The key is saved into the
- * keyring on confirm, which (via the parent's auto-advance) moves the flow on to the final step.
+ * The key step: three file pickers, nothing else.
+ *
+ * What was here before was written for a stranger who has never heard of an API key: a recommended
+ * free provider, a five-point guide to signing up for it, a sign-up link and a paste box. None of
+ * that applies. The keys already exist in a file on the phone, and the three providers this build
+ * actually uses are fixed, so the whole step is three buttons that read that file.
+ *
+ * Each picker parses the same file for its own provider, so one file holding all three keys can be
+ * picked three times, or a separate file used for each. Importing twice adds nothing.
  */
 @Composable
 private fun FlorisStepLayoutScope.ProviderSetupStep(
@@ -429,148 +385,75 @@ private fun FlorisStepLayoutScope.ProviderSetupStep(
     onSkip: () -> Unit,
 ) {
     val context = LocalContext.current
-
-    var selectedProviderId by rememberSaveable { mutableStateOf(RECOMMENDED_PROVIDER_ID) }
-    var apiKey by rememberSaveable { mutableStateOf("") }
-    var showAdvanced by rememberSaveable { mutableStateOf(false) }
-    var showManualEntry by rememberSaveable { mutableStateOf(false) }
-    var pasteHint by remember { mutableStateOf<String?>(null) }
-    var providerMenuExpanded by remember { mutableStateOf(false) }
-
-    val selectedPreset = ProviderRegistry.byId(selectedProviderId) ?: ProviderRegistry.GROQ
-    val isRecommended = selectedProviderId == RECOMMENDED_PROVIDER_ID
-
-    StepText(stringRes(R.string.setup__provider__intro))
-    Spacer(modifier = Modifier.height(8.dp))
-    StepText(stringRes(R.string.setup__provider__what_is_key))
-
-    if (isRecommended) {
-        Spacer(modifier = Modifier.height(8.dp))
-        StepText(stringRes(R.string.setup__provider__recommended))
-    }
-
-    Spacer(modifier = Modifier.height(12.dp))
     StepText(
-        text = if (isRecommended) {
-            stringRes(R.string.setup__provider__steps_groq)
-        } else {
-            stringRes(R.string.setup__provider__steps_generic, "provider" to selectedPreset.displayName)
-        },
+        "Point each provider at your keys file. The same file can be used for all three, since " +
+            "each one takes only the keys that belong to it."
     )
+    Spacer(modifier = Modifier.height(8.dp))
 
-    StepButton(
-        label = stringRes(R.string.setup__provider__open_btn, "provider" to selectedPreset.displayName),
-    ) {
-        selectedPreset.apiKeyUrl?.let { context.launchUrl(it) }
-    }
-
-    // Paste-first: the user just copied the key on the provider page, so the common path needs no
-    // on-screen keyboard (which otherwise covers this cramped step). Manual entry stays as a fallback.
-    val clipboardEmptyMsg = stringRes(R.string.setup__provider__clipboard_empty)
-    StepButton(label = stringRes(R.string.setup__provider__paste_btn)) {
-        val pasted = readClipboardText(context)?.trim()
-        if (pasted.isNullOrBlank()) {
-            pasteHint = clipboardEmptyMsg
-        } else {
-            apiKey = pasted
-            pasteHint = null
-        }
-    }
-
-    if (apiKey.isNotBlank()) {
-        Spacer(modifier = Modifier.height(8.dp))
-        StepText(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            text = stringRes(R.string.setup__provider__key_detected, "key" to maskKey(apiKey)),
-        )
-    }
-    pasteHint?.let { hint ->
-        Spacer(modifier = Modifier.height(8.dp))
-        StepText(text = hint, fontStyle = FontStyle.Italic)
-    }
+    MaSetupKeyPicker("assemblyai", "AssemblyAI", "transcription", onSaveKey)
+    MaSetupKeyPicker("anthropic", "Anthropic Claude", "rewording", onSaveKey)
+    MaSetupKeyPicker("gemini", "Google Gemini", "optional", onSaveKey)
 
     TextButton(
-        modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .padding(top = 4.dp),
-        onClick = { showManualEntry = !showManualEntry },
-    ) {
-        Text(stringRes(R.string.setup__provider__enter_manually))
-    }
-    if (showManualEntry) {
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            value = apiKey,
-            onValueChange = { apiKey = it },
-            singleLine = true,
-            label = { Text(stringRes(R.string.setup__provider__key_field)) },
-        )
-    }
-
-    if (apiKey.isNotBlank()) {
-        StepButton(label = stringRes(R.string.setup__provider__save_btn)) {
-            onSaveKey(selectedProviderId, apiKey)
-        }
-    }
-
-    // Advanced: let users pick a different transcription-capable provider than the recommended one.
-    TextButton(
-        modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .padding(top = 4.dp),
-        onClick = { showAdvanced = !showAdvanced },
-    ) {
-        Text(stringRes(R.string.setup__provider__other_provider))
-    }
-    if (showAdvanced) {
-        StepText(
-            text = stringRes(R.string.setup__provider__other_provider_hint),
-            fontStyle = FontStyle.Italic,
-        )
-        Box(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            TextButton(onClick = { providerMenuExpanded = true }) {
-                Text("${selectedPreset.displayName}  ▾")
-            }
-            DropdownMenu(
-                expanded = providerMenuExpanded,
-                onDismissRequest = { providerMenuExpanded = false },
-            ) {
-                ProviderRegistry.presets
-                    .filter { it.capabilities.transcription }
-                    .forEach { preset ->
-                        DropdownMenuItem(
-                            text = { Text(preset.displayName) },
-                            onClick = {
-                                selectedProviderId = preset.id
-                                providerMenuExpanded = false
-                            },
-                        )
-                    }
-            }
-        }
-    }
-
-    TextButton(
-        modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .padding(top = 4.dp),
+        modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp),
         onClick = onSkip,
     ) {
         Text(
-            text = stringRes(R.string.setup__provider__skip_btn),
+            text = "Set up later",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
+/**
+ * One provider's picker. Reports how many keys it took, so the step gives the same feedback the key
+ * manager does rather than silently succeeding.
+ */
+@Composable
+private fun FlorisStepLayoutScope.MaSetupKeyPicker(
+    providerId: String,
+    label: String,
+    role: String,
+    onSaveKey: (providerId: String, key: String) -> Unit,
+) {
+    val context = LocalContext.current
+    var note by remember { mutableStateOf("") }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val text = runCatching {
+                context.contentResolver.openInputStream(uri)?.use { String(it.readBytes()) }
+            }.getOrNull().orEmpty()
+            val keys = MaKeys.extract(text, providerId)
+            if (keys.isEmpty()) {
+                note = MaKeys.mismatchWarning(text, providerId, keys)
+                    ?: "No $label key found in that file"
+            } else {
+                onSaveKey(providerId, MaKeys.join(keys))
+                MaVault.write(text)
+                note = if (keys.size == 1) "1 key imported" else "${keys.size} keys imported"
+            }
+        }
+    }
+    StepButton(label = "$label ($role)") {
+        picker.launch(arrayOf("*/*"))
+    }
+    if (note.isNotEmpty()) {
+        StepText(note)
+    }
+}
+
+/**
+ * Four steps, down from seven.
+ *
+ * The crash-report notification step is gone: nothing posts crash notifications any more, so asking
+ * for the permission was asking for nothing. The floating-button step is gone too, since the
+ * floating bubble itself was removed from this build and the step was still advertising it.
+ */
 private sealed class Steps(val id: Int) {
     data object EnableIme : Steps(id = 1)
     data object SelectIme : Steps(id = 2)
     data object GrantMicPermission : Steps(id = 3)
-    data object SelectNotification : Steps(id = 4)
-    data object SetUpProvider : Steps(id = 5)
-    data object FloatingButton : Steps(id = 6)
-    data object FinishUp : Steps(id = 7)
+    data object SetUpProvider : Steps(id = 4)
+    data object FinishUp : Steps(id = 5)
 }

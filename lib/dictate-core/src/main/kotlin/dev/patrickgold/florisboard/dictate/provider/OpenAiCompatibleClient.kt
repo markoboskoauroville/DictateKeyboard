@@ -772,6 +772,48 @@ class OpenAiCompatibleClient(
         return false
     }
 
+    /**
+     * Checks a key against the live service and reports how many models it can see.
+     *
+     * [listModels] is not a key test for every provider. AssemblyAI and ElevenLabs have no model
+     * catalog, so listModels returns a curated list without a network call at all: a wrong key, or
+     * no key, still reported "connected". That is exactly how an Anthropic key sat in the AssemblyAI
+     * slot looking healthy while every transcription failed.
+     *
+     * So the catalogless providers get a real authenticated request instead. AssemblyAI answers
+     * `GET /v2/transcript?limit=1` with 200 for a good key and 401 for a bad one, which is the
+     * cheapest honest question that can be asked of it.
+     *
+     * @return the number of models the key can see, or -1 when the provider has no catalog and only
+     *   the key itself was verified.
+     * @throws DictateApiException with INVALID_API_KEY when the service rejects the key, or NETWORK
+     *   and TIMEOUT when the phone could not reach it at all.
+     */
+    suspend fun validateKey(): Int {
+        if (config.apiKey.isBlank()) {
+            throw DictateApiException(DictateApiException.Kind.INVALID_API_KEY, "No key")
+        }
+        if (config.transcriptionApi == TranscriptionApi.ASSEMBLYAI_ASYNC) {
+            val request = Request.Builder()
+                .url(config.normalizedBaseUrl + "v2/transcript?limit=1")
+                .header("authorization", config.apiKey)
+                .get()
+                .build()
+            executeForBody(request, maxRetries = 1)
+            return -1
+        }
+        if (config.transcriptionApi == TranscriptionApi.ELEVENLABS_MULTIPART) {
+            val request = Request.Builder()
+                .url(config.normalizedBaseUrl + "user")
+                .headers(authHeaders())
+                .get()
+                .build()
+            executeForBody(request, maxRetries = 1)
+            return -1
+        }
+        return listModels().size
+    }
+
     private fun authHeaders(): Headers {
         val builder = Headers.Builder()
         if (config.apiKey.isNotBlank()) {

@@ -35,7 +35,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Spellcheck
-import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Palette
@@ -184,6 +184,18 @@ fun HomeScreen() = FlorisScreen {
                 }
             }
         }*/
+        // Reorganised around how this app is actually used. Keys first, because nothing works
+        // without one and everything else is decoration until one is green. Then dictation, then the
+        // things that shape what the keyboard looks like and does, then About.
+        //
+        // Removed rather than hidden: Emojis & GIFs, Addons & Extensions, and Other. They belong to
+        // the general-purpose keyboard this was forked from, not to a voice-typing tool.
+        Preference(
+            icon = Icons.Default.Key,
+            title = "API keys",
+            summary = "Import, test and manage every key",
+            onClick = { navController.navigate(Routes.Settings.DictateKeys) },
+        )
         Preference(
             icon = Icons.Default.Mic,
             title = stringRes(R.string.dictate__title),
@@ -210,34 +222,19 @@ fun HomeScreen() = FlorisScreen {
             onClick = { navController.navigate(Routes.Settings.Smartbar) },
         )
         Preference(
-            icon = Icons.Default.Spellcheck,
-            title = stringRes(R.string.settings__typing__title),
-            onClick = { navController.navigate(Routes.Settings.Typing) },
-        )
-        Preference(
             icon = Icons.Default.Gesture,
             title = stringRes(R.string.settings__gestures__title),
             onClick = { navController.navigate(Routes.Settings.Gestures) },
         )
         Preference(
+            icon = Icons.Default.Spellcheck,
+            title = stringRes(R.string.settings__typing__title),
+            onClick = { navController.navigate(Routes.Settings.Typing) },
+        )
+        Preference(
             icon = Icons.AutoMirrored.Outlined.Assignment,
             title = stringRes(R.string.settings__clipboard__title),
             onClick = { navController.navigate(Routes.Settings.Clipboard) },
-        )
-        Preference(
-            icon = Icons.Default.SentimentSatisfiedAlt,
-            title = stringRes(R.string.settings__media__title),
-            onClick = { navController.navigate(Routes.Settings.Media) },
-        )
-        Preference(
-            icon = Icons.Default.Extension,
-            title = stringRes(R.string.ext__home__title),
-            onClick = { navController.navigate(Routes.Ext.Home) },
-        )
-        Preference(
-            icon = Icons.Outlined.Build,
-            title = stringRes(R.string.settings__other__title),
-            onClick = { navController.navigate(Routes.Settings.Other) },
         )
         Preference(
             icon = Icons.Outlined.Info,

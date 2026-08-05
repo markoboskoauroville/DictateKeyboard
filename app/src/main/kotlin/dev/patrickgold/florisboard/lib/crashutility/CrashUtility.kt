@@ -267,24 +267,12 @@ abstract class CrashUtility private constructor() {
          * @param title The title of the notification.
          * @param body The body of the notification.
          */
+        @Suppress("UNUSED_PARAMETER")
         private fun pushNotification(context: Context?, id: Int, title: String, body: String) {
-            context ?: return
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE)
-            if (notificationManager != null && notificationManager is NotificationManager) {
-                val notificationBuilder = Notification.Builder(context.applicationContext, NOTIFICATION_CHANNEL_ID)
-                val crashDialogIntent = Intent(context, CrashDialogActivity::class.java)
-                val notification = notificationBuilder.run {
-                    setContentTitle(title)
-                    style = Notification.BigTextStyle().bigText(body)
-                    setContentText(body)
-                    setSmallIcon(android.R.drawable.stat_notify_error)
-                    setContentIntent(PendingIntent.getActivity(context, 0, crashDialogIntent, PendingIntent.FLAG_IMMUTABLE)).setAutoCancel(
-                        true
-                    )
-                    build()
-                }
-                notificationManager.notify(id, notification)
-            }
+            // Crash notifications are gone by request. The stack trace is still written to disk and
+            // CrashDialogActivity can still display it, but nothing pushes itself into the
+            // notification shade any more, and setup no longer asks for notification permission for
+            // something the user never wanted to see.
         }
 
         /**

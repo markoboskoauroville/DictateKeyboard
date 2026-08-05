@@ -60,6 +60,36 @@ object MaKeys {
     /** How the list is written back into the single stored field. */
     fun join(keys: List<String>): String = keys.joinToString("\n")
 
+    /**
+     * A single key, masked for display. Enough of both ends to recognise which key a row is, never
+     * enough to use. Short strings collapse entirely rather than leaking most of themselves.
+     */
+    fun mask(key: String): String {
+        val k = key.trim()
+        return when {
+            k.length > 14 -> k.take(8) + "\u2026" + k.takeLast(4)
+            k.length > 8 -> k.take(4) + "\u2026" + k.takeLast(2)
+            else -> "\u2026"
+        }
+    }
+
+    /**
+     * Merges freshly imported keys into the ones already stored, keeping order and dropping exact
+     * duplicates. Importing the same file twice therefore changes nothing, which is the point: a
+     * long list of keys is only manageable if re-importing is safe.
+     *
+     * @return the merged list and how many of [incoming] were genuinely new.
+     */
+    fun merge(existing: List<String>, incoming: List<String>): Pair<List<String>, Int> {
+        val seen = LinkedHashSet<String>()
+        existing.map { it.trim() }.filter { it.isNotEmpty() }.forEach { seen.add(it) }
+        var added = 0
+        for (key in incoming.map { it.trim() }.filter { it.isNotEmpty() }) {
+            if (seen.add(key)) added++
+        }
+        return seen.toList() to added
+    }
+
     /** Masked summary of what is stored, shown where the paste field used to be. */
     fun describe(stored: String): String {
         val keys = split(stored).filter { it.isNotBlank() }

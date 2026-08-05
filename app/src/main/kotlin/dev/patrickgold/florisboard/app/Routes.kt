@@ -62,6 +62,7 @@ import dev.patrickgold.florisboard.app.settings.advanced.RestoreScreen
 import dev.patrickgold.florisboard.app.settings.clipboard.ClipboardScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateLanguagesScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateMappingsScreen
+import dev.patrickgold.florisboard.app.settings.dictate.DictateKeysScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateProvidersScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateProxyScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateWearScreen
@@ -141,6 +142,10 @@ object Routes {
         @Serializable
         @Deeplink("settings/dictate/providers")
         object DictateProviders
+
+        @Serializable
+        @Deeplink("settings/dictate/keys")
+        object DictateKeys
 
         @Serializable
         @Deeplink("settings/dictate/mappings")
@@ -371,6 +376,7 @@ object Routes {
             composableWithDeepLink(Settings.Dictate::class) { DictateScreen() }
             composableWithDeepLink(Settings.DictateLanguages::class) { DictateLanguagesScreen() }
             composableWithDeepLink(Settings.DictateProviders::class) { DictateProvidersScreen() }
+            composableWithDeepLink(Settings.DictateKeys::class) { DictateKeysScreen() }
             composableWithDeepLink(Settings.DictateMappings::class) { DictateMappingsScreen() }
             composableWithDeepLink(Settings.DictateProxy::class) { DictateProxyScreen() }
             composableWithDeepLink(Settings.DictateWear::class) { DictateWearScreen() }
