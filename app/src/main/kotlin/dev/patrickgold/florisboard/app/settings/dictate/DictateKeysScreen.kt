@@ -19,6 +19,7 @@ package dev.patrickgold.florisboard.app.settings.dictate
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,12 +30,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Card
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,26 +47,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaVault
+import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.dictate.provider.OpenAiCompatibleClient
 import dev.patrickgold.florisboard.dictate.provider.ProviderAccount
+import dev.patrickgold.florisboard.dictate.provider.ProviderAccounts
 import dev.patrickgold.florisboard.dictate.provider.ProviderPreset
 import dev.patrickgold.florisboard.dictate.provider.ProviderRegistry
 import dev.patrickgold.florisboard.lib.compose.FlorisScreen
+import dev.patrickgold.florisboard.lib.util.launchUrl
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -86,27 +92,50 @@ private fun KeyHealth.colour(): Color = when (this) {
     else -> GREY
 }
 
+private fun KeyHealth.label(): String = when (this) {
+    KeyHealth.WORKING -> "works"
+    KeyHealth.REJECTED -> "rejected"
+    KeyHealth.NO_QUOTA -> "no quota"
+    KeyHealth.OFFLINE -> "no connection"
+    KeyHealth.TESTING -> "testing"
+    KeyHealth.UNTESTED -> "untested"
+}
+
 /** Result of testing one key: its light, and a short sentence explaining it. */
 private data class KeyStatus(val health: KeyHealth, val detail: String = "")
 
 /**
- * The key manager.
+ * Providers this build actually uses, in the order they matter, with what each one is for. Anything
+ * else in the registry is still supported if a key turns up for it, but is not advertised here.
+ */
+private val MA_PROVIDERS = listOf(
+    "assemblyai" to "speech to text, the transcription engine",
+    "anthropic" to "rewording and the restyle prompts",
+    "gemini" to "optional second engine, transcription and rewording",
+    "groq" to "optional fast fallback",
+    "openai" to "optional, for custom endpoints",
+)
+
+/**
+ * The key manager. One picker, one list, one place.
  *
- * Everything in this app depends on a working key, so a key deserves more than a masked string and a
- * single "Test connection" button that lumps every provider together. Each key gets its own row, its
- * own light and its own test:
+ * The old version had a file picker per provider, which asked the user to know which key belongs to
+ * which service before importing it. That is backwards: the parser already knows. So there is a
+ * single button now. It reads the file once, works out which keys belong to which provider, and files
+ * them. One file holding every key is the normal case, and importing it twice changes nothing.
  *
+ * Lights, per key:
  *   green   the service accepted this key
  *   red     the service rejected it, it is dead or belongs somewhere else
- *   amber   accepted but out of quota, it will be skipped in favour of the next one
+ *   amber   accepted but out of quota, so it will be skipped in favour of the next
  *   yellow  the phone could not reach the service, so nothing was learned about the key
  *   grey    not tested yet
  *
- * The distinction between red and yellow is the one that matters. Without it an aeroplane-mode test
- * looks exactly like a dead key, and a good key gets deleted for nothing.
+ * The red/yellow split is the one that matters. Without it a test run with no signal looks exactly
+ * like a dead key, and a good key gets deleted for nothing.
  *
- * Models are refreshed from here too, per provider, because a key that works against a model the
- * provider has retired fails in a way that reads like a key problem and is not one.
+ * The radio button picks which key is tried first. The rest stay as fallbacks in order, which is how
+ * the call path already treats them: a rejected or exhausted key rolls on to the next one.
  */
 @Composable
 fun DictateKeysScreen() = FlorisScreen {
@@ -117,47 +146,266 @@ fun DictateKeysScreen() = FlorisScreen {
     val prefs by FlorisPreferenceStore
 
     content {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         val accounts by prefs.dictate.providerAccounts.collectAsState()
         val activeTranscriptionId by prefs.dictate.transcriptionProviderId.collectAsState()
         val activeRewordingId by prefs.dictate.rewordingProviderId.collectAsState()
 
-        // Keyed by "providerId\u0000key" so a key shared between two providers is tracked separately.
+        // Keyed by "providerId\u0000key" so the same key held by two providers is tracked separately.
         val statuses = remember { mutableStateMapOf<String, KeyStatus>() }
+        var note by remember { mutableStateOf("") }
+        var busy by remember { mutableStateOf(false) }
 
-        // Every provider that has a key, plus the two that are currently active even when empty, so
-        // an unconfigured active provider is visibly missing its key rather than silently absent.
-        val presets = remember(accounts, activeTranscriptionId, activeRewordingId) {
-            ProviderRegistry.presets.filter { preset ->
-                val stored = accounts.accounts[preset.id]?.apiKey.orEmpty()
-                stored.isNotBlank() ||
-                    preset.id == activeTranscriptionId ||
-                    preset.id == activeRewordingId
+        /** Every provider with a key, plus whichever two are currently active. */
+        val shown = remember(accounts, activeTranscriptionId, activeRewordingId) {
+            val ids = LinkedHashSet<String>()
+            MA_PROVIDERS.forEach { (id, _) ->
+                if (accounts.accounts[id]?.apiKey.orEmpty().isNotBlank()) ids.add(id)
+            }
+            accounts.accounts.forEach { (id, acc) -> if (acc.apiKey.isNotBlank()) ids.add(id) }
+            ids.add(activeTranscriptionId)
+            ids.add(activeRewordingId)
+            ids.mapNotNull { ProviderRegistry.byId(it) }
+        }
+
+        fun save(updated: ProviderAccounts) {
+            scope.launch { prefs.dictate.providerAccounts.set(updated) }
+        }
+
+        /** Runs one key against the live service and records what came back. */
+        fun testKey(preset: ProviderPreset, key: String) {
+            val slot = preset.id + "\u0000" + key
+            statuses[slot] = KeyStatus(KeyHealth.TESTING)
+            val account = accounts.accounts[preset.id]
+            scope.launch {
+                val status = withContext(Dispatchers.IO) {
+                    try {
+                        val count = OpenAiCompatibleClient
+                            .from(
+                                preset, key,
+                                baseUrlOverride = account?.customBaseUrl?.takeIf { it.isNotBlank() }
+                                    ?: preset.baseUrl,
+                                proxy = prefs.dictate.dictateProxyConfig(),
+                                trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+                            )
+                            .validateKey()
+                        KeyStatus(
+                            KeyHealth.WORKING,
+                            if (count >= 0) "works, $count models" else "works",
+                        )
+                    } catch (e: DictateApiException) {
+                        when (e.kind) {
+                            DictateApiException.Kind.INVALID_API_KEY ->
+                                KeyStatus(KeyHealth.REJECTED, "rejected by the service")
+                            DictateApiException.Kind.QUOTA_EXCEEDED ->
+                                KeyStatus(KeyHealth.NO_QUOTA, "out of quota, will be skipped")
+                            DictateApiException.Kind.NETWORK, DictateApiException.Kind.TIMEOUT ->
+                                KeyStatus(KeyHealth.OFFLINE, "no connection, key not checked")
+                            else -> KeyStatus(
+                                KeyHealth.OFFLINE,
+                                MaKeys.tidyError(e.message, "could not be checked"),
+                            )
+                        }
+                    } catch (e: Exception) {
+                        KeyStatus(
+                            KeyHealth.OFFLINE,
+                            MaKeys.tidyError(e.message, "could not be checked"),
+                        )
+                    }
+                }
+                statuses[slot] = status
             }
         }
 
+        // THE single picker. One file, every provider, sorted automatically.
+        val picker = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            if (uri != null) {
+                val text = runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { String(it.readBytes()) }
+                }.getOrNull().orEmpty()
+                var working = accounts
+                val summary = mutableListOf<String>()
+                var totalNew = 0
+                for ((id, _) in MA_PROVIDERS) {
+                    val preset = ProviderRegistry.byId(id) ?: continue
+                    val found = MaKeys.extract(text, id)
+                    if (found.isEmpty()) continue
+                    val existing = working.accounts[id] ?: ProviderAccount(providerId = id)
+                    val current = MaKeys.split(existing.apiKey).filter { it.isNotBlank() }
+                    val (merged, added) = MaKeys.merge(current, found)
+                    if (added > 0) {
+                        working = working.put(existing.copy(apiKey = MaKeys.join(merged)))
+                        summary += "${preset.displayName} +$added"
+                        totalNew += added
+                    }
+                }
+                if (totalNew > 0) {
+                    save(working)
+                    MaVault.write(text)
+                    note = "Imported: " + summary.joinToString(", ")
+                } else {
+                    note = "Nothing new. Every key in that file is already here."
+                }
+            }
+        }
+
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            onClick = { picker.launch(arrayOf("*/*")) },
+        ) {
+            Text("LOAD KEYS FROM FILE")
+        }
         Text(
-            text = "One row per key. Tap a light to test that key on its own, or test a whole " +
-                "provider at once. Re-importing a file you have already imported adds nothing, so " +
-                "it is always safe.",
+            text = "Any text file. The keys are lifted out of it, sorted to the right provider and " +
+                "everything else is ignored. Nothing is ever pasted, and importing the same file " +
+                "twice changes nothing.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
 
-        presets.forEach { preset ->
-            ProviderKeyCard(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                enabled = !busy,
+                onClick = {
+                    shown.forEach { preset ->
+                        MaKeys.split(accounts.accounts[preset.id]?.apiKey.orEmpty())
+                            .filter { it.isNotBlank() }
+                            .forEach { testKey(preset, it) }
+                    }
+                },
+            ) {
+                Text("TEST ALL")
+            }
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                enabled = !busy,
+                onClick = {
+                    busy = true
+                    scope.launch {
+                        var working = accounts
+                        val lines = mutableListOf<String>()
+                        for (preset in shown) {
+                            val key = MaKeys.split(working.accounts[preset.id]?.apiKey.orEmpty())
+                                .firstOrNull { it.isNotBlank() } ?: continue
+                            val ids = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    OpenAiCompatibleClient
+                                        .from(
+                                            preset, key,
+                                            proxy = prefs.dictate.dictateProxyConfig(),
+                                            trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+                                        )
+                                        .listModels()
+                                        .map { it.id }
+                                }.getOrNull()
+                            }
+                            if (ids != null) {
+                                val existing = working.accounts[preset.id]
+                                    ?: ProviderAccount(providerId = preset.id)
+                                working = working.put(
+                                    existing.copy(
+                                        cachedModels = ids,
+                                        cachedModelsAt = System.currentTimeMillis(),
+                                    )
+                                )
+                                lines += "${preset.displayName} ${ids.size}"
+                            }
+                        }
+                        save(working)
+                        note = if (lines.isEmpty()) {
+                            "No model lists could be refreshed"
+                        } else {
+                            "Models: " + lines.joinToString(", ")
+                        }
+                        busy = false
+                    }
+                },
+            ) {
+                Text("CHECK MODELS")
+            }
+        }
+
+        if (note.isNotEmpty()) {
+            Text(
+                text = note,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+
+        Text(
+            text = "The filled circle is the key tried first. The others are fallbacks, in order.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+
+        shown.forEach { preset ->
+            ProviderSection(
                 preset = preset,
-                account = accounts.accounts[preset.id],
+                accounts = accounts,
+                statuses = statuses,
                 isTranscription = preset.id == activeTranscriptionId,
                 isRewording = preset.id == activeRewordingId,
-                statuses = statuses,
+                onTest = { key -> testKey(preset, key) },
+                onSave = ::save,
             )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+        // Where to get a key, and what each one does here. Kept at the bottom deliberately: it is
+        // reference material, needed once, and does not belong in the way of the daily list above.
+        Text(
+            text = "Where the keys come from",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+        MA_PROVIDERS.forEach { (id, purpose) ->
+            val preset = ProviderRegistry.byId(id) ?: return@forEach
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = preset.apiKeyUrl != null) {
+                        preset.apiKeyUrl?.let { context.launchUrl(it) }
+                    }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = preset.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (preset.apiKeyUrl != null) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                Text(
+                    text = purpose,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         Text(
             text = "Keys are also mirrored to ${MaVault.DISPLAY_PATH}, which an uninstall does not " +
                 "delete, so this list comes back by itself on a clean install.",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(16.dp),
         )
@@ -165,285 +413,123 @@ fun DictateKeysScreen() = FlorisScreen {
 }
 
 @Composable
-private fun ProviderKeyCard(
+private fun ProviderSection(
     preset: ProviderPreset,
-    account: ProviderAccount?,
+    accounts: ProviderAccounts,
+    statuses: SnapshotStateMap<String, KeyStatus>,
     isTranscription: Boolean,
     isRewording: Boolean,
-    statuses: androidx.compose.runtime.snapshots.SnapshotStateMap<String, KeyStatus>,
+    onTest: (String) -> Unit,
+    onSave: (ProviderAccounts) -> Unit,
 ) {
-    val prefs by FlorisPreferenceStore
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val accounts by prefs.dictate.providerAccounts.collectAsState()
-
+    val account = accounts.accounts[preset.id]
     val keys = remember(account?.apiKey) {
         MaKeys.split(account?.apiKey.orEmpty()).filter { it.isNotBlank() }
     }
-    var note by remember { mutableStateOf("") }
-    var refreshing by remember { mutableStateOf(false) }
 
-    fun statusKey(key: String) = preset.id + "\u0000" + key
-
-    /** Writes a changed key list back into the keyring. */
-    fun saveKeys(updated: List<String>) {
-        val existing = account ?: ProviderAccount(providerId = preset.id)
-        scope.launch {
-            prefs.dictate.providerAccounts.set(
-                accounts.put(existing.copy(apiKey = MaKeys.join(updated)))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = preset.displayName,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        val roles = buildList {
+            if (isTranscription) add("transcription")
+            if (isRewording) add("rewording")
+        }
+        if (roles.isNotEmpty()) {
+            Text(
+                text = roles.joinToString(" + "),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     }
 
-    /** Runs one key against the live service and records what came back. */
-    fun testKey(key: String) {
-        statuses[statusKey(key)] = KeyStatus(KeyHealth.TESTING)
-        scope.launch {
-            val status = withContext(Dispatchers.IO) {
-                try {
-                    val count = OpenAiCompatibleClient
-                        .from(
-                            preset, key,
-                            baseUrlOverride = account?.customBaseUrl?.takeIf { it.isNotBlank() }
-                                ?: preset.baseUrl,
-                            proxy = prefs.dictate.dictateProxyConfig(),
-                            trustUserCerts = prefs.dictate.trustUserCertificates.get(),
-                        )
-                        .validateKey()
-                    KeyStatus(
-                        KeyHealth.WORKING,
-                        if (count >= 0) "accepted, $count models" else "accepted",
-                    )
-                } catch (e: DictateApiException) {
-                    when (e.kind) {
-                        DictateApiException.Kind.INVALID_API_KEY ->
-                            KeyStatus(KeyHealth.REJECTED, "rejected by the service")
-                        DictateApiException.Kind.QUOTA_EXCEEDED ->
-                            KeyStatus(KeyHealth.NO_QUOTA, "out of quota, will be skipped")
-                        DictateApiException.Kind.NETWORK, DictateApiException.Kind.TIMEOUT ->
-                            KeyStatus(KeyHealth.OFFLINE, "no connection, key not checked")
-                        else -> KeyStatus(
-                            KeyHealth.OFFLINE,
-                            MaKeys.tidyError(e.message, "could not be checked"),
-                        )
+    if (keys.isEmpty()) {
+        Text(
+            text = "No key yet. Load your keys file above.",
+            style = MaterialTheme.typography.bodySmall,
+            color = RED,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+        return
+    }
+
+    keys.forEachIndexed { index, key ->
+        val status = statuses[preset.id + "\u0000" + key] ?: KeyStatus(KeyHealth.UNTESTED)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Selecting a key moves it to the front, which is exactly what "default" means to the
+            // call path: it walks the list in order and rolls on when one is refused.
+            RadioButton(
+                selected = index == 0,
+                onClick = {
+                    if (index != 0) {
+                        val reordered = listOf(key) + keys.filterNot { it == key }
+                        val existing = account ?: ProviderAccount(providerId = preset.id)
+                        onSave(accounts.put(existing.copy(apiKey = MaKeys.join(reordered))))
                     }
-                } catch (e: Exception) {
-                    KeyStatus(KeyHealth.OFFLINE, MaKeys.tidyError(e.message, "could not be checked"))
-                }
-            }
-            statuses[statusKey(key)] = status
-        }
-    }
-
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            val text = runCatching {
-                context.contentResolver.openInputStream(uri)?.use { String(it.readBytes()) }
-            }.getOrNull().orEmpty()
-            val found = MaKeys.extract(text, preset.id)
-            if (found.isEmpty()) {
-                note = MaKeys.mismatchWarning(text, preset.id, found)
-                    ?: "No key for ${preset.displayName} in that file"
-            } else {
-                val (merged, added) = MaKeys.merge(keys, found)
-                saveKeys(merged)
-                MaVault.write(text)
-                note = when (added) {
-                    0 -> "Already had every key in that file, nothing changed"
-                    1 -> "1 new key added"
-                    else -> "$added new keys added"
-                }
-            }
-        }
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+                },
+            )
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 4.dp)) {
                 Text(
-                    text = preset.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
+                    text = "${index + 1}. ${MaKeys.mask(key)}",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                val roles = buildList {
-                    if (isTranscription) add("transcription")
-                    if (isRewording) add("rewording")
-                }
-                if (roles.isNotEmpty()) {
+                if (status.detail.isNotEmpty()) {
                     Text(
-                        text = roles.joinToString(" + "),
+                        text = status.detail,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-
-            if (keys.isEmpty()) {
-                Text(
-                    text = "No key yet.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = RED,
-                    modifier = Modifier.padding(top = 6.dp),
+            if (status.health == KeyHealth.TESTING) {
+                CircularProgressIndicator(modifier = Modifier.size(12.dp))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(status.health.colour()),
                 )
             }
-
-            keys.forEachIndexed { index, key ->
-                val status = statuses[statusKey(key)] ?: KeyStatus(KeyHealth.UNTESTED)
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (status.health == KeyHealth.TESTING) {
-                        CircularProgressIndicator(modifier = Modifier.size(14.dp))
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(status.health.colour()),
-                        )
-                    }
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 10.dp),
-                    ) {
-                        Text(
-                            text = MaKeys.mask(key),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 13.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        val detail = when {
-                            status.detail.isNotEmpty() -> status.detail
-                            index == 0 -> "first choice"
-                            else -> "fallback ${index + 1}"
-                        }
-                        Text(
-                            text = detail,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    TextButton(onClick = { testKey(key) }) { Text("Test") }
-                    IconButton(onClick = {
-                        statuses.remove(statusKey(key))
-                        saveKeys(keys.filterNot { it == key })
-                        note = "Key removed"
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Remove this key",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            // Current model, and a refresh that asks the provider what it actually offers today. A
-            // key tested green against a model the provider has since retired still fails, and the
-            // failure reads like a key problem, so the two belong on the same screen.
-            val currentModel = account?.transcriptionModel?.takeIf { it.isNotBlank() }
-                ?: preset.defaultTranscriptionModel.orEmpty()
-            if (currentModel.isNotEmpty()) {
-                val known = account?.cachedModels.orEmpty()
-                val retired = known.isNotEmpty() && currentModel !in known
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Model: $currentModel",
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (retired) {
-                            Text(
-                                text = "Not in this provider's current list. Pick another in AI providers.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = AMBER,
-                            )
-                        }
-                    }
-                    IconButton(
-                        enabled = !refreshing && keys.isNotEmpty(),
-                        onClick = {
-                            refreshing = true
-                            scope.launch {
-                                val result = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        OpenAiCompatibleClient
-                                            .from(
-                                                preset, keys.first(),
-                                                baseUrlOverride = account?.customBaseUrl
-                                                    ?.takeIf { it.isNotBlank() } ?: preset.baseUrl,
-                                                proxy = prefs.dictate.dictateProxyConfig(),
-                                                trustUserCerts = prefs.dictate.trustUserCertificates.get(),
-                                            )
-                                            .listModels()
-                                            .map { it.id }
-                                    }
-                                }
-                                result.onSuccess { ids ->
-                                    val existing = account ?: ProviderAccount(providerId = preset.id)
-                                    prefs.dictate.providerAccounts.set(
-                                        accounts.put(
-                                            existing.copy(
-                                                cachedModels = ids,
-                                                cachedModelsAt = System.currentTimeMillis(),
-                                            )
-                                        )
-                                    )
-                                    note = "${ids.size} models refreshed"
-                                }.onFailure { e ->
-                                    note = MaKeys.tidyError(e.message, "Model list could not be refreshed")
-                                }
-                                refreshing = false
-                            }
-                        },
-                    ) {
-                        if (refreshing) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh the model list",
-                            )
-                        }
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = { picker.launch(arrayOf("*/*")) }) {
-                    Text("Import from file")
-                }
-                if (keys.isNotEmpty()) {
-                    TextButton(onClick = { keys.forEach { testKey(it) } }) {
-                        Text("Test all")
-                    }
-                }
-            }
-
-            if (note.isNotEmpty()) {
-                Text(
-                    text = note,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                text = status.health.label(),
+                style = MaterialTheme.typography.labelSmall,
+                color = status.health.colour(),
+                modifier = Modifier.padding(start = 6.dp),
+            )
+            TextButton(onClick = { onTest(key) }) { Text("test") }
+            IconButton(onClick = {
+                statuses.remove(preset.id + "\u0000" + key)
+                val existing = account ?: ProviderAccount(providerId = preset.id)
+                onSave(
+                    accounts.put(
+                        existing.copy(apiKey = MaKeys.join(keys.filterNot { it == key }))
+                    )
+                )
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Remove this key",
+                    tint = RED,
                 )
             }
         }

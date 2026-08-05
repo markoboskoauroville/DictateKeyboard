@@ -201,6 +201,15 @@ fun HomeScreen() = FlorisScreen {
             title = stringRes(R.string.dictate__title),
             onClick = { navController.navigate(Routes.Settings.Dictate) },
         )
+        // The transcription archive already existed, three levels down under Dictate, which is why it
+        // read as missing. Every finished dictation is logged and can be re-inserted or re-transcribed
+        // from here, so it belongs beside dictation itself rather than buried under it.
+        Preference(
+            icon = Icons.Default.Schedule,
+            title = stringRes(R.string.dictate__history_title),
+            summary = "Every transcription, re-insert or re-transcribe",
+            onClick = { navController.navigate(Routes.Settings.DictateHistory) },
+        )
         Preference(
             icon = Icons.Default.Language,
             title = stringRes(R.string.settings__localization__title),
