@@ -1314,7 +1314,18 @@ object DictateController {
                 // difference between these two is the thing that shows it.
                 val maRawBytes = uploadFile.length()
                 var maCompressed = false
-                if (preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE) {
+                // AssemblyAI is deliberately excluded, on measurement rather than theory. Sending it
+                // Ogg Opus produced a small upload followed by a long wait; sending the raw 16 kHz
+                // WAV produced a large upload and a transcript almost immediately. The service
+                // transcodes anything that is not already PCM before it can queue the job, and that
+                // transcode costs far more than the seconds saved on the wire.
+                //
+                // The recorder is 16 kHz mono, so "large" is about 1 MB a minute. On any usable
+                // connection that uploads in a second, which is the cheaper half of the trade.
+                // Compression still helps providers that take the file as-is, so it stays for them.
+                val maCompressible = preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE &&
+                    preset.transcriptionApi != TranscriptionApi.ASSEMBLYAI_ASYNC
+                if (maCompressible) {
                     MaOpus.compress(uploadFile)?.let { small ->
                         if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
                         uploadFile = small
@@ -1498,8 +1509,17 @@ object DictateController {
             // selection) and insert the answer instead of the transcript.
             _pendingPrompts.value = emptyList() // a live prompt ignores any queued prompts
             _state.value = UiState.Rewording(appContext.getString(R.string.dictate__status_rewording))
-            val selection = sink(appContext).selectedText().takeIf { it.isNotEmpty() }
-            requestReword(rawText, selection)
+            // The text the instruction is about. Selection first, because selecting something is an
+            // explicit "this bit"; otherwise the whole field, because that is what the user is
+            // looking at and plainly means.
+            //
+            // This is the bug behind the model answering that it cannot see any text. Only the
+            // selection was ever sent, so speaking an instruction with nothing highlighted handed
+            // the model an instruction about nothing, and it said so.
+            val outSink = sink(appContext)
+            val subject = outSink.selectedText().takeIf { it.isNotBlank() }
+                ?: outSink.fullText().takeIf { it.isNotBlank() }
+            requestReword(rawText, subject)
         } else {
             // Normal dictation: auto-formatting + auto-apply prompts, then the prompts the user queued by
             // tapping the prompt row while recording, in tap order; then commit. [alreadyFormatted] skips
@@ -2612,14 +2632,9 @@ object DictateController {
      * Called when the keyboard appears so it never interrupts an in-flight recording/transcription.
      */
     fun maybePromptForReview() {
-        if (_state.value !is UiState.Idle) return
-        val total = prefs.dictate.totalAudioSeconds.get()
-        val kind = when {
-            total > DONATE_THRESHOLD_SECONDS && !prefs.dictate.hasDonated.get() -> PromoKind.DONATE
-            total > RATE_THRESHOLD_SECONDS && total <= DONATE_THRESHOLD_SECONDS && !prefs.dictate.hasRated.get() -> PromoKind.RATE
-            else -> return
-        }
-        _state.value = UiState.Promo(kind)
+        // Nothing. This is a fork; the upstream author's rate and donate nudges are not ours to
+        // show, and asking for money on his behalf from a build he does not maintain would be
+        // wrong even if it were wanted. Nothing raises a promo any more.
     }
 
     /**
@@ -2628,10 +2643,10 @@ object DictateController {
      * intact — when idle-state is not held or nothing is pending / celebrations are off.
      */
     private suspend fun showMilestoneNudge(context: Context): Boolean {
-        if (_state.value !is UiState.Idle) return false
-        val milestone = DictateStats.consumePendingMilestone(prefs) ?: return false
-        _state.value = UiState.Promo(PromoKind.MILESTONE, message = milestoneMessage(context, milestone))
-        return true
+        // Milestone celebrations are gone with the rest of the banners. The pending marker is still
+        // consumed so it cannot pile up and fire later if this ever comes back.
+        DictateStats.consumePendingMilestone(prefs)
+        return false
     }
 
     /** Short, single-line celebration text for the milestone nudge (kept compact for the Smartbar). */
@@ -2651,12 +2666,8 @@ object DictateController {
      * from reappearing without suppressing the in-app dialog, and vice versa. No-op unless idle.
      */
     fun maybePromptChangelog(context: Context) {
-        if (_state.value !is UiState.Idle) return
-        if (!DEBUG_FORCE_CHANGELOG_NUDGE) {
-            if (!AppVersionUtils.shouldShowChangelog(context, prefs)) return
-            if (prefs.dictate.changelogNudgeVersion.get() == BuildConfig.VERSION_NAME) return
-        }
-        _state.value = UiState.Promo(PromoKind.CHANGELOG)
+        // Also gone. An update banner is still a banner, and the only pop-up worth interrupting
+        // someone for is one that says something has actually gone wrong.
     }
 
     /**
@@ -2666,16 +2677,7 @@ object DictateController {
      * Gated by a per-version flag; skipped once the user has enabled it or opened its screen. No-op unless idle.
      */
     fun maybePromptFloatingButton(context: Context) {
-        // Mantra Voice Type: the floating bubble is gone, its accessibility service is no longer
-        // registered, so advertising it would send the user to a screen that can do nothing.
-        if (true) return
-        @Suppress("UNREACHABLE_CODE")
-        if (_state.value !is UiState.Idle) return
-        if (!DEBUG_FORCE_FB_SPOTLIGHT) {
-            if (prefs.dictate.floatingButtonEnabled.get() || prefs.dictate.floatingButtonHintSeen.get()) return
-            if (prefs.dictate.floatingButtonSpotlightVersion.get() == BuildConfig.VERSION_NAME) return
-        }
-        _state.value = UiState.Promo(PromoKind.FLOATING_BUTTON)
+        // The floating bubble was removed from this build; there is nothing to advertise.
     }
 
     /**

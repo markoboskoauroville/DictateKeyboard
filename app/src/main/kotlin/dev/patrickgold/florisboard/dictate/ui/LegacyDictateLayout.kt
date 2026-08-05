@@ -664,43 +664,22 @@ private fun LegacyRecordRow(
             // Voice Type: the oscilloscope lives inside this button, behind its content, so the
             // bar keeps the shape and the surrounding editing keys the original author designed.
             MaScopeCanvas(active = isRecording, tint = onAccent)
+            // Nothing sits over the meter while recording. The red dot said "this is recording",
+            // which is exactly what a moving trace already says, and it said it by covering the
+            // thing that was saying it. Elapsed time is the one fact the meter cannot show, so it is
+            // all that stays: small, dim, and tucked into the bottom right corner rather than
+            // centred across the trace.
+            if (recording != null) {
+                MaRecordingClock(
+                    recording = recording,
+                    segmentsInFlight = segmentsInFlight,
+                    tint = onAccent,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 4.dp),
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 when {
-                    recording != null -> {
-                        var elapsedMs by remember { mutableLongStateOf(recording.accumulatedMs) }
-                        LaunchedEffect(recording.startedAtMs, recording.accumulatedMs, recording.paused) {
-                            if (recording.paused) {
-                                elapsedMs = recording.accumulatedMs
-                            } else {
-                                while (true) {
-                                    elapsedMs = recording.accumulatedMs +
-                                        (SystemClock.elapsedRealtime() - recording.startedAtMs)
-                                    delay(200L)
-                                }
-                            }
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .alpha(if (recording.paused) 0.4f else 1f)
-                                .clip(CircleShape)
-                                .background(Color(0xFFD32F2F)),
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = formatElapsed(elapsedMs), color = onAccent, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                        // Long-form: how many cut segments are transcribing in the background right now (#170).
-                        if (segmentsInFlight > 0) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.Default.Sync, contentDescription = null, tint = onAccent, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(text = "$segmentsInFlight", color = onAccent, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        }
-                        // Realtime (#128): tapping finalizes the live stream — show a send glyph as the hint.
-                        if (realtime) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = onAccent, modifier = Modifier.size(18.dp))
-                        }
-                    }
+                    recording != null -> Unit
                     rewording != null -> {
                         // Reworded, not transcribed: show the rewording label (prompt name / "Rewording…").
                         // A trailing stop icon signals a tap cancels the request (issue #192).
@@ -1388,3 +1367,56 @@ private fun MaBrailleSpinner(color: Color, fontSize: androidx.compose.ui.unit.Te
 
 /** After this long on one request the spinner starts blinking, so a pause never reads as a crash. */
 private const val BLINK_AFTER_MS = 6_000L
+
+/**
+ * The recording clock: elapsed seconds, and nothing else.
+ *
+ * It sits in the bottom-right corner of the record button, small and dimmed, so the level meter
+ * behind it stays completely unobstructed. The meter already says a recording is running, better
+ * than any indicator could, by moving. What it cannot say is how long, which is the only thing here.
+ *
+ * Long-form segment count still appears when segments are being transcribed in the background,
+ * because that is a fact nothing else on screen reports.
+ */
+@Composable
+private fun MaRecordingClock(
+    recording: DictateController.UiState.Recording,
+    segmentsInFlight: Int,
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    var elapsedMs by remember { mutableLongStateOf(recording.accumulatedMs) }
+    LaunchedEffect(recording.startedAtMs, recording.accumulatedMs, recording.paused) {
+        if (recording.paused) {
+            elapsedMs = recording.accumulatedMs
+        } else {
+            while (true) {
+                elapsedMs = recording.accumulatedMs +
+                    (SystemClock.elapsedRealtime() - recording.startedAtMs)
+                delay(200L)
+            }
+        }
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (segmentsInFlight > 0) {
+            Icon(
+                imageVector = Icons.Default.Sync,
+                contentDescription = null,
+                tint = tint.copy(alpha = 0.7f),
+                modifier = Modifier.size(11.dp),
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = "$segmentsInFlight",
+                color = tint.copy(alpha = 0.7f),
+                fontSize = 10.sp,
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+        Text(
+            text = formatElapsed(elapsedMs),
+            color = tint.copy(alpha = if (recording.paused) 0.45f else 0.75f),
+            fontSize = 11.sp,
+        )
+    }
+}
