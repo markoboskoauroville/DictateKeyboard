@@ -30,10 +30,21 @@ jobs:
       - name: Fetch sherpa-onnx native libs
         run: bash tools/fetch-sherpa-onnx.sh
 
-      - name: Create signing key
+      # One permanent key, kept as an encrypted repository secret. Every build is then signed
+      # identically, so a new version installs straight over the old one and Android never asks
+      # anyone to uninstall anything. A throwaway key per build was what forced that before.
+      - name: Restore the signing key
+        env:
+          KS: ${{ secrets.VOICE_TYPE_KEYSTORE }}
+          KS_PW: ${{ secrets.VOICE_TYPE_KEYSTORE_PASSWORD }}
         run: |
-          keytool -genkeypair -v -keystore mantra.jks -alias mantra -keyalg RSA -keysize 2048 -validity 10000 -storepass mantra12345 -keypass mantra12345 -dname "CN=Mantra Productions, O=Mantra, C=HR"
-          printf 'storeFile=mantra.jks\nstorePassword=mantra12345\nkeyAlias=mantra\nkeyPassword=mantra12345\n' > keystore.properties
+          if [ -z "$KS" ]; then
+            echo "No keystore secret found, this build would not be upgradable in place."
+            exit 1
+          fi
+          echo "$KS" | base64 -d > voicetype.jks
+          printf 'storeFile=voicetype.jks\nstorePassword=%s\nkeyAlias=voicetype\nkeyPassword=%s\n' "$KS_PW" "$KS_PW" > keystore.properties
+          keytool -list -keystore voicetype.jks -storepass "$KS_PW" | grep -i 'SHA-256' || true
 
       - name: Build release APK
         run: ./gradlew :app:assembleRelease -x lintVitalRelease --no-daemon
