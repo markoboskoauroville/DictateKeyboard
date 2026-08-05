@@ -90,6 +90,36 @@ object MaVault {
     }.getOrDefault(false)
 
     /**
+     * Writes every key currently held, grouped by provider, as the backup file.
+     *
+     * Distinct from the copy made at import time, which is only ever the last file that was picked.
+     * After a few imports, some deletions and some reordering, what is actually in use no longer
+     * matches any single file on disk, and that curated list is the thing worth keeping.
+     *
+     * The format is plain text that this app's own parser reads back without help: comment lines
+     * naming each provider, which the parser skips, and one key per line, which it recognises by
+     * shape. That also makes it readable by a human, which matters for a file whose whole job is to
+     * still make sense on a phone that no longer has the app installed.
+     */
+    fun writeBackup(sections: List<Pair<String, List<String>>>): Boolean {
+        val total = sections.sumOf { it.second.size }
+        if (total == 0) return false
+        val text = buildString {
+            appendLine("# Mantra Voice Type, API key backup")
+            appendLine("# Written " + java.text.SimpleDateFormat("d.M.yyyy HH:mm", java.util.Locale.getDefault())
+                .format(java.util.Date()))
+            appendLine("# Keep this file. A fresh install reads it from here with no clicks.")
+            for ((provider, keys) in sections) {
+                if (keys.isEmpty()) continue
+                appendLine()
+                appendLine("# $provider")
+                keys.forEach { appendLine(it) }
+            }
+        }
+        return write(text)
+    }
+
+    /**
      * Read the vault back, or null when it is missing or unreadable. Unreadable is the normal state
      * after an uninstall until all-files access is granted, and is not an error worth shouting about.
      */

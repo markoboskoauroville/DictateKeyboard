@@ -41,10 +41,12 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
@@ -167,6 +169,25 @@ fun DictateKeysScreen() = FlorisScreen {
 
         fun save(updated: ProviderAccounts) {
             scope.launch { prefs.dictate.providerAccounts.set(updated) }
+        }
+
+        // Restore, the other half of backup. On a phone with no keys at all, this is a fresh
+        // install, so read the backup in Documents and file it. Only ever when the keyring is
+        // completely empty: once a single key exists, silently merging a file the user has not
+        // asked for would fight whatever they have set up by hand.
+        var restoreChecked by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(restoreChecked) {
+            if (restoreChecked) return@LaunchedEffect
+            restoreChecked = true
+            val anyKey = accounts.accounts.values.any { it.apiKey.isNotBlank() }
+            if (anyKey) return@LaunchedEffect
+            val text = MaVault.read()
+            if (text.isNullOrBlank()) return@LaunchedEffect
+            val result = MaKeyImport.importAll(text, accounts)
+            if (result.added > 0) {
+                prefs.dictate.providerAccounts.set(result.accounts)
+                note = "Restored ${result.added} keys from ${MaVault.DISPLAY_PATH}"
+            }
         }
 
         /** Runs one key against the live service and records what came back. */
@@ -313,6 +334,37 @@ fun DictateKeysScreen() = FlorisScreen {
                 },
             ) {
                 Text("CHECK MODELS")
+            }
+        }
+
+        // Backup. The copy made at import time is only ever the last file that was picked; after a
+        // few imports, some deletions and some reordering, the list actually in use matches no file
+        // on disk. This writes that curated list out, to the same place a fresh install reads from.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    val sections = shown.map { preset ->
+                        preset.displayName to MaKeys
+                            .split(accounts.accounts[preset.id]?.apiKey.orEmpty())
+                            .filter { it.isNotBlank() }
+                    }
+                    val count = sections.sumOf { it.second.size }
+                    note = when {
+                        count == 0 -> "No keys to back up yet"
+                        MaVault.writeBackup(sections) ->
+                            "$count keys backed up to ${MaVault.DISPLAY_PATH}"
+                        else ->
+                            "Could not write the backup. Grant all-files access and try again."
+                    }
+                },
+            ) {
+                Text("BACK UP KEYS")
             }
         }
 
