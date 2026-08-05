@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.dictate.MaKeyImport
 import dev.patrickgold.florisboard.dictate.MaVault
+import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
@@ -167,8 +168,25 @@ fun DictateKeysScreen() = FlorisScreen {
             ids.mapNotNull { ProviderRegistry.byId(it) }
         }
 
+        /**
+         * Writes the keyring, and mirrors it straight back out to the backup file.
+         *
+         * This is the fix for deleted keys rising from the dead. The backup used to be written only
+         * on import, from the raw file that was picked, so deleting a dud key changed the keyring
+         * and left the backup untouched. A reinstall then restored the old file, dud key and all,
+         * and it looked as though the deletion had never happened. It had; the backup simply had not
+         * heard about it. Every change now goes to both places, so what is on screen is what comes
+         * back.
+         */
         fun save(updated: ProviderAccounts) {
             scope.launch { prefs.dictate.providerAccounts.set(updated) }
+            val sections = updated.accounts.values
+                .filter { it.apiKey.isNotBlank() }
+                .map { account ->
+                    (ProviderRegistry.byId(account.providerId)?.displayName ?: account.providerId) to
+                        MaKeys.split(account.apiKey).filter { it.isNotBlank() }
+                }
+            if (sections.isNotEmpty()) MaVault.writeBackup(sections)
         }
 
         // Restore, the other half of backup. On a phone with no keys at all, this is a fresh
@@ -245,8 +263,10 @@ fun DictateKeysScreen() = FlorisScreen {
                 }.getOrNull().orEmpty()
                 val result = MaKeyImport.importAll(text, accounts)
                 if (result.added > 0) {
+                    // save() mirrors the merged keyring to the backup itself. Writing the raw picked
+                    // file here as well would put keys in the backup that were rejected as belonging
+                    // to another provider, and they would come back on the next restore.
                     save(result.accounts)
-                    MaVault.write(text)
                 }
                 note = result.summary
             }
@@ -374,6 +394,27 @@ fun DictateKeysScreen() = FlorisScreen {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+
+        // Telling someone to grant a permission without giving them a way to do it is not a message,
+        // it is a dead end. The system screen is one tap from here whenever access is missing.
+        if (!MaVault.hasFullAccess()) {
+            TextButton(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                onClick = {
+                    runCatching { context.startActivity(MaVault.accessIntent(context)) }
+                },
+            ) {
+                Text("GRANT ALL-FILES ACCESS")
+            }
+            Text(
+                text = "Android will not let this app read or write a file it does not own without " +
+                    "it, which is what the backup in Documents is. Find " +
+                    "${context.getString(R.string.app_name_full)} in the list and turn it on.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
 

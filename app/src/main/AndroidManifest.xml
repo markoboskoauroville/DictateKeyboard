@@ -101,6 +101,14 @@
             android:foregroundServiceType="dataSync"
             android:exported="false"/>
 
+        <!-- Holds the microphone while a dictation runs, so switching apps mid-sentence does not end
+             it. Android 14+ only grants background microphone access to a foreground service that
+             declared it wants one, which is exactly what this is and all that it is. -->
+        <service
+            android:name="dev.patrickgold.florisboard.dictate.MaRecordingService"
+            android:foregroundServiceType="microphone"
+            android:exported="false"/>
+
 
 
 

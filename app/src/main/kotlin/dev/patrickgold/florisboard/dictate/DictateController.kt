@@ -361,6 +361,18 @@ object DictateController {
     private var screenOffReceiver: BroadcastReceiver? = null
     private var screenOffContext: Context? = null
 
+    /**
+     * Application context, latched the first time a recording starts. Teardown paths run from places
+     * that have no context to hand, and releasing the microphone service is not something to skip
+     * because the caller happened not to be holding one.
+     */
+    private var maAppContext: Context? = null
+
+    /** Releases the microphone foreground service, from anywhere, as often as needed. */
+    private fun maReleaseMic() {
+        maAppContext?.let { MaRecordingService.stop(it) }
+    }
+
     /** The in-flight transcription coroutine, cancellable via the stop button (see [cancelTranscription]). */
     private var transcribeJob: Job? = null
 
@@ -817,6 +829,7 @@ object DictateController {
 
     /** Aborts an in-progress recording and returns to idle (cancel button / leaving the keyboard). */
     fun cancelRecording(keepBarForMs: Long = 0L) {
+        maReleaseMic()
         pttStopPending = false
         // A discard in flight keeps its flag; any other teardown clears everything.
         setPushToTalk(
@@ -993,6 +1006,11 @@ object DictateController {
                     else -> null
                 }
                 recorder = RecordingController(appContext).also { it.start(audioSource, pcmSink) }
+                // Take the microphone foreground before anything else can take the screen. From here
+                // the recording belongs to a service rather than to the keyboard window, so switching
+                // apps, locking, or anything else coming to the front no longer ends it.
+                maAppContext = appContext
+                MaRecordingService.start(appContext)
                 if (prefs.dictate.skipSilentRecordings.get()) {
                     // Hide the one-time native VAD/session setup behind the user's recording time.
                     scope.launch { SpeechGate.prewarm(appContext) }
@@ -1047,6 +1065,7 @@ object DictateController {
      * long-form / realtime there is no plain send button to hold, so the shortcut doesn't apply.
      */
     fun stopAndTranscribeLocal(context: Context) {
+        maReleaseMic()
         if (!canLongPressSendLocal()) return
         stopAndTranscribe(context, forceLocal = true)
     }
@@ -1061,6 +1080,7 @@ object DictateController {
         _state.value is UiState.Recording && !segmentedActive && realtimeSession == null
 
     private fun stopAndTranscribe(context: Context, forceLocal: Boolean = false) {
+        maReleaseMic()
         setPushToTalk(phase = PushToTalkPhase.NONE)
         // Long-form segmented (#170): finish the segment queue instead of uploading one big file.
         if (segmentedActive) {
@@ -2285,7 +2305,32 @@ object DictateController {
      * [maybeOfferInterruptedRecording]). Outside the recording state this falls back to the normal
      * teardown ([cancelRecording]).
      */
+    /**
+     * Ends everything, now, from anywhere.
+     *
+     * Reachable from the notification's Stop action and from the X beside the record button. A
+     * recording that keeps running while out of sight needs a way to be ended that does not involve
+     * finding the keyboard again, and a way out if it ever gets stuck.
+     */
+    fun forceStop(context: Context) {
+        maReleaseMic()
+        if (_state.value is UiState.Recording) {
+            stopAndTranscribe(context)
+        } else {
+            cancelRecording()
+        }
+    }
+
     fun stashRecordingOnHide(context: Context) {
+        // The keyboard going away is no longer the end of a recording. While the microphone
+        // foreground service holds the mic, the audio keeps arriving whatever is on screen, so
+        // switching apps mid-sentence simply does not interrupt anything and there is nothing here
+        // to salvage.
+        //
+        // This still runs when the mic is not held: on the screen-off path, and on anything that
+        // tore the service down. Then the old behaviour is exactly right and the audio so far is
+        // finalised and kept rather than dropped.
+        if (_state.value is UiState.Recording && MaRecordingService.isHoldingMic) return
         val current = _state.value
         val activeRecorder = recorder
         if (current !is UiState.Recording || activeRecorder == null) {

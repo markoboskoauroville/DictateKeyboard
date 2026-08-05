@@ -732,6 +732,10 @@ private fun LegacyRecordRow(
                 }
             }
             recording != null -> {
+                // Pause, and beside it the way out. A recording that now keeps running while the
+                // keyboard is nowhere in sight needs a stop that does not depend on the rest of the
+                // machinery behaving: this one releases the microphone and ends the dictation
+                // whatever state it thinks it is in.
                 ThemedIconKey(
                     code = KeyCode.NOOP,
                     icon = if (recording.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
@@ -740,6 +744,14 @@ private fun LegacyRecordRow(
                     ),
                     modifier = sideKey,
                     onClick = { DictateController.togglePause() },
+                )
+                ThemedIconKey(
+                    code = KeyCode.NOOP,
+                    icon = Icons.Default.Close,
+                    contentDescription = "Force stop",
+                    modifier = sideKey,
+                    tint = Color(0xFFE53935),
+                    onClick = { DictateController.forceStop(context) },
                 )
             }
             else -> LegacyBackspaceKey(modifier = sideKey)
