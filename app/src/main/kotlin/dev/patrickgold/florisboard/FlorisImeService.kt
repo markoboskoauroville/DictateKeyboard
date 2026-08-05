@@ -143,6 +143,30 @@ class FlorisImeService : LifecycleInputMethodService() {
             return ims.switchToNextInputMethod()
         }
 
+        /**
+         * Switches to a named input method.
+         *
+         * Only the running IME can do this: the platform call wants the service's own window token,
+         * which nothing outside the service has. Android 28 and later expose a token-free overload;
+         * below that the token is taken from the service window. Returns false if neither path is
+         * available, so the caller can fall back to the picker instead of a tap that does nothing.
+         */
+        fun switchToInputMethod(imeId: String): Boolean {
+            val ims = FlorisImeServiceReference.get() ?: return false
+            return runCatching {
+                if (AndroidVersion.ATLEAST_API28_P) {
+                    ims.switchInputMethod(imeId)
+                    true
+                } else {
+                    val imm = ims.systemServiceOrNull(InputMethodManager::class)
+                    val token = ims.window.window?.attributes?.token ?: return@runCatching false
+                    @Suppress("DEPRECATION")
+                    imm?.setInputMethod(token, imeId)
+                    true
+                }
+            }.getOrDefault(false)
+        }
+
         fun showImePicker(): Boolean {
             val ims = FlorisImeServiceReference.get() ?: return false
             return InputMethodUtils.showImePicker(ims)
@@ -437,6 +461,10 @@ class FlorisImeService : LifecycleInputMethodService() {
 
     override fun onEvaluateInputViewShown(): Boolean {
         val config = resources.configuration
+        // Held open (green pin): answer yes regardless. The platform asks this every time something
+        // would take the keyboard away, so saying yes here is what keeps it on screen when an app
+        // that has just come to the front would rather it were not.
+        if (prefs.dictate.maHoldOpen.get()) return true
         return super.onEvaluateInputViewShown()
             || config.keyboard == Configuration.KEYBOARD_NOKEYS
             || prefs.physicalKeyboard.showOnScreenKeyboard.get()

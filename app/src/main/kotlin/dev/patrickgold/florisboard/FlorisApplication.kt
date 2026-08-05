@@ -126,6 +126,7 @@ class FlorisApplication : Application() {
             DictateLegacyMigrator.migratePromptsActionIfNeeded(this@FlorisApplication)
             DictateLegacyMigrator.migratePromptsLayoutToRowIfNeeded()
             DictateLegacyMigrator.applySunriseThemeIfNeeded()
+            DictateLegacyMigrator.applyRowV2IfNeeded()
             DictateLegacyMigrator.reofferRateAndDonateIfNeeded()
             preferenceStoreLoaded.value = true
         }

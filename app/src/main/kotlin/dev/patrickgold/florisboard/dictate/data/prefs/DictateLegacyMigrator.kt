@@ -348,6 +348,27 @@ object DictateLegacyMigrator {
         prefs.dictate.maSunriseApplied.set(true)
     }
 
+    /**
+     * Drops the emoji key from the classic row, once.
+     *
+     * Its own flag on purpose. The Sunrise pass has already run on every phone carrying the previous
+     * build, so folding this into it would mean the change never arrived anywhere. Only the emoji
+     * entry is removed; whatever else the user has arranged is left exactly as it is.
+     */
+    suspend fun applyRowV2IfNeeded() {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maRowV2Applied.get()) return
+        val row = prefs.dictate.legacyActionRow.get()
+        if (row.contains("EMOJI")) {
+            val trimmed = row.split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && it != "EMOJI" }
+                .joinToString(",")
+            prefs.dictate.legacyActionRow.set(trimmed)
+        }
+        prefs.dictate.maRowV2Applied.set(true)
+    }
+
     suspend fun migratePromptsLayoutToRowIfNeeded() {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.promptsLayoutRowMigrated.get()) return

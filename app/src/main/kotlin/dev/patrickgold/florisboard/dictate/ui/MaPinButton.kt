@@ -62,6 +62,7 @@ fun MaPinButton(
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
     val pinned by prefs.dictate.maPinnedView.collectAsState()
+    val holdOpen by prefs.dictate.maHoldOpen.collectAsState()
     val isPinnedHere = pinned == mode.name
 
     // Borrows the keyboard's own key colours so the pin belongs to whatever theme is active rather
@@ -76,24 +77,51 @@ fun MaPinButton(
     )
     val foreground = style.foreground(default = Color.White)
 
+    // Three states, cycled by tapping, in the order they escalate:
+    //
+    //   outline  nothing pinned, the last-used view opens
+    //   filled   this view opens first
+    //   green    this view opens first AND the keyboard stays up until dismissed by hand
+    //
+    // Escalation is the right shape here: holding the keyboard open only makes sense once a view has
+    // been chosen, and one control that goes further each tap is easier to reason about than two
+    // separate toggles that can disagree.
+    val stage = when {
+        isPinnedHere && holdOpen -> 2
+        isPinnedHere -> 1
+        else -> 0
+    }
+    val green = Color(0xFF56D364)
+
     Box(
         modifier = modifier
             .size(30.dp)
             .clickable {
                 scope.launch {
-                    prefs.dictate.maPinnedView.set(if (isPinnedHere) "" else mode.name)
+                    when (stage) {
+                        0 -> prefs.dictate.maPinnedView.set(mode.name)
+                        1 -> prefs.dictate.maHoldOpen.set(true)
+                        else -> {
+                            prefs.dictate.maHoldOpen.set(false)
+                            prefs.dictate.maPinnedView.set("")
+                        }
+                    }
                 }
             },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = if (isPinnedHere) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-            contentDescription = if (isPinnedHere) {
-                "This view opens first. Tap to unpin."
-            } else {
-                "Pin this view so it opens first"
+            imageVector = if (stage == 0) Icons.Outlined.PushPin else Icons.Filled.PushPin,
+            contentDescription = when (stage) {
+                0 -> "Pin this view so it opens first"
+                1 -> "This view opens first. Tap again to keep the keyboard open."
+                else -> "Keyboard held open. Tap to release."
             },
-            tint = if (isPinnedHere) foreground else foreground.copy(alpha = 0.45f),
+            tint = when (stage) {
+                0 -> foreground.copy(alpha = 0.45f)
+                1 -> foreground
+                else -> green
+            },
             modifier = Modifier.padding(6.dp).size(16.dp),
         )
     }

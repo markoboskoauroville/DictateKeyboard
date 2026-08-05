@@ -785,10 +785,47 @@ private fun LegacyBottomRow(
             },
         )
 
+        // The space bar was the width of the whole row for a key that, in a dictation layout, is
+        // pressed rarely: the words arrive with their spaces already in them. The keyboards
+        // installed on this phone take the space it was wasting, numbered so the positions stay put
+        // and become muscle memory, and space keeps enough width to still be hit comfortably.
+        val context = LocalContext.current
+        val others = remember { MaKeyboards.list(context).take(MaKeyboards.MAX_SHOWN) }
+
         LegacySpaceKey(
             keyboardManager = keyboardManager,
-            modifier = Modifier.weight(1f).fillMaxHeight(),
+            modifier = Modifier.weight(if (others.isEmpty()) 1f else 0.9f).fillMaxHeight(),
         )
+
+        others.forEachIndexed { index, entry ->
+            ThemedKey(
+                code = KeyCode.NOOP,
+                modifier = Modifier.weight(0.5f).fillMaxHeight(),
+                onClick = {
+                    // Falling back to the picker matters: a tap that silently does nothing is worse
+                    // than one extra dialog, and the switch can fail on some devices.
+                    if (!MaKeyboards.switchTo(entry)) {
+                        keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER)
+                    }
+                },
+                onLongClick = { keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER) },
+            ) { fg ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${index + 1}",
+                        color = fg,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = MaKeyboards.shortLabel(entry),
+                        color = fg.copy(alpha = 0.7f),
+                        fontSize = 8.sp,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
 
         // Enter: tap inserts a newline; long-press opens the character popup (#196). Carries the ENTER code
         // so the theme paints it with its usual accent (as on the keyboard).

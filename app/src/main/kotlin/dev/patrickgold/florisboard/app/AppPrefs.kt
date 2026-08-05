@@ -760,7 +760,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // the user via drag-and-drop. Default reproduces the original fixed row.
         val legacyActionRow = string(
             key = "dictate__legacy_action_row",
-            default = "SELECT_ALL,UNDO,REDO,CUT,COPY,PASTE,EMOJI,NUMBERS",
+            // Emoji is not in the default row: this is a dictation keyboard and the emoji panel is
+            // one of the things the fork does not need. Still available to anyone who adds it back.
+            default = "SELECT_ALL,UNDO,REDO,CUT,COPY,PASTE,NUMBERS",
         )
         // Sticky panel: when on, whichever of the two main views was last used comes back the next
         // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
@@ -782,6 +784,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // fresh install, and every phone that already ran this app has floris_night written to disk,
         // so without this the theme would never actually arrive on the device that asked for it.
         // Runs once and never again, so a later manual choice of another theme sticks.
+        // Second one-shot pass. maSunriseApplied has already run on every phone that has this
+        // build's predecessor, so reusing it would silently skip everything added after it. Each
+        // batch of "change something a user may already have written" needs its own flag.
+        val maRowV2Applied = boolean(
+            key = "dictate__ma_row_v2_applied",
+            default = false,
+        )
         val maSunriseApplied = boolean(
             key = "dictate__ma_sunrise_applied",
             default = false,
@@ -805,6 +814,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val maPinnedView = string(
             key = "dictate__ma_pinned_view",
             default = "",
+        )
+        // Third pin state, the green one: hold the keyboard open. An app asking for it to close is
+        // refused; only the system's own down-arrow puts it away. See FlorisImeService.onFinishInput
+        // and onEvaluateInputViewShown.
+        val maHoldOpen = boolean(
+            key = "dictate__ma_hold_open",
+            default = false,
         )
         // Which panel was showing when the keyboard was last closed. Written by FlorisImeService,
         // read back on the next open when maStickyTranscribeView is on. Stored as the enum name so a
