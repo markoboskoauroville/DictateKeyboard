@@ -2669,7 +2669,7 @@ object DictateController {
         runCatching {
             val intent = when (kind) {
                 PromoKind.RATE -> Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://play.google.com/store/apps/details?id=net.devemperor.dictate"))
+                    Uri.parse("https://github.com/markoboskoauroville/DictateKeyboard/releases"))
                 PromoKind.DONATE -> Intent(Intent.ACTION_VIEW, Uri.parse("https://paypal.me/DevEmperor"))
                 PromoKind.CHANGELOG -> Intent(context, FlorisAppActivity::class.java)
                 PromoKind.FLOATING_BUTTON -> Intent(

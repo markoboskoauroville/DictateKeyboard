@@ -68,7 +68,10 @@ configure<ApplicationExtension> {
     }
 
     defaultConfig {
-        applicationId = "net.devemperor.dictate"
+        // Marko's own package. Changing this makes Android treat the build as a new app, which is
+        // exactly what was wanted: the old net.devemperor.dictate install stays behind as a separate
+        // entry until it is removed by hand, and this one carries no trace of the fork's origin.
+        applicationId = "com.mantraproductions.voicetype"
         minSdk = projectMinSdk.toInt()
         targetSdk = projectTargetSdk.toInt()
         versionCode = projectVersionCode.toInt()
@@ -112,8 +115,8 @@ configure<ApplicationExtension> {
     // is absent (e.g. on CI without secrets, or a contributor's machine) the release build simply has
     // no signing config attached and falls back to an unsigned build, exactly as before.
     //
-    // IMPORTANT: For uploads to Google Play this must be the *upload key* the existing
-    // net.devemperor.dictate listing expects (the old Java app's key) — a fresh key gets rejected.
+    // This project is distributed as a signed APK from GitHub releases, not through Play, so the
+    // only requirement on the key is that it never changes: every build must install over the last.
     val keystorePropsFile = rootProject.file("keystore.properties")
     val keystoreProps = if (keystorePropsFile.exists()) {
         Properties().apply { keystorePropsFile.inputStream().use { load(it) } }
