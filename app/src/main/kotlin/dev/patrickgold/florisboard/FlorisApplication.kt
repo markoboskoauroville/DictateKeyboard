@@ -28,7 +28,6 @@ import androidx.core.os.UserManagerCompat
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.data.prefs.DictateLegacyMigrator
-import dev.patrickgold.florisboard.dictate.wear.DictateWearPublisher
 import dev.patrickgold.florisboard.ime.clipboard.ClipboardManager
 import dev.patrickgold.florisboard.ime.core.SubtypeManager
 import dev.patrickgold.florisboard.ime.dictionary.DictionaryManager
@@ -129,9 +128,6 @@ class FlorisApplication : Application() {
             DictateLegacyMigrator.applySunriseThemeIfNeeded()
             DictateLegacyMigrator.reofferRateAndDonateIfNeeded()
             preferenceStoreLoaded.value = true
-            // Keep the Wear OS companion's settings snapshot fresh: re-publish whenever a watch-relevant
-            // phone setting changes (#106), so the watch reflects accent/provider/key/prompt automatically.
-            DictateWearPublisher.startPublishingOnChange(this@FlorisApplication, scope)
         }
         extensionManager.value.init()
         clipboardManager.value.initializeForContext(this)

@@ -1309,10 +1309,16 @@ object DictateController {
                     preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE
                 // MA TWIST: shrink the upload. Cloud only, never the on-device engine, which is
                 // handed the audio locally. Null on anything unexpected, and the WAV goes as before.
+                // Reported below, so the status line can say what actually happened instead of one
+                // number with no reference point. If compression silently fails on a device, the
+                // difference between these two is the thing that shows it.
+                val maRawBytes = uploadFile.length()
+                var maCompressed = false
                 if (preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE) {
                     MaOpus.compress(uploadFile)?.let { small ->
                         if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
                         uploadFile = small
+                        maCompressed = true
                     }
                 }
                 val request = TranscriptionRequest(
@@ -1340,11 +1346,20 @@ object DictateController {
                         // MA TWIST: the key field may hold several keys, one per line. A rejected or
                         // exhausted key rolls to the next one; anything else fails straight away.
                         val maKeys = MaKeys.split(apiKey)
-                        val maSizeKb = uploadFile.length() / 1024L
-                        _maStatus.value = if (maKeys.size > 1) {
-                            "sending ${maSizeKb} kB, key 1 of ${maKeys.size}"
+                        // Both numbers, always. A single figure told nobody whether the 1.9 MB of
+                        // raw audio had been shrunk or was going out whole, which is exactly the
+                        // question worth answering while watching an upload crawl.
+                        val maRawKb = maRawBytes / 1024L
+                        val maSentKb = uploadFile.length() / 1024L
+                        val maSize = if (maCompressed && maRawKb > 0) {
+                            "$maRawKb kB wav to $maSentKb kB opus"
                         } else {
-                            "sending ${maSizeKb} kB"
+                            "$maSentKb kB wav, not compressed"
+                        }
+                        _maStatus.value = if (maKeys.size > 1) {
+                            "sending $maSize, key 1 of ${maKeys.size}"
+                        } else {
+                            "sending $maSize"
                         }
                         maWithKeyFallback(
                             maKeys,

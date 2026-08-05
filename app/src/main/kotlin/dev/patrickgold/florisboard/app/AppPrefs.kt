@@ -268,23 +268,6 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             default = false,
         )
 
-        // Wear OS standalone (#106): when on, the paired watch is allowed to transcribe by itself and
-        // the API key is included in the settings snapshot synced to it (stored private to the watch app).
-        // On by default so the watch keeps working when the phone is out of range; it still tethers
-        // through the phone whenever one is reachable. Turn off to keep the key strictly on the phone
-        // (the watch is then tether-only and can't dictate without the phone).
-        val wearStandaloneEnabled = boolean(
-            key = "dictate__wear_standalone_enabled",
-            default = true,
-        )
-
-        // Wear OS (#106/#130): when on, dictations made from the watch are auto-reworded like on the
-        // phone — tethered dictations are reworded by the phone, standalone ones by the watch itself
-        // (using the synced rewording config + auto-apply prompts). On by default.
-        val wearAutoRewordingEnabled = boolean(
-            key = "dictate__wear_auto_rewording_enabled",
-            default = true,
-        )
 
         // --- Network proxy (roadmap 5.6) ---------------------------------------------------------
         // Optional proxy applied to *every* provider API call (transcription, rewording, model
@@ -418,7 +401,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // Haptic feedback on dictation state changes (issue #166): a short buzz on record start/stop, a
         // double on transcription done, a longer one when a rewording/LLM prompt finished — so the user
         // knows blindly when to look back at the screen. Off by default. Amplitude honours the system
-        // haptic intensity. Also mirrored on the watch (synced to it via DictateSyncedSettings).
+        // haptic intensity.
         val hapticFeedback = boolean(
             key = "dictate__haptic_feedback",
             default = false,

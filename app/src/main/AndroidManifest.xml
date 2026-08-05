@@ -93,19 +93,6 @@
             <meta-data android:name="android.view.textservice.scs" android:resource="@xml/spellchecker"/>
         </service>
 
-        <!-- Wear OS Data Layer endpoint (#106): answers settings-sync requests from the watch app. -->
-        <service
-            android:name="dev.patrickgold.florisboard.dictate.wear.DictateWearService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
-                <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
-                <data
-                    android:scheme="wear"
-                    android:host="*"
-                    android:pathPrefix="/dictate" />
-            </intent-filter>
-        </service>
 
         <!-- Keeps on-device model downloads running when the app is left (issue #207); shows an ongoing
              progress notification. Not exported: only started internally by LocalModelDownloads. -->

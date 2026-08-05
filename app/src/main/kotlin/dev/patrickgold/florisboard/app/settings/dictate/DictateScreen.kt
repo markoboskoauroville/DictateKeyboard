@@ -111,7 +111,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DictateScreen() = FlorisScreen {
-    title = stringRes(R.string.dictate__title)
+    title = stringRes(R.string.app_name_full)
     previewFieldVisible = true
     iconSpaceReserved = true
 
@@ -134,34 +134,16 @@ fun DictateScreen() = FlorisScreen {
             providerDisplayName(rewordingProviderId, accounts)
         }
 
+        // The key manager, first. Everything on this screen is decoration until a key is green,
+        // and the only other place it lives is the settings home, which is one level further away
+        // than the screen people actually open when something is wrong.
         Preference(
-            icon = Icons.Default.Insights,
-            modifier = Modifier.settingsSearchAnchor("dictate__stats_title"),
-            title = stringRes(R.string.dictate__stats_title),
-            summary = stringRes(R.string.dictate__stats_menu_summary),
-            onClick = { navController.navigate(Routes.Settings.DictateStats) },
+            icon = Icons.Default.Key,
+            modifier = Modifier.settingsSearchAnchor("dictate__keys_title"),
+            title = "API keys",
+            summary = "Import, test and manage every key",
+            onClick = { navController.navigate(Routes.Settings.DictateKeys) },
         )
-        Preference(
-            icon = Icons.Default.History,
-            modifier = Modifier.settingsSearchAnchor("dictate__history_title"),
-            title = stringRes(R.string.dictate__history_title),
-            summary = stringRes(R.string.dictate__history_menu_summary),
-            onClick = { navController.navigate(Routes.Settings.DictateHistory) },
-        )
-
-        // Dictation layout: its own category (issue #199) — the classic keyboard-less layout toggle
-        // today, with more layout options to follow. Kept out of Output (it changes the whole keyboard,
-        // not how text is inserted) and given top-level prominence here.
-        Preference(
-            icon = Icons.Default.Dialpad,
-            modifier = Modifier.settingsSearchAnchor("dictate__layout_title"),
-            title = stringRes(R.string.dictate__layout_title),
-            summary = stringRes(R.string.dictate__layout_menu_summary),
-            onClick = { navController.navigate(Routes.Settings.DictateLayout) },
-        )
-
-        // Hub: each row opens a dedicated sub-screen (issue #153), keeping this landing page short and
-        // scannable instead of one long list of every setting.
         Preference(
             icon = Icons.Default.Cloud,
             modifier = Modifier.settingsSearchAnchor("dictate__providers_title"),
@@ -194,14 +176,6 @@ fun DictateScreen() = FlorisScreen {
         )
 
         Preference(
-            icon = Icons.Default.Spellcheck,
-            modifier = Modifier.settingsSearchAnchor("dictate__formatting_title"),
-            title = stringRes(R.string.dictate__formatting_title),
-            summary = stringRes(R.string.dictate__formatting_menu_summary),
-            onClick = { navController.navigate(Routes.Settings.DictateFormatting) },
-        )
-
-        Preference(
             icon = Icons.Default.AutoAwesome,
             modifier = Modifier.settingsSearchAnchor("dictate__rewording_title"),
             title = stringRes(R.string.dictate__rewording_title),
@@ -231,13 +205,6 @@ fun DictateScreen() = FlorisScreen {
         // Mantra Voice Type: the floating button entry is gone. Its accessibility service is no
         // longer declared in the manifest, so the screen behind it could only ever fail.
 
-        Preference(
-            icon = Icons.Default.Watch,
-            modifier = Modifier.settingsSearchAnchor("dictate__wear_title"),
-            title = stringRes(R.string.dictate__wear_title),
-            summary = stringRes(R.string.dictate__wear_summary),
-            onClick = { navController.navigate(Routes.Settings.DictateWear) },
-        )
     }
 }
 

@@ -27,11 +27,18 @@ import java.nio.ByteBuffer
  */
 object MaOpus {
 
-    /** Speech stays intelligible well below this; 20 kbps is a comfortable margin. */
-    private const val BITRATE = 20_000
+    /**
+     * The recorder produces 16 kHz mono, which is already the rate a recogniser wants, so the only
+     * thing left to remove is the PCM overhead. 16 kbps Opus keeps speech fully intelligible and is
+     * one twentieth of the raw stream: a minute of dictation goes from about 1.9 MB to 120 kB.
+     */
+    private const val BITRATE = 16_000
 
-    /** Not worth the encoder setup for a very short take. */
-    private const val MIN_BYTES = 48_000L
+    /**
+     * Below half a second the encoder setup costs more than it saves. This used to be 48 kB, a
+     * second and a half, which meant every short correction went up as raw PCM.
+     */
+    private const val MIN_BYTES = 16_000L
 
     private const val TIMEOUT_US = 10_000L
 

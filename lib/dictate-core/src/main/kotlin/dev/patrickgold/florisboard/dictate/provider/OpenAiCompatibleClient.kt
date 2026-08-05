@@ -398,6 +398,7 @@ class OpenAiCompatibleClient(
             // 3. Poll until the job completes or fails (or we exceed the overall budget).
             val statusUrl = base + "transcriptions/" + id
             var waitedMs = 0L
+            var polls = 0
             while (true) {
                 val statusRequest = Request.Builder()
                     .url(statusUrl)
@@ -428,8 +429,10 @@ class OpenAiCompatibleClient(
                                 "Soniox transcription timed out",
                             )
                         }
-                        delay(SONIOX_POLL_INTERVAL_MS)
-                        waitedMs += SONIOX_POLL_INTERVAL_MS
+                        val gap = pollDelayMs(polls)
+                        polls++
+                        delay(gap)
+                        waitedMs += gap
                     }
                 }
             }
@@ -559,6 +562,7 @@ class OpenAiCompatibleClient(
         // 3. Poll until completed / error, bounded by the overall budget.
         val statusUrl = base + "v2/transcript/" + id
         var waitedMs = 0L
+        var polls = 0
         while (true) {
             val pollRequest = Request.Builder()
                 .url(statusUrl)
@@ -582,8 +586,10 @@ class OpenAiCompatibleClient(
                             "AssemblyAI transcription timed out",
                         )
                     }
-                    delay(SONIOX_POLL_INTERVAL_MS)
-                    waitedMs += SONIOX_POLL_INTERVAL_MS
+                    val gap = pollDelayMs(polls)
+                    polls++
+                    delay(gap)
+                    waitedMs += gap
                 }
             }
         }
@@ -1305,9 +1311,21 @@ class OpenAiCompatibleClient(
         private val reasoningEffortUnsupported =
             java.util.Collections.synchronizedSet(HashSet<String>())
 
-        /** Soniox / AssemblyAI async polling: interval between status checks and the overall budget. */
-        private const val SONIOX_POLL_INTERVAL_MS = 1500L
+        /** Soniox / AssemblyAI async polling: the overall budget before giving up. */
         private const val SONIOX_POLL_TIMEOUT_MS = 300_000L
+
+        /**
+         * Adaptive polling. A fixed 1500 ms gap cost, on average, three quarters of a second of pure
+         * waiting on every short dictation: the result was ready and nobody asked. Short takes are
+         * the common case, so the first few checks come fast and the gap then backs off, which keeps
+         * long recordings from hammering the endpoint for minutes.
+         */
+        private val POLL_SCHEDULE_MS = longArrayOf(250L, 250L, 400L, 400L, 600L, 800L, 1200L)
+        private const val POLL_MAX_INTERVAL_MS = 2000L
+
+        /** Gap before the [attempt]-th status check, counting from zero. */
+        private fun pollDelayMs(attempt: Int): Long =
+            POLL_SCHEDULE_MS.getOrNull(attempt) ?: POLL_MAX_INTERVAL_MS
 
         /** Transcription APIs with no model-list endpoint; listModels() returns curated ids (#143). */
         private val NO_MODELS_CATALOG_APIS = setOf(
