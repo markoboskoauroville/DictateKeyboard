@@ -785,6 +785,20 @@ private class TextKeyboardLayoutController(
                 initialKey.computedData.code > KeyCode.SPACE && !popupUiController.isShowingExtendedPopup -> when {
                     !isGlideEnabled && !pointer.hasTriggeredGestureMove -> when (event.type) {
                         SwipeGesture.Type.TOUCH_UP -> {
+                            // Mantra Voice Type: swipe toward a corner symbol to type it, instead of
+                            // long pressing and picking from a popup. The idea is Unexpected
+                            // Keyboard's; the implementation is ours, since that project is GPL and
+                            // this one is Apache. Only when the key actually carries a symbol for
+                            // that direction, so every existing swipe action still works elsewhere.
+                            val corner = if (prefs.gestures.maSwipeToSymbol.get()) {
+                                maCornerSymbol(initialKey, event.direction)
+                            } else {
+                                null
+                            }
+                            if (corner != null) {
+                                inputEventDispatcher.sendDownUp(corner)
+                                return true
+                            }
                             val swipeAction = when (event.direction) {
                                 SwipeGesture.Direction.UP -> prefs.gestures.swipeUp.get()
                                 SwipeGesture.Direction.DOWN -> prefs.gestures.swipeDown.get()
@@ -1052,4 +1066,29 @@ private class TextKeyboardLayoutController(
             return "${TouchPointer::class.simpleName} { id=$id, index=$index, initialKey=$initialKey, activeKey=$activeKey }"
         }
     }
+}
+
+/**
+ * Mantra Voice Type: which character a corner swipe on [key] should type, or null if that
+ * direction carries nothing.
+ *
+ * The corners are read from the key's own popup set, which every layout already fills in, so no
+ * layout has to be rewritten and every language keeps its own symbols. Up is the symbol hint the
+ * key already displays, and left, right and down take the first three relevant popups in order.
+ * Returning null means the swipe was not a symbol swipe, and the caller falls through to the
+ * user's ordinary gesture actions, so nothing that worked before stops working.
+ */
+private fun maCornerSymbol(
+    key: dev.patrickgold.florisboard.ime.text.keyboard.TextKey,
+    direction: SwipeGesture.Direction,
+): dev.patrickgold.florisboard.ime.keyboard.KeyData? {
+    val popups = key.computedPopups
+    val relevant = popups.relevant
+    return when (direction) {
+        SwipeGesture.Direction.UP -> popups.symbolHint ?: popups.main ?: relevant.getOrNull(0)
+        SwipeGesture.Direction.LEFT -> relevant.getOrNull(0)
+        SwipeGesture.Direction.RIGHT -> relevant.getOrNull(1)
+        SwipeGesture.Direction.DOWN -> relevant.getOrNull(2)
+        else -> null
+    } as? dev.patrickgold.florisboard.ime.keyboard.KeyData
 }

@@ -957,6 +957,16 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
 
     val gestures = Gestures()
     inner class Gestures {
+        /**
+         * Mantra Voice Type: swipe toward a symbol printed on a key to type it, rather than long
+         * pressing and choosing from the popup. Off by default so nobody's muscle memory changes
+         * without asking.
+         */
+        val maSwipeToSymbol = boolean(
+            key = "gestures__ma_swipe_to_symbol",
+            default = false,
+        )
+
         val swipeUp = enum(
             key = "gestures__swipe_up",
             default = SwipeAction.SHIFT,
