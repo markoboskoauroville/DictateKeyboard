@@ -264,6 +264,127 @@
       "language": "en",
       "author": "DictateKeyboard",
       "description": "Turns your text into a catchy social post."
+    },
+    {
+      "id": "style-yshai",
+      "name": "Yshai style",
+      "prompt": "Rewrite the text in the voice of a quiet teacher writing to a student. All lowercase, including the start of sentences. Short simple sentences in plain everyday words. Warm and humble, never grand. Short paragraphs of one to three sentences with a blank line between them. No bullet points, no headings, no dashes or em dashes. Keep the length close to the original and keep the writer's own meaning; say less rather than more. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Lowercase, warm, unhurried. The voice of a teacher writing to a student."
+    },
+    {
+      "id": "style-condense",
+      "name": "Condense",
+      "prompt": "Rewrite the text so it says the same thing in fewer words. Remove repetition, filler and any word that carries no meaning. Merge sentences that make the same point. You may reorder sentences freely if a different order communicates more clearly. Lose no fact, no nuance and no intent. Keep the original language and the writer's tone. Return only the condensed text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Same meaning, fewer words. Repetition gone, order free to change."
+    },
+    {
+      "id": "style-nutshell",
+      "name": "In a nutshell",
+      "prompt": "Read the whole text and return what actually matters in it: the takeaways and the principles behind them, not the details or the examples. Ignore digressions, repetitions and thinking out loud. Write a short piece of prose, no more than a third the length of the original, in the original language. If the text contains decisions or actions, state them plainly. Return only that summary, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "The takeaways and principles, with the blabbing left out."
+    },
+    {
+      "id": "style-business",
+      "name": "Business",
+      "prompt": "Rewrite the text as clear professional business communication. Direct, courteous, no filler, no flattery, no exclamation marks. Lead with the point, then the detail. Keep the original language and every fact. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Direct and professional, point first."
+    },
+    {
+      "id": "style-casual",
+      "name": "Casual",
+      "prompt": "Rewrite the text the way you would say it to a colleague you like. Relaxed, natural, contractions welcome, no stiffness and no corporate wording. Keep the meaning and the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Relaxed and natural, the way you would actually say it."
+    },
+    {
+      "id": "style-friendly",
+      "name": "Friendly",
+      "prompt": "Rewrite the text so it sounds open and kind without becoming sweet or exaggerated. Keep every fact, soften anything that reads as blunt, and keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Open and kind, without going sugary."
+    },
+    {
+      "id": "style-warm",
+      "name": "Warm",
+      "prompt": "Rewrite the text with real warmth, as if writing to someone you care about. Unhurried, personal, gentle in its wording, but never sentimental and never longer than it needs to be. Keep the meaning and the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Personal and gentle, for people you care about."
+    },
+    {
+      "id": "style-fun",
+      "name": "Fun",
+      "prompt": "Rewrite the text with a light touch and a sense of play. Keep it quick, let the humour come from rhythm and word choice rather than jokes bolted on, and never let the joke cost the meaning. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Light and playful, without losing the point."
+    },
+    {
+      "id": "style-spiritual",
+      "name": "Spiritual",
+      "prompt": "Rewrite the text in a contemplative voice: unhurried, grounded, attentive to what is underneath the words. Plain language rather than mystical vocabulary, and no preaching. Keep the writer's meaning and the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Contemplative and grounded, no preaching."
+    },
+    {
+      "id": "style-technical",
+      "name": "Technical",
+      "prompt": "Rewrite the text as precise technical writing. Exact terms, unambiguous sentences, no marketing language and no hedging. Preserve every number, name and detail exactly. State assumptions where the original is vague rather than inventing facts. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Precise and unambiguous, every detail preserved."
+    },
+    {
+      "id": "style-musical",
+      "name": "Musical",
+      "prompt": "Rewrite the text with attention to its rhythm: vary sentence lengths, let it breathe, place the strongest word where the ear expects it, and use silence by keeping some sentences very short. Meaning first, music second, never the other way round. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+      "requiresSelection": true,
+      "autoApply": false,
+      "category": "Voice Type",
+      "language": "en",
+      "author": "Mantra Productions",
+      "description": "Written for the ear, with rhythm and breath."
     }
   ]
 }
