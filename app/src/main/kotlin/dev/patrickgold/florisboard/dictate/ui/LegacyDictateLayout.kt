@@ -307,6 +307,9 @@ fun LegacyDictateLayout(
                     modifier = Modifier.fillMaxWidth().height(EditRowHeight),
                 )
 
+                // Row 1c: the flat command bar, matching the keyboard view so both look the same.
+                MaCommandRow()
+
                 // Row 2: editing actions (select-all first, so it sits in the row below the strip).
                 LegacyEditRow(
                     keyboardManager = keyboardManager,
@@ -327,6 +330,9 @@ fun LegacyDictateLayout(
                     keyboardManager = keyboardManager,
                     onExitToKeyboard = onExitToKeyboard,
                 )
+
+                // Row 5: the arrow strip, along the very bottom, same as the keyboard view.
+                MaCursorRow()
             }
         }
     }

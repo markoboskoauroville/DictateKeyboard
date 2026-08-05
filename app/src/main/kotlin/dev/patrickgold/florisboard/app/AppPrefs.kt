@@ -792,6 +792,15 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // Gestures. See MaCursorRow.
         val maCursorRow = boolean(
             key = "dictate__ma_cursor_row",
+            // On: the bars are the point, not an option to go looking for.
+            default = true,
+        )
+        // One-shot: switch an existing install over to Sunrise. Changing the default only affects a
+        // fresh install, and every phone that already ran this app has floris_night written to disk,
+        // so without this the theme would never actually arrive on the device that asked for it.
+        // Runs once and never again, so a later manual choice of another theme sticks.
+        val maSunriseApplied = boolean(
+            key = "dictate__ma_sunrise_applied",
             default = false,
         )
         // The pinned view, set by the pin in each view's top-left corner. "TEXT" or "TRANSCRIBE"
@@ -1455,19 +1464,22 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "theme__mode",
             default = ThemeMode.FOLLOW_SYSTEM,
         )
+        // Sunrise is the default now, day and night both, so it is what a fresh install looks like
+        // rather than something to be found in a list. The original author's themes are all still
+        // there and still selectable, which was always the deal.
         val dayThemeId = custom(
             key = "theme__day_theme_id",
-            default = extCoreTheme("floris_day"),
+            default = extCoreTheme("sunrise"),
             serializer = ExtensionComponentName.Serializer,
         )
         val nightThemeId = custom(
             key = "theme__night_theme_id",
-            default = extCoreTheme("floris_night"),
+            default = extCoreTheme("sunrise"),
             serializer = ExtensionComponentName.Serializer,
         )
         val accentColor = custom(
             key = "theme__accent_color",
-            default = Color(0xFF30B7E6), // Dictate light blue
+            default = Color(0xFFFFA23A), // Sunrise amber
             serializer = ColorPreferenceSerializer,
         )
         val sunriseTime = localTime(

@@ -845,8 +845,11 @@ private fun formatElapsed(ms: Long): String {
 // The house palette Marko uses across his apps, so the keyboard matches maha_transcribe.
 // --------------------------------------------------------------------------------
 
-private val MaCyan = Color(0xFF39D0D8)
-private val MaViolet = Color(0xFFA371F7)
+// Sunrise, not the inherited cyan and violet. These four accent uses were the last hardcoded
+// colours fighting the active theme; amber and horizon orange are the same two tones the Sunrise
+// stylesheet uses for --primary and --secondary, so the dictation bar now matches the keys around it.
+private val MaCyan = Color(0xFFFFA23A)
+private val MaViolet = Color(0xFFF2673B)
 private val MaMuted = Color(0xFF8B949E)
 private val MaInk = Color(0xFFE6EDF3)
 private const val MA_BRAILLE = "\u280B\u2819\u2839\u2838\u283C\u2834\u2826\u2827\u2807\u280F"

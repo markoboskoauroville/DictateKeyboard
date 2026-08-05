@@ -13,6 +13,7 @@ package dev.patrickgold.florisboard.dictate.data.prefs
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.ime.theme.extCoreTheme
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.dictate.DictatePromptsLayout
 import dev.patrickgold.florisboard.dictate.provider.DictateProxyType
@@ -328,6 +329,25 @@ object DictateLegacyMigrator {
      * switch back in settings. A brand-new install is already on ROW (the new default), so this is a no-op
      * for them. Idempotent via `prefs.dictate.promptsLayoutRowMigrated`.
      */
+    /**
+     * Puts an existing install onto the Sunrise theme, once.
+     *
+     * Defaults only apply to preferences that were never written, and any phone that has run this
+     * app already has the upstream night theme on disk. Switching the default alone therefore
+     * changes nothing for the only user there is. This flips it once and records that it did, so
+     * choosing a different theme afterwards is respected.
+     */
+    suspend fun applySunriseThemeIfNeeded() {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maSunriseApplied.get()) return
+        prefs.theme.dayThemeId.set(extCoreTheme("sunrise"))
+        prefs.theme.nightThemeId.set(extCoreTheme("sunrise"))
+        // Same reasoning for the command and arrow bars: a changed default never reaches a phone
+        // that has already written the old value, so switch them on in the same one-shot pass.
+        prefs.dictate.maCursorRow.set(true)
+        prefs.dictate.maSunriseApplied.set(true)
+    }
+
     suspend fun migratePromptsLayoutToRowIfNeeded() {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.promptsLayoutRowMigrated.get()) return

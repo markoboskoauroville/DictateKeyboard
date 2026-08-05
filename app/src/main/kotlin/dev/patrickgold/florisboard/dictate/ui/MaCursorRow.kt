@@ -25,24 +25,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.ime.input.InputShiftState
@@ -57,12 +60,7 @@ import dev.patrickgold.florisboard.keyboardManager
 import kotlinx.coroutines.withTimeoutOrNull
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
 
-/** Corner radius, matching the record button and the legacy keys so nothing looks bolted on. */
-private val MaCursorKeyShape = RoundedCornerShape(12.dp)
-private val MaCursorKeyMarginH = 3.dp
-private val MaCursorKeyMarginV = 4.dp
-
-/** How long a key must be held before it starts repeating, and how fast it repeats after that. */
+/** Hold-to-repeat timings for the arrows. */
 private const val MA_REPEAT_DELAY_MS = 380L
 private const val MA_REPEAT_INTERVAL_MS = 55L
 
@@ -78,16 +76,13 @@ private fun maKeyAttributes(code: Int) = mapOf(
 )
 
 /**
- * A dedicated cursor row that sits between the Smartbar and the keys.
+ * The arrow strip along the bottom, in the flat style of the reference keyboard.
  *
- * Moving the caret used to mean either swiping the space bar or digging the arrow actions out of the
- * Smartbar overflow. Neither is any good when the point is to fix one wrong letter in the middle of a
- * long dictated paragraph. This gives the four arrows their own permanent keys, with line start and
- * line end on the outside, all repeating when held, all styled by whatever theme is active so it
- * looks like part of the keyboard rather than an addition to it.
+ * No key shapes, no fills, no margins: four evenly spaced glyphs sitting on the window's own colour,
+ * so the strip reads as part of the frame rather than another row of keys competing with the letters
+ * above it. Up and down first, then left and right, matching the reference.
  *
- * Nothing else in the layout moves: the row is inserted above the keys and is off unless switched on
- * in Settings, so the keyboard anyone else sees is unchanged.
+ * Holding an arrow repeats it, which is what makes crossing a long dictated paragraph bearable.
  */
 @Composable
 fun MaCursorRow(modifier: Modifier = Modifier) {
@@ -97,86 +92,136 @@ fun MaCursorRow(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(FlorisImeSizing.smartbarHeight),
+            .height(FlorisImeSizing.smartbarHeight * 0.8f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MaCursorKey(
-            code = KeyCode.MOVE_START_OF_LINE,
-            label = "\u21e4",
-            description = "Start of line",
-            keyboardManager = keyboardManager,
-            repeats = false,
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_UP) },
+            repeats = true,
             modifier = Modifier.weight(1f).fillMaxHeight(),
-        )
-        MaCursorKey(
-            code = KeyCode.ARROW_LEFT,
-            icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-            description = "Cursor left",
-            keyboardManager = keyboardManager,
-            modifier = Modifier.weight(1.4f).fillMaxHeight(),
-        )
-        MaCursorKey(
-            code = KeyCode.ARROW_UP,
-            icon = Icons.Default.KeyboardArrowUp,
-            description = "Cursor up",
-            keyboardManager = keyboardManager,
+        ) { fg -> MaGlyph(Icons.Default.KeyboardArrowUp, "Cursor up", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_DOWN) },
+            repeats = true,
             modifier = Modifier.weight(1f).fillMaxHeight(),
-        )
-        MaCursorKey(
-            code = KeyCode.ARROW_DOWN,
-            icon = Icons.Default.KeyboardArrowDown,
-            description = "Cursor down",
-            keyboardManager = keyboardManager,
+        ) { fg -> MaGlyph(Icons.Default.KeyboardArrowDown, "Cursor down", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_LEFT) },
+            repeats = true,
             modifier = Modifier.weight(1f).fillMaxHeight(),
-        )
-        MaCursorKey(
-            code = KeyCode.ARROW_RIGHT,
-            icon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            description = "Cursor right",
-            keyboardManager = keyboardManager,
-            modifier = Modifier.weight(1.4f).fillMaxHeight(),
-        )
-        MaCursorKey(
-            code = KeyCode.MOVE_END_OF_LINE,
-            label = "\u21e5",
-            description = "End of line",
-            keyboardManager = keyboardManager,
-            repeats = false,
+        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Cursor left", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_RIGHT) },
+            repeats = true,
             modifier = Modifier.weight(1f).fillMaxHeight(),
-        )
+        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Cursor right", fg) }
     }
 }
 
 /**
- * One key of the cursor row. A tap fires once; holding an arrow repeats it after a short delay, which
- * is what makes moving across a long line bearable. The line start and line end keys never repeat,
- * since firing them twice does nothing anyway.
+ * The command bar along the top, same flat treatment: short bold words and plain glyphs, evenly
+ * spaced, no key shapes.
+ *
+ * These are the commands worth having in reach while editing dictated text rather than typing it.
+ * Line start and line end take the place of the reference keyboard's CTRL, which on Android controls
+ * nothing an input method can rely on. TAB, ESC, undo, redo, select-all, copy and paste all go
+ * through the ordinary input pipeline and do exactly what they say.
  */
 @Composable
-private fun MaCursorKey(
-    code: Int,
-    description: String,
-    keyboardManager: KeyboardManager,
+fun MaCommandRow(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val keyboardManager by context.keyboardManager()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(FlorisImeSizing.smartbarHeight * 0.8f),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.MOVE_START_OF_LINE) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaLabel("\u21e4", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.TAB) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaLabel("\u2192|", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.MOVE_END_OF_LINE) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaLabel("\u21e5", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.UNDO) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.Undo, "Undo", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.REDO) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.Redo, "Redo", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.CLIPBOARD_SELECT_ALL) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.Default.SelectAll, "Select all", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.CLIPBOARD_COPY) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.Default.ContentCopy, "Copy", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.CLIPBOARD_PASTE) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.Default.ContentPaste, "Paste", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ESCAPE) },
+            modifier = Modifier.weight(1.2f).fillMaxHeight(),
+        ) { fg -> MaLabel("ESC", fg, bold = true, size = 12) }
+    }
+}
+
+@Composable
+private fun MaGlyph(icon: ImageVector, description: String, tint: Color) {
+    Icon(
+        imageVector = icon,
+        contentDescription = description,
+        tint = tint,
+        modifier = Modifier.size(20.dp),
+    )
+}
+
+@Composable
+private fun MaLabel(text: String, tint: Color, bold: Boolean = false, size: Int = 15) {
+    Text(
+        text = text,
+        color = tint,
+        fontSize = size.sp,
+        fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium,
+    )
+}
+
+/**
+ * One flat command: no shape, no fill, just the glyph on the window's own background.
+ *
+ * The foreground is taken from the theme's key styling, so both bars follow whatever stylesheet is
+ * active, Sunrise included, rather than being a hardcoded white strip that fights every theme.
+ */
+@Composable
+private fun MaFlatKey(
+    onFire: () -> Unit,
     modifier: Modifier,
-    icon: ImageVector? = null,
-    label: String? = null,
-    repeats: Boolean = true,
+    repeats: Boolean = false,
+    content: @Composable (Color) -> Unit,
 ) {
-    val style = rememberSnyggThemeQuery(FlorisImeUi.Key.elementName, maKeyAttributes(code))
-    val background = style.background(default = Color.White.copy(alpha = 0.08f))
+    val style = rememberSnyggThemeQuery(FlorisImeUi.Key.elementName, maKeyAttributes(KeyCode.NOOP))
     val foreground = style.foreground(default = Color.White)
     val feedback = LocalInputFeedbackController.current
 
-    val gesture = Modifier.pointerInput(code, repeats) {
+    val gesture = Modifier.pointerInput(repeats) {
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false)
-            keyboardManager.maTapKey(code)
+            onFire()
             feedback.keyPress()
             if (repeats) {
-                // Hold to repeat. waitForUpOrCancellation suspends until the finger leaves, so racing
-                // it against a timeout gives a clean answer every round: null means the timeout won
-                // and the key is still held, true means the finger is gone and the loop is over.
-                // Mixing delay with awaitPointerEvent here would queue up events and misfire.
+                // Racing waitForUpOrCancellation against a timeout gives a clean answer each round:
+                // null means the timeout won and the finger is still down, true means it is gone.
                 var wait = MA_REPEAT_DELAY_MS
                 while (true) {
                     val released = withTimeoutOrNull(wait) {
@@ -184,12 +229,11 @@ private fun MaCursorKey(
                         true
                     }
                     if (released == true) break
-                    keyboardManager.maTapKey(code)
+                    onFire()
                     feedback.keyPress()
                     wait = MA_REPEAT_INTERVAL_MS
                 }
             } else {
-                // Still wait for the lift so the gesture completes cleanly.
                 waitForUpOrCancellation()
             }
         }
@@ -197,27 +241,10 @@ private fun MaCursorKey(
 
     Box(
         modifier = modifier
-            .padding(horizontal = MaCursorKeyMarginH, vertical = MaCursorKeyMarginV)
-            .clip(MaCursorKeyShape)
-            .background(background)
+            .background(Color.Transparent)
             .then(gesture),
         contentAlignment = Alignment.Center,
     ) {
-        // The four arrows are icons; line start and line end are the Unicode tab arrows, which say
-        // the same thing without depending on icon names that keep moving between Compose releases.
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = description,
-                tint = foreground,
-                modifier = Modifier.size(22.dp),
-            )
-        } else if (label != null) {
-            Text(
-                text = label,
-                color = foreground,
-                fontSize = 20.sp,
-            )
-        }
+        content(foreground)
     }
 }

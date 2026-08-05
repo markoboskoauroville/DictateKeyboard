@@ -33,6 +33,7 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
+import dev.patrickgold.florisboard.dictate.ui.MaCommandRow
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
 import dev.patrickgold.florisboard.dictate.ui.MaPinButton
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
@@ -97,12 +98,12 @@ fun TextInputLayout(
                 }
             }
         }
-        // Cursor row (Marko): sits between the Smartbar and the keys so the caret can be moved without
-        // swiping the space bar or digging the arrows out of the Smartbar overflow. Hidden unless
-        // switched on, and hidden while the overflow panel is open, which owns the whole area below.
+        // Command bar (Marko): flat editing commands directly under the Smartbar, in the same style
+        // as the arrow strip at the bottom. Hidden while the overflow panel is open, which owns the
+        // whole area below it.
         val maCursorRowEnabled by prefs.dictate.maCursorRow.collectAsState()
         if (maCursorRowEnabled && !state.isActionsOverflowVisible) {
-            MaCursorRow()
+            MaCommandRow()
         }
         if (state.isActionsOverflowVisible) {
             QuickActionsOverflowPanel()
@@ -121,6 +122,11 @@ fun TextInputLayout(
                     )
                 }
                 TextKeyboardLayout(evaluator = evaluator)
+            }
+            // Arrow strip along the very bottom, below the letters, exactly where the reference
+            // keyboard puts it.
+            if (maCursorRowEnabled) {
+                MaCursorRow()
             }
         }
     }

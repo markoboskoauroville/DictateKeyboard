@@ -169,10 +169,10 @@ fun GesturesScreen() = FlorisScreen {
             // one on does not turn the other off.
             SwitchPreference(
                 prefs.dictate.maCursorRow,
-                title = "Cursor row",
-                summary = "A row of arrow keys above the keyboard: line start, left, up, down, " +
-                    "right, line end. Hold an arrow to repeat it. Useful for fixing one letter in " +
-                    "the middle of a long dictated paragraph without swiping the space bar.",
+                title = "Command and arrow bars",
+                summary = "A flat command bar under the Smartbar and an arrow strip along the " +
+                    "bottom, in both the keyboard and the transcribe view. Hold an arrow to " +
+                    "repeat it.",
             )
             SwitchPreference(
                 prefs.gestures.maSwipeToSymbol,
