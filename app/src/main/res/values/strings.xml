@@ -755,16 +755,16 @@
     <string name="apptour52__outro_eyebrow">That\'s 5.2</string>
     <string name="apptour52__outro_title">Happy dictating</string>
     <string name="apptour52__outro_body">Plus plenty under the hood: the screen stays awake through a whole dictation, on-device models free their memory when idle, watch dictations survive dropouts, and German autocorrect learned umlauts. You can revisit any tour under Settings › About.</string>
-    <string name="about__website__title" comment="Preference title linking to the marketing website">Website</string>
+    <string name="about__website__title" comment="Preference title linking to the project home">Project home</string>
     <string name="about__repository__title" comment="Preference title">Repository (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Source code, discussions, issues and info</string>
-    <string name="about__based_on_floris__title" comment="Preference title crediting the upstream project Dictate is forked from">Based on FlorisBoard</string>
-    <string name="about__based_on_floris__summary" comment="Preference summary crediting the upstream project">A fork of FlorisBoard by Patrick Goldinger and contributors, Apache 2.0. Tap to open it.</string>
-    <string name="about__made_by" comment="Personal signature shown under the app name in the About header" translatable="false">Made with ❤️ by DevEmperor\nSoli deo gloria ✝️</string>
+    <string name="about__repository__summary" comment="Preference summary">Source code, issues and every build</string>
+    <string name="about__based_on_floris__title" comment="Preference title crediting the upstream fork">Forked from Dictate</string>
+    <string name="about__based_on_floris__summary" comment="Preference summary crediting the upstream project">Dictate by DevEmperor, itself built on FlorisBoard by Patrick Goldinger. Apache 2.0. Tap to open.</string>
+    <string name="about__made_by" comment="Personal signature shown under the app name in the About header" translatable="false">Marko Boško · Mantra Productions\nOd Gangesa do Amazone</string>
     <string name="about__feedback__title" comment="Preference title">Feedback &amp; support</string>
     <string name="about__feedback__summary" comment="Preference summary">Send an email with questions, bugs or ideas</string>
     <string name="about__feedback__email" translatable="false">contact@devemperor.net</string>
-    <string name="about__feedback__subject" comment="Default subject line of the feedback email" translatable="false">Dictate Feedback</string>
+    <string name="about__feedback__subject" comment="Default subject line of the feedback email" translatable="false">Mantra Voice Type</string>
     <string name="about__privacy_policy__title" comment="Preference title">Privacy policy</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">The privacy policy for this project</string>
     <string name="about__project_license__title" comment="Preference title">Project license</string>
@@ -1976,4 +1976,8 @@
     <string name="changelog__v4_2_0" comment="What's-new text for the 4.2.0 release. One change per line.">• NEW: Floating dictation button — dictate straight into any app, even when another keyboard is active. Pick from three styles (Pill, Ring, Orb), watch a live waveform while you speak, drag it anywhere with edge-snapping, set its color and size, and long-press to reword. Turn it on in Settings ▸ Dictate ▸ Floating button.\n• NEW: Google Gemini — bring your own AI Studio API key for both transcription and rewording.\n• Prompts now appear in an always-on row above the keys by default.\n• More reliable text insertion across apps, including browsers and other keyboards.</string>
     <string name="changelog__v4_1_1" comment="What's-new text for the 4.1.1 release. One change per line.">• Fix: the accent color could appear green on some devices — keys and buttons are back to the Dictate blue.</string>
 
+    <string name="about__releases__title" comment="Preference title linking to the release list">Builds and updates</string>
+    <string name="about__releases__summary" comment="Preference summary">Every signed APK, newest first. Each one installs over the last.</string>
+    <string name="about__floris__title" comment="Preference title crediting FlorisBoard">FlorisBoard</string>
+    <string name="about__floris__summary" comment="Preference summary crediting FlorisBoard">The keyboard engine underneath everything, by Patrick Goldinger and contributors.</string>
 </resources>

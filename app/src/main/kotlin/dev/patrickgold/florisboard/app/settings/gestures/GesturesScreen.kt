@@ -164,6 +164,16 @@ fun GesturesScreen() = FlorisScreen {
             // Mantra Voice Type: the swipe-to-symbol switch, placed directly above the two
             // thresholds that govern how far and how fast a swipe must be, since turning it on
             // and then tuning those two is one continuous task rather than three separate ones.
+            // Mantra Voice Type: the cursor row. Kept beside the space-bar cursor gesture below,
+            // because the two are the same job solved twice and it should be obvious that turning
+            // one on does not turn the other off.
+            SwitchPreference(
+                prefs.dictate.maCursorRow,
+                title = "Cursor row",
+                summary = "A row of arrow keys above the keyboard: line start, left, up, down, " +
+                    "right, line end. Hold an arrow to repeat it. Useful for fixing one letter in " +
+                    "the middle of a long dictated paragraph without swiping the space bar.",
+            )
             SwitchPreference(
                 prefs.gestures.maSwipeToSymbol,
                 title = "Swipe to symbol",

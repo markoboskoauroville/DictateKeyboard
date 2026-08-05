@@ -540,7 +540,6 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="about__changelog__title" comment="Preference title">Changelog</string>
     <string name="about__changelog__summary" comment="Preference summary">Apa yang baru</string>
     <string name="about__repository__title" comment="Preference title">Repositori (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Sumber kode, diskusi, masalah dan info</string>
     <string name="about__privacy_policy__title" comment="Preference title">Kebijakan privasi</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Kebijakan privasi untuk proyek ini</string>
     <string name="about__project_license__title" comment="Preference title">Lisensi proyek</string>
@@ -1024,8 +1023,6 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="quick_action__dictate_live_prompt__tooltip">Rekam instruksi lisan dan kirim ke AI</string>
     <string name="quick_action__dictate_prompts">Perintah AI</string>
     <string name="quick_action__dictate_prompts__tooltip">Buka perintah penyusunan ulang AI</string>
-    <string name="about__based_on_floris__title">Berdasarkan FlorisBoard</string>
-    <string name="about__based_on_floris__summary">Cabang dari FlorisBoard oleh Patrick Goldinger dan kontributor, Apache 2.0. Ketuk untuk membuka.</string>
     <string name="about__made_by">Dibuat dengan ❤️ oleh DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">Masukan &amp; dukungan</string>
     <string name="about__feedback__summary">Kirim email berisi pertanyaan, bug, atau ide</string>
@@ -1764,5 +1761,4 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__legacy_prompt_rows_title">Baris prompt</string>
     <string name="dictate__legacy_prompt_rows_one">Satu baris</string>
     <string name="dictate__legacy_prompt_rows_two">Dua baris</string>
-    <string name="about__website__title">Situs web</string>
 </resources>

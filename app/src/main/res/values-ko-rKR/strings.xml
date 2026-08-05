@@ -301,7 +301,6 @@
     <string name="about__changelog__title" comment="Preference title">변경 내역</string>
     <string name="about__changelog__summary" comment="Preference summary">새로운 기능</string>
     <string name="about__repository__title" comment="Preference title">리포지터리 (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">소스 코드, 토론, 버그 신고 및 정보</string>
     <string name="about__privacy_policy__title" comment="Preference title">개인 정보 보호 정책</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">이 프로젝트의 개인 정보 보호 정책</string>
     <string name="about__project_license__title" comment="Preference title">프로젝트 라이선스</string>

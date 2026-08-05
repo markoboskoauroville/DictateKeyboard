@@ -476,7 +476,6 @@
     <string name="about__changelog__title" comment="Preference title">Wijzigingenlogboek</string>
     <string name="about__changelog__summary" comment="Preference summary">Wat is er nieuw</string>
     <string name="about__repository__title" comment="Preference title">Opslagplaats (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Broncode, discussies, problemen en info</string>
     <string name="about__privacy_policy__title" comment="Preference title">Privacybeleid</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Het privacybeleid voor dit project</string>
     <string name="about__project_license__title" comment="Preference title">Projectlicentie</string>
@@ -968,8 +967,6 @@ Deze toestemming kan op elk moment worden gewijzigd in de systeeminstellingen.  
     <string name="quick_action__dictate_live_prompt__tooltip">Neem een gesproken instructie op en stuur die naar de AI</string>
     <string name="quick_action__dictate_prompts">AI-prompts</string>
     <string name="quick_action__dictate_prompts__tooltip">De AI-herformuleringsprompts openen</string>
-    <string name="about__based_on_floris__title">Gebaseerd op FlorisBoard</string>
-    <string name="about__based_on_floris__summary">Een fork van FlorisBoard door Patrick Goldinger en bijdragers, Apache 2.0. Tik om te openen.</string>
     <string name="about__made_by">Gemaakt met ❤️ door DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">Feedback en ondersteuning</string>
     <string name="about__feedback__summary">Stuur een e-mail met vragen, bugs of ideeën</string>
@@ -1708,5 +1705,4 @@ Deze toestemming kan op elk moment worden gewijzigd in de systeeminstellingen.  
     <string name="dictate__legacy_prompt_rows_title">Promptrijen</string>
     <string name="dictate__legacy_prompt_rows_one">Eén rij</string>
     <string name="dictate__legacy_prompt_rows_two">Twee rijen</string>
-    <string name="about__website__title">Website</string>
 </resources>

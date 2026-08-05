@@ -2,13 +2,19 @@
   "$": "ime.extension.theme",
   "meta": {
     "id": "org.florisboard.themes",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "title": "Dictate Keyboard default themes",
     "description": "Default themes (both day and night) for the keyboard UI",
     "maintainers": [ "patrickgold <patrick@patrickgold.dev>", "lm41 <lm41@lm41.xyz>" ],
     "license": "apache-2.0"
   },
   "themes": [
+    {
+      "id": "sunrise",
+      "label": "Sunrise (Auroville)",
+      "authors": [ "Marko Bosko" ],
+      "isNight": true
+    },
     {
       "id": "dictate_eink",
       "label": "Dictate E-Ink (High Contrast)",

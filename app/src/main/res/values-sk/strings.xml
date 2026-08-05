@@ -257,7 +257,6 @@
     <string name="about__changelog__title" comment="Preference title">Prehľad zmien</string>
     <string name="about__changelog__summary" comment="Preference summary">Čo je nové?</string>
     <string name="about__repository__title" comment="Preference title">Repozitár (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Zdrojový kód, diskusie, problémy a informácie</string>
     <string name="about__privacy_policy__title" comment="Preference title">Zásady ochrany osobných údajov</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Zásady ochrany osobných údajov v rámci tohto projektu</string>
     <string name="about__project_license__title" comment="Preference title">Licencia projektu</string>

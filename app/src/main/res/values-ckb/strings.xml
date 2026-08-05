@@ -394,7 +394,6 @@
     <string name="about__changelog__title" comment="Preference title">گۆڕانکارییەکان</string>
     <string name="about__changelog__summary" comment="Preference summary">نوێکارییەکان</string>
     <string name="about__repository__title" comment="Preference title">کۆدی سەرچاوە (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">کۆدی بەرنامەکە، فێرکاری و زانیاری</string>
     <string name="about__privacy_policy__title" comment="Preference title">تایبەتمەندێتی ڕامیاری</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">زانیاری تایبەتمەندێتی بەرنامەکە</string>
     <string name="about__project_license__title" comment="Preference title">مۆڵەتی پڕۆژە</string>

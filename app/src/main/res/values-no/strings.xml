@@ -297,7 +297,6 @@
     <string name="about__changelog__title" comment="Preference title">Endringslogg</string>
     <string name="about__changelog__summary" comment="Preference summary">Hva som er nytt</string>
     <string name="about__repository__title" comment="Preference title">Oppbevaringssted (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Kildekode, diskusjoner, saker og info</string>
     <string name="about__privacy_policy__title" comment="Preference title">Persovernerklæring</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Personvernærklæring for dette prosjektet</string>
     <string name="about__project_license__title" comment="Preference title">Prosjektlisens</string>

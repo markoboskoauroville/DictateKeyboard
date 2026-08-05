@@ -779,6 +779,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__legacy_action_row",
             default = "SELECT_ALL,UNDO,REDO,CUT,COPY,PASTE,EMOJI,NUMBERS",
         )
+        // Dedicated cursor row above the keyboard: line start, four arrows, line end, all repeating
+        // when held. Off by default so the stock keyboard is unchanged; switched on in Settings under
+        // Gestures. See MaCursorRow.
+        val maCursorRow = boolean(
+            key = "dictate__ma_cursor_row",
+            default = false,
+        )
         // How many rows of prompt/revision buttons the legacy prompt strip shows (1 or 2, issue #194/#8).
         val legacyPromptRows = int(
             key = "dictate__legacy_prompt_rows",

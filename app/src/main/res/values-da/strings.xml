@@ -403,7 +403,6 @@
     <string name="about__changelog__title" comment="Preference title">Ændringslog</string>
     <string name="about__changelog__summary" comment="Preference summary">Nyheder</string>
     <string name="about__repository__title" comment="Preference title">Projektarkiv (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Kildekode, diskussioner, problemer og information</string>
     <string name="about__privacy_policy__title" comment="Preference title">Privatlivspolitik</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Privatlivspolitikken for dette projekt</string>
     <string name="about__project_license__title" comment="Preference title">Projektlicens</string>

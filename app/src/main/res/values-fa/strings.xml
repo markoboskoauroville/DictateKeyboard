@@ -230,7 +230,6 @@
     <string name="about__changelog__title" comment="Preference title">لیست تغییرات</string>
     <string name="about__changelog__summary" comment="Preference summary">تغییرات جدید</string>
     <string name="about__repository__title" comment="Preference title">رپو (گیت هاب)</string>
-    <string name="about__repository__summary" comment="Preference summary">کد منبع، مباحثه ها، مشکلات و اطلاعات</string>
     <string name="about__privacy_policy__title" comment="Preference title">سیاست حریم خصوصی</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">سیاست حریم خصوصی برای این پروژه</string>
     <string name="about__project_license__title" comment="Preference title">گواهی های پروژه</string>

@@ -32,6 +32,7 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
+import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
 import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
 import dev.patrickgold.florisboard.ime.smartbar.InlineSuggestionsStyleCache
@@ -85,6 +86,13 @@ fun TextInputLayout(
             }
         } else {
             Smartbar()
+        }
+        // Cursor row (Marko): sits between the Smartbar and the keys so the caret can be moved without
+        // swiping the space bar or digging the arrows out of the Smartbar overflow. Hidden unless
+        // switched on, and hidden while the overflow panel is open, which owns the whole area below.
+        val maCursorRowEnabled by prefs.dictate.maCursorRow.collectAsState()
+        if (maCursorRowEnabled && !state.isActionsOverflowVisible) {
+            MaCursorRow()
         }
         if (state.isActionsOverflowVisible) {
             QuickActionsOverflowPanel()

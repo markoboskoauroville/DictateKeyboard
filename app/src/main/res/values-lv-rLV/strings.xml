@@ -506,7 +506,6 @@
     <string name="about__changelog__title" comment="Preference title">Izmaiņu žurnāls</string>
     <string name="about__changelog__summary" comment="Preference summary">Kas jauns?</string>
     <string name="about__repository__title" comment="Preference title">Glabātava (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Pirmkods, apspriedes, nepilnības un uzziņa</string>
     <string name="about__privacy_policy__title" comment="Preference title">Privātuma nosacījumi</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Šī projekta privātuma nosacījumi</string>
     <string name="about__project_license__title" comment="Preference title">Projekta licence</string>
@@ -1012,8 +1011,6 @@
     <string name="quick_action__dictate_live_prompt__tooltip">Ierakstiet izrunātu norādījumu un nosūtiet to MI</string>
     <string name="quick_action__dictate_prompts">MI uzvednes</string>
     <string name="quick_action__dictate_prompts__tooltip">Atveriet MI pārformulēšanas uzvednes</string>
-    <string name="about__based_on_floris__title">Balstīts uz FlorisBoard</string>
-    <string name="about__based_on_floris__summary">FlorisBoard atzars, ko izstrādājis Patrick Goldinger un līdzautori, Apache 2.0. Pieskaries, lai atvērtu.</string>
     <string name="about__made_by">Izveidoja ar ❤️ DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">Atsauksmes un atbalsts</string>
     <string name="about__feedback__summary">Nosūtiet e-pastu ar jautājumiem, kļūdām vai idejām</string>
@@ -1752,5 +1749,4 @@
     <string name="dictate__legacy_prompt_rows_title">Uzvednes rindas</string>
     <string name="dictate__legacy_prompt_rows_one">Viena rinda</string>
     <string name="dictate__legacy_prompt_rows_two">Divas rindas</string>
-    <string name="about__website__title">Vietne</string>
 </resources>

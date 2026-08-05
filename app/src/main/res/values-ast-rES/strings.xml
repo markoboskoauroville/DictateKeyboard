@@ -159,7 +159,6 @@
     <string name="about__changelog__title" comment="Preference title">Rexistru de cambeos</string>
     <string name="about__changelog__summary" comment="Preference summary">Contién les novedaes</string>
     <string name="about__repository__title" comment="Preference title">Depósitu (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">El códigu fonte, los discutinios, los problemes y más información</string>
     <string name="about__privacy_policy__title" comment="Preference title">Política de privacidá</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">La política de privacidá d\'esti proyeutu</string>
     <string name="about__project_license__title" comment="Preference title">Llicencia del proyeutu</string>

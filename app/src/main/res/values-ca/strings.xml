@@ -457,7 +457,6 @@
     <string name="about__changelog__title" comment="Preference title">Registre de canvis</string>
     <string name="about__changelog__summary" comment="Preference summary">Novetats</string>
     <string name="about__repository__title" comment="Preference title">Repositori (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Codi font, debats, incidències i informació</string>
     <string name="about__privacy_policy__title" comment="Preference title">Política de privacitat</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">La política de privacitat per a aquest projecte</string>
     <string name="about__project_license__title" comment="Preference title">Llicència del projecte</string>
@@ -944,8 +943,6 @@
     <string name="quick_action__dictate_live_prompt__tooltip">Grava una instrucció parlada i envia-la a la IA</string>
     <string name="quick_action__dictate_prompts">Prompts d\'IA</string>
     <string name="quick_action__dictate_prompts__tooltip">Obre els prompts de reformulació amb IA</string>
-    <string name="about__based_on_floris__title">Basat en FlorisBoard</string>
-    <string name="about__based_on_floris__summary">Una bifurcació de FlorisBoard de Patrick Goldinger i col·laboradors, Apache 2.0. Toca per obrir-lo.</string>
     <string name="about__made_by">Fet amb ❤️ per DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">Comentaris i assistència</string>
     <string name="about__feedback__summary">Envia un correu amb preguntes, errors o idees</string>
@@ -1684,5 +1681,4 @@
     <string name="dictate__legacy_prompt_rows_title">Files d\'indicacions</string>
     <string name="dictate__legacy_prompt_rows_one">Una fila</string>
     <string name="dictate__legacy_prompt_rows_two">Dues files</string>
-    <string name="about__website__title">Lloc web</string>
 </resources>

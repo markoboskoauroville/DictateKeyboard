@@ -554,7 +554,6 @@
     <string name="about__changelog__title" comment="Preference title">Změny</string>
     <string name="about__changelog__summary" comment="Preference summary">Co je nového</string>
     <string name="about__repository__title" comment="Preference title">Repozitář (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Zdrojový kód, diskuze, problémy a informace</string>
     <string name="about__privacy_policy__title" comment="Preference title">Soukromí</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Zásady ochrany soukromí tohoto projektu</string>
     <string name="about__project_license__title" comment="Preference title">Licence projektu</string>
@@ -1083,8 +1082,6 @@
     <string name="quick_action__dictate_live_prompt__tooltip">Nahrajte mluvený pokyn a odešlete jej AI</string>
     <string name="quick_action__dictate_prompts">Prompty AI</string>
     <string name="quick_action__dictate_prompts__tooltip">Otevřít prompty přeformulování AI</string>
-    <string name="about__based_on_floris__title">Založeno na FlorisBoard</string>
-    <string name="about__based_on_floris__summary">Fork FlorisBoard od Patricka Goldingera a přispěvatelů, Apache 2.0. Klepnutím jej otevřete.</string>
     <string name="about__made_by">Vytvořeno s ❤️ od DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">Zpětná vazba a podpora</string>
     <string name="about__feedback__summary">Pošlete e-mail s dotazy, chybami nebo nápady</string>
@@ -1823,5 +1820,4 @@
     <string name="dictate__legacy_prompt_rows_title">Řádky výzev</string>
     <string name="dictate__legacy_prompt_rows_one">Jeden řádek</string>
     <string name="dictate__legacy_prompt_rows_two">Dva řádky</string>
-    <string name="about__website__title">Webové stránky</string>
 </resources>

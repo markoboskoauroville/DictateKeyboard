@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2021-2025 The FlorisBoard Contributors
+ * Copyright (C) 2026 Marko Bosko, Mantra Productions
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +17,23 @@
 
 package dev.patrickgold.florisboard.app.settings.about
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CallSplit
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Policy
-import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,8 +46,6 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.settings.search.settingsSearchAnchor
 import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.app.Routes
-import dev.patrickgold.florisboard.app.WHATS_NEW_TOURS
-import dev.patrickgold.florisboard.app.WhatsNewTourState
 import dev.patrickgold.florisboard.clipboardManager
 import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 import dev.patrickgold.florisboard.lib.util.launchUrl
@@ -65,6 +54,17 @@ import org.florisboard.lib.android.stringRes
 import org.florisboard.lib.compose.FlorisCanvasIcon
 import org.florisboard.lib.compose.stringRes
 
+/**
+ * About, rebuilt for Mantra Voice Type.
+ *
+ * The header carries Marko Bosko's own name and build number rather than the upstream author's, and
+ * the row list is trimmed to what this build actually has: the repository, the release list, the two
+ * projects it stands on, and the licence screens.
+ *
+ * The two credit rows are not decoration. This app is Apache-2.0, inherited from FlorisBoard through
+ * Dictate, and neither the licence headers in the source nor ATTRIBUTION.md and NOTICE may be removed.
+ * Keeping one visible link per upstream project is both the honest thing and the legal minimum.
+ */
 @Composable
 fun AboutScreen() = FlorisScreen {
     title = stringRes(R.string.about__title)
@@ -73,7 +73,9 @@ fun AboutScreen() = FlorisScreen {
     val context = LocalContext.current
     val clipboardManager by context.clipboardManager()
 
-    val appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+    // Account suffix (a) marks which machine last built this, matching the convention across the
+    // rest of Marko's apps. The build number is what the GitHub release is named after.
+    val appVersion = "${BuildConfig.VERSION_NAME} (a), build ${BuildConfig.VERSION_CODE}"
 
     content {
         Column(
@@ -119,67 +121,19 @@ fun AboutScreen() = FlorisScreen {
                 }
             },
         )
-        // A single "What's new" entry that opens a small version picker, so users on any prior version can
-        // re-view every release's tour without cluttering the list. (Auto-show on update still jumps
-        // straight to the updated version — see WhatsNewTour / pendingTourVersions.)
-        var showWhatsNewPicker by remember { mutableStateOf(false) }
-        Preference(
-            icon = Icons.Default.AutoAwesome,
-            modifier = Modifier.settingsSearchAnchor("about__whats_new__title"),
-            title = stringRes(R.string.about__whats_new__title),
-            summary = stringRes(R.string.about__whats_new__summary),
-            onClick = { showWhatsNewPicker = true },
-        )
-        if (showWhatsNewPicker) {
-            AlertDialog(
-                onDismissRequest = { showWhatsNewPicker = false },
-                title = { Text(stringRes(R.string.about__whats_new__title)) },
-                text = {
-                    // Newest first; the registry is ascending, so reverse for display.
-                    Column {
-                        WHATS_NEW_TOURS.reversed().forEach { tour ->
-                            val versionLabel = tour.version.toString().substringBeforeLast(".0")
-                            Text(
-                                text = stringRes(R.string.about__whats_new__versioned)
-                                    .replace("{version}", versionLabel),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        showWhatsNewPicker = false
-                                        WhatsNewTourState.open(tour.version)
-                                    }
-                                    .padding(vertical = 14.dp),
-                            )
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showWhatsNewPicker = false }) {
-                        Text(stringRes(R.string.action__cancel))
-                    }
-                },
-            )
-        }
-        Preference(
-            icon = Icons.Outlined.Public,
-            modifier = Modifier.settingsSearchAnchor("about__website__title"),
-            title = stringRes(R.string.about__website__title),
-            summary = "dictatekeyboard.com",
-            onClick = { context.launchUrl(R.string.florisboard__website_url) },
-        )
-        Preference(
-            icon = Icons.Default.History,
-            modifier = Modifier.settingsSearchAnchor("about__changelog__title"),
-            title = stringRes(R.string.about__changelog__title),
-            summary = stringRes(R.string.about__changelog__summary),
-            onClick = { context.launchUrl(R.string.florisboard__changelog_url, "version" to BuildConfig.VERSION_NAME) },
-        )
         Preference(
             icon = Icons.Default.Code,
             modifier = Modifier.settingsSearchAnchor("about__repository__title"),
             title = stringRes(R.string.about__repository__title),
             summary = stringRes(R.string.about__repository__summary),
             onClick = { context.launchUrl(R.string.florisboard__repo_url) },
+        )
+        Preference(
+            icon = Icons.Default.Download,
+            modifier = Modifier.settingsSearchAnchor("about__releases__title"),
+            title = stringRes(R.string.about__releases__title),
+            summary = stringRes(R.string.about__releases__summary),
+            onClick = { context.launchUrl(R.string.florisboard__changelog_url) },
         )
         Preference(
             icon = Icons.Default.CallSplit,
@@ -189,21 +143,11 @@ fun AboutScreen() = FlorisScreen {
             onClick = { context.launchUrl(R.string.florisboard__upstream_repo_url) },
         )
         Preference(
-            icon = Icons.Outlined.Email,
-            modifier = Modifier.settingsSearchAnchor("about__feedback__title"),
-            title = stringRes(R.string.about__feedback__title),
-            summary = stringRes(R.string.about__feedback__summary),
-            onClick = {
-                val email = context.stringRes(R.string.about__feedback__email)
-                val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$email")).apply {
-                    putExtra(Intent.EXTRA_SUBJECT, context.stringRes(R.string.about__feedback__subject))
-                }
-                try {
-                    context.startActivity(intent)
-                } catch (e: Throwable) {
-                    Toast.makeText(context, email, Toast.LENGTH_LONG).show()
-                }
-            },
+            icon = Icons.Default.Keyboard,
+            modifier = Modifier.settingsSearchAnchor("about__floris__title"),
+            title = stringRes(R.string.about__floris__title),
+            summary = stringRes(R.string.about__floris__summary),
+            onClick = { context.launchUrl(R.string.florisboard__floris_repo_url) },
         )
         Preference(
             icon = Icons.Outlined.Policy,

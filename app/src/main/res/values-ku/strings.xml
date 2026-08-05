@@ -211,7 +211,6 @@
     <string name="about__changelog__title" comment="Preference title">Lîsteya guhertinan</string>
     <string name="about__changelog__summary" comment="Preference summary">Çi nû ye</string>
     <string name="about__repository__title" comment="Preference title">Depo (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Koda çavkanî, nîqaş, mijar û agahî</string>
     <string name="about__privacy_policy__title" comment="Preference title">Polîtîqa Taybetîyê</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Polîtîkaya nepenîtiyê ya ji bo vê projeyê</string>
     <string name="about__project_license__title" comment="Preference title">Lîsansa projeyê</string>

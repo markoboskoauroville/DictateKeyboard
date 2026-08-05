@@ -198,7 +198,6 @@
     <string name="about__changelog__title" comment="Preference title">Κατάλογος αλλαγών</string>
     <string name="about__changelog__summary" comment="Preference summary">Τι νέο υπάρχει</string>
     <string name="about__repository__title" comment="Preference title">Αποθετήριο (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Πηγαίος κώδικας, συζητήσεις, θέματα και πληροφορίες</string>
     <string name="about__privacy_policy__title" comment="Preference title">Πολιτική απορρήτου</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Η πολιτική απορρήτου αυτού του πρότζεκτ</string>
     <string name="about__project_license__title" comment="Preference title">Άδεια πρότζεκτ</string>

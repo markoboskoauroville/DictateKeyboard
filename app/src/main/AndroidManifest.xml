@@ -24,6 +24,19 @@
     <!-- On-device model downloads that keep running in the background (issue #207). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
 
+    <!-- Key vault in Documents. Preferences and persisted SAF grants are both wiped by a full
+         uninstall, which is what used to force the API keys to be entered again. A plain file in
+         the shared Documents folder survives, but reading a file this app no longer owns needs
+         all-files access, which is requested from the settings screen and never at startup.
+         This app is distributed as a signed APK from GitHub releases, not through Play, so the
+         Play policy restriction on this permission does not apply. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"/>
+
     <!-- Android 11+ only: Define that FlorisBoard requests to see all apps that
           ship with an IME or Spell Check service. This is used to guide the user
           in the Settings Ui why FlorisBoard may not be working.

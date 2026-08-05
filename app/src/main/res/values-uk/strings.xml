@@ -441,7 +441,6 @@
     <string name="about__changelog__title" comment="Preference title">Журнал змін</string>
     <string name="about__changelog__summary" comment="Preference summary">Що нового</string>
     <string name="about__repository__title" comment="Preference title">Репозиторій (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Вихідний код, обговорення, проблеми та інформація</string>
     <string name="about__privacy_policy__title" comment="Preference title">Політика конфіденційності</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">Політика приватності для цього проєкту</string>
     <string name="about__project_license__title" comment="Preference title">Ліцензія проєкту</string>
@@ -916,8 +915,6 @@
     <string name="quick_action__dictate_live_prompt__tooltip">Запишіть усну інструкцію та надішліть її ШІ</string>
     <string name="quick_action__dictate_prompts">Промпти ШІ</string>
     <string name="quick_action__dictate_prompts__tooltip">Відкрити промпти переформулювання ШІ</string>
-    <string name="about__based_on_floris__title">На основі FlorisBoard</string>
-    <string name="about__based_on_floris__summary">Форк FlorisBoard від Patrick Goldinger та учасників, Apache 2.0. Торкніться, щоб відкрити.</string>
     <string name="about__made_by">Зроблено з ❤️ DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">Відгуки та підтримка</string>
     <string name="about__feedback__summary">Надішліть лист із запитаннями, помилками чи ідеями</string>
@@ -1656,5 +1653,4 @@
     <string name="dictate__legacy_prompt_rows_title">Рядки підказок</string>
     <string name="dictate__legacy_prompt_rows_one">Один рядок</string>
     <string name="dictate__legacy_prompt_rows_two">Два рядки</string>
-    <string name="about__website__title">Вебсайт</string>
 </resources>

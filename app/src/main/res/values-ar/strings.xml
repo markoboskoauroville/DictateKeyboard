@@ -440,7 +440,6 @@
     <string name="about__changelog__title" comment="Preference title">سِجل التغييرات</string>
     <string name="about__changelog__summary" comment="Preference summary">مالجديد</string>
     <string name="about__repository__title" comment="Preference title">المستودع(چيتهب)</string>
-    <string name="about__repository__summary" comment="Preference summary">الكود المصدري, المناقشات, الاخطاء والمعلومات</string>
     <string name="about__privacy_policy__title" comment="Preference title">سياسة الخصوصية</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">سياسة الخصوصية لهذا المشروع</string>
     <string name="about__project_license__title" comment="Preference title">رخصة المشروع</string>
@@ -927,8 +926,6 @@
     <string name="quick_action__dictate_live_prompt__tooltip">سجّل تعليمات منطوقة وأرسلها إلى الذكاء الاصطناعي</string>
     <string name="quick_action__dictate_prompts">مطالبات الذكاء الاصطناعي</string>
     <string name="quick_action__dictate_prompts__tooltip">افتح مطالبات إعادة الصياغة بالذكاء الاصطناعي</string>
-    <string name="about__based_on_floris__title">مبني على FlorisBoard</string>
-    <string name="about__based_on_floris__summary">نسخة معدّلة من FlorisBoard من إعداد Patrick Goldinger والمساهمين، برخصة Apache 2.0. انقر لفتحه.</string>
     <string name="about__made_by">صُنع بـ ❤️ بواسطة DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">الملاحظات والدعم</string>
     <string name="about__feedback__summary">أرسل بريدًا إلكترونيًا بأسئلة أو أخطاء أو أفكار</string>
@@ -1667,5 +1664,4 @@
     <string name="dictate__legacy_prompt_rows_title">صفوف المطالبات</string>
     <string name="dictate__legacy_prompt_rows_one">صف واحد</string>
     <string name="dictate__legacy_prompt_rows_two">صفان</string>
-    <string name="about__website__title">الموقع الإلكتروني</string>
 </resources>

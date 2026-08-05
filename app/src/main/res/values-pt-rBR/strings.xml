@@ -446,7 +446,6 @@
     <string name="about__changelog__title" comment="Preference title">Registro de alterações</string>
     <string name="about__changelog__summary" comment="Preference summary">O que há de novo</string>
     <string name="about__repository__title" comment="Preference title">Repositório (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Código-fonte, discussões, problemas e informações</string>
     <string name="about__privacy_policy__title" comment="Preference title">Política de privacidade</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">A política de privacidade para este projeto</string>
     <string name="about__project_license__title" comment="Preference title">Licença do projeto</string>
@@ -877,8 +876,6 @@
     <string name="quick_action__dictate_live_prompt__tooltip">Grave uma instrução falada e envie para a IA</string>
     <string name="quick_action__dictate_prompts">Prompts de IA</string>
     <string name="quick_action__dictate_prompts__tooltip">Abrir os prompts de reformulação com IA</string>
-    <string name="about__based_on_floris__title">Baseado no FlorisBoard</string>
-    <string name="about__based_on_floris__summary">Uma bifurcação do FlorisBoard por Patrick Goldinger e colaboradores, Apache 2.0. Toque para abrir.</string>
     <string name="about__made_by">Feito com ❤️ por DevEmperor\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">Comentários e suporte</string>
     <string name="about__feedback__summary">Envie um e-mail com perguntas, erros ou ideias</string>
@@ -1617,5 +1614,4 @@
     <string name="dictate__legacy_prompt_rows_title">Linhas de prompt</string>
     <string name="dictate__legacy_prompt_rows_one">Uma linha</string>
     <string name="dictate__legacy_prompt_rows_two">Duas linhas</string>
-    <string name="about__website__title">Site</string>
 </resources>

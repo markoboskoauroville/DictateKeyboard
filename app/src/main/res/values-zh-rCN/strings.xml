@@ -553,7 +553,6 @@
     <string name="about__changelog__title" comment="Preference title">更新日志</string>
     <string name="about__changelog__summary" comment="Preference summary">新版本变化</string>
     <string name="about__repository__title" comment="Preference title">源码库（GitHub）</string>
-    <string name="about__repository__summary" comment="Preference summary">源代码、讨论、问题和信息</string>
     <string name="about__privacy_policy__title" comment="Preference title">隐私政策</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">本项目的隐私政策</string>
     <string name="about__project_license__title" comment="Preference title">项目开源协议</string>
@@ -1064,8 +1063,6 @@
     <string name="quick_action__dictate_live_prompt__tooltip">录制一条语音指令并发送给 AI</string>
     <string name="quick_action__dictate_prompts">AI 提示词</string>
     <string name="quick_action__dictate_prompts__tooltip">打开 AI 改写提示词</string>
-    <string name="about__based_on_floris__title">基于 FlorisBoard</string>
-    <string name="about__based_on_floris__summary">由 Patrick Goldinger 及贡献者开发的 FlorisBoard 分支，Apache 2.0。点按可打开。</string>
     <string name="about__made_by">由 DevEmperor 用 ❤️ 制作\nSoli deo gloria ✝️</string>
     <string name="about__feedback__title">反馈与支持</string>
     <string name="about__feedback__summary">发送电子邮件提出问题、漏洞或建议</string>
@@ -1803,5 +1800,4 @@
     <string name="dictate__legacy_prompt_rows_title">提示行</string>
     <string name="dictate__legacy_prompt_rows_one">一行</string>
     <string name="dictate__legacy_prompt_rows_two">两行</string>
-    <string name="about__website__title">网站</string>
 </resources>

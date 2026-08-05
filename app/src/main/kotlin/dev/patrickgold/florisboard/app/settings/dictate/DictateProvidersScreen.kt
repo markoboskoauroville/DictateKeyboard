@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
@@ -70,6 +71,7 @@ import dev.patrickgold.florisboard.app.settings.search.settingsSearchAnchor
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.app.Routes
+import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
 import dev.patrickgold.florisboard.dictate.provider.LocalModelCatalog
 import dev.patrickgold.florisboard.dictate.provider.LocalModelManager
@@ -208,6 +210,28 @@ fun DictateProvidersScreen() = FlorisScreen {
                     proxyOff
                 },
                 onClick = { navController.navigate(Routes.Settings.DictateProxy) },
+            )
+        }
+
+        // Key vault. A copy of the imported keys file is kept in the shared Documents folder, which
+        // an uninstall does not touch, so a clean install loads the keys with no clicks. Reading a
+        // file the app no longer owns needs all-files access, granted here and nowhere else.
+        PreferenceGroup(title = "Key vault") {
+            val vaultContext = LocalContext.current
+            // Recomposes when returning from the system permission screen, so the summary is current.
+            var vaultTick by remember { mutableStateOf(0) }
+            val vaultSummary = remember(vaultTick) { MaVault.status() }
+            Preference(
+                icon = Icons.Default.Folder,
+                modifier = Modifier.settingsSearchAnchor("dictate__key_vault"),
+                title = "Keys survive a reinstall",
+                summary = vaultSummary,
+                onClick = {
+                    if (!MaVault.hasFullAccess()) {
+                        runCatching { vaultContext.startActivity(MaVault.accessIntent(vaultContext)) }
+                    }
+                    vaultTick += 1
+                },
             )
         }
 
@@ -609,13 +633,16 @@ private fun ProviderEditorDialog(
             var maImportNote by remember { mutableStateOf("") }
             val maScope = rememberCoroutineScope()
             // Voice Type: reading the picked file, shared by the picker and the automatic reload.
-            fun maReadKeys(uri: android.net.Uri): List<String> {
-                val text = runCatching {
+            fun maReadText(uri: android.net.Uri): String {
+                return runCatching {
                     maFileContext.contentResolver.openInputStream(uri)?.use { stream ->
                         String(stream.readBytes())
                     }
                 }.getOrNull().orEmpty()
-                return MaKeys.extract(text, effectivePreset.id)
+            }
+
+            fun maReadKeys(uri: android.net.Uri): List<String> {
+                return MaKeys.extract(maReadText(uri), effectivePreset.id)
             }
 
             val maPicker = rememberLauncherForActivityResult(
@@ -630,13 +657,22 @@ private fun ProviderEditorDialog(
                             android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
                         )
                     }
-                    val keys = maReadKeys(uri)
+                    val text = maReadText(uri)
+                    val keys = MaKeys.extract(text, effectivePreset.id)
                     maImportNote = if (keys.isEmpty()) {
                         "No keys found in that file"
                     } else {
                         apiKey = MaKeys.join(keys)
                         maScope.launch { prefs.dictate.maKeysFileUri.set(uri.toString()) }
-                        if (keys.size == 1) "1 key imported" else "${keys.size} keys imported, tried in order"
+                        // Keep a copy where a full uninstall cannot reach it, so a clean install
+                        // finds the keys by itself instead of asking for the file again.
+                        val mirrored = MaVault.write(text)
+                        val suffix = if (mirrored) ", copied to ${MaVault.DISPLAY_PATH}" else ""
+                        if (keys.size == 1) {
+                            "1 key imported$suffix"
+                        } else {
+                            "${keys.size} keys imported, tried in order$suffix"
+                        }
                     }
                 }
             }
@@ -645,16 +681,29 @@ private fun ProviderEditorDialog(
             LaunchedEffect(effectivePreset.id) {
                 if (apiKey.isBlank()) {
                     val remembered = prefs.dictate.maKeysFileUri.get()
-                    if (remembered.isNotBlank()) {
-                        val keys = runCatching { maReadKeys(android.net.Uri.parse(remembered)) }
+                    var keys = if (remembered.isNotBlank()) {
+                        runCatching { maReadKeys(android.net.Uri.parse(remembered)) }
                             .getOrDefault(emptyList())
-                        if (keys.isNotEmpty()) {
-                            apiKey = MaKeys.join(keys)
-                            maImportNote = if (keys.size == 1) {
-                                "1 key loaded from your saved file"
-                            } else {
-                                "${keys.size} keys loaded from your saved file"
-                            }
+                    } else {
+                        emptyList()
+                    }
+                    var fromVault = false
+                    if (keys.isEmpty()) {
+                        // Nothing in preferences and no usable grant: this is a fresh install after an
+                        // uninstall. Fall back to the copy in Documents, which survived it.
+                        val vaultText = MaVault.read()
+                        if (!vaultText.isNullOrBlank()) {
+                            keys = MaKeys.extract(vaultText, effectivePreset.id)
+                            fromVault = keys.isNotEmpty()
+                        }
+                    }
+                    if (keys.isNotEmpty()) {
+                        apiKey = MaKeys.join(keys)
+                        val where = if (fromVault) MaVault.DISPLAY_PATH else "your saved file"
+                        maImportNote = if (keys.size == 1) {
+                            "1 key loaded from $where"
+                        } else {
+                            "${keys.size} keys loaded from $where"
                         }
                     }
                 }

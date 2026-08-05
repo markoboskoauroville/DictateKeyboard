@@ -366,7 +366,6 @@
     <string name="about__changelog__title" comment="Preference title">Ŝanĝojn registro</string>
     <string name="about__changelog__summary" comment="Preference summary">Kio estas nova</string>
     <string name="about__repository__title" comment="Preference title">Deponejo (GitHub)</string>
-    <string name="about__repository__summary" comment="Preference summary">Fontkodo, diskutoj, problemoj kaj informoj</string>
     <string name="about__privacy_policy__title" comment="Preference title">Privateca politiko</string>
     <string name="about__privacy_policy__summary" comment="Preference summary">La privateca politiko de tiu ĉi projekto</string>
     <string name="about__project_license__title" comment="Preference title">Projekton permesilo</string>
