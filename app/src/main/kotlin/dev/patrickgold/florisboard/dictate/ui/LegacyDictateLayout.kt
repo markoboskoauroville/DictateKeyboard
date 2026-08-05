@@ -140,6 +140,9 @@ import org.florisboard.lib.snygg.ui.SnyggText
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
 import androidx.compose.foundation.Canvas
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.runtime.mutableFloatStateOf
 
 /**
  * Cross-composable state for the legacy layout. [suppressGlide] is set while the modern typing keyboard
@@ -1239,43 +1242,103 @@ private fun formatElapsed(ms: Long): String {
 private const val MA_BRAILLE = "\u280B\u2819\u2839\u2838\u283C\u2834\u2826\u2827\u2807\u280F"
 
 /**
- * The level meter painted across the record button.
+ * A proper level meter across the record button, the kind a sound engineer expects.
  *
- * Deliberately not a waveform of the take. A scrolling history draws what you already said, which
- * is of no use while speaking and reads as clutter. These bars answer one question instead, is the
- * microphone hearing me right now, so every bar responds to the current level and falls back to
- * rest when you stop. Bar heights are shaped by a fixed per-bar factor so the row breathes as a
- * body rather than moving as one block.
+ * The earlier versions drew a waveform and then a row of bars, and neither answered the question a
+ * meter exists to answer: how hot am I, in dB. This is a horizontal bar in dBFS with a peak hold,
+ * the same instrument as the small meter in a video timeline.
+ *
+ * Amplitude is converted with 20*log10, floored at [FLOOR_DB], because below that a speech signal
+ * is silence for our purposes. The peak marker falls back slowly rather than snapping, so a
+ * transient stays visible long enough to read. Green through amber to red, with the top of the
+ * scale reserved for the region where a recogniser starts losing consonants to clipping.
  */
 @Composable
 private fun MaScopeCanvas(active: Boolean, tint: Color) {
     if (!active) return
     val level by DictateController.audioLevel.collectAsState()
-    // Smoothed so the bars settle rather than flicker at the sampling rate.
+    val db = maToDb(level)
     val smoothed by animateFloatAsState(
-        targetValue = level.coerceIn(0f, 1f),
-        animationSpec = tween(90),
-        label = "maLevel",
+        targetValue = db,
+        animationSpec = tween(70),
+        label = "maDb",
     )
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val bars = 22
-        val gap = size.width / (bars * 2f)
-        val barWidth = gap
-        val midY = size.height / 2f
-        for (i in 0 until bars) {
-            // A fixed shape across the row: taller in the middle, shorter at the edges.
-            val position = i / (bars - 1f)
-            val shape = 0.35f + 0.65f * kotlin.math.sin(position * Math.PI).toFloat()
-            val height = (0.06f + smoothed * shape * 0.80f) * size.height
-            val x = gap + i * (barWidth + gap)
-            drawLine(
-                color = tint.copy(alpha = 0.30f + smoothed * 0.25f),
-                start = androidx.compose.ui.geometry.Offset(x, midY - height / 2f),
-                end = androidx.compose.ui.geometry.Offset(x, midY + height / 2f),
-                strokeWidth = barWidth,
-            )
+    var peakDb by remember { mutableFloatStateOf(FLOOR_DB) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val now = maToDb(DictateController.audioLevel.value)
+            peakDb = if (now > peakDb) now else (peakDb - 0.6f).coerceAtLeast(FLOOR_DB)
+            delay(60L)
         }
     }
+
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier
+                .weight(1f)
+                .height(14.dp)
+                .padding(start = 14.dp, end = 8.dp),
+        ) {
+            val h = size.height
+            val full = size.width
+            // The scale, drawn faintly so the bar has something to sit against.
+            drawRect(
+                color = tint.copy(alpha = 0.14f),
+                topLeft = Offset(0f, h * 0.25f),
+                size = Size(full, h * 0.5f),
+            )
+            val filled = full * maNorm(smoothed)
+            drawRect(
+                color = maDbColour(smoothed, tint),
+                topLeft = Offset(0f, h * 0.25f),
+                size = Size(filled, h * 0.5f),
+            )
+            // Peak hold.
+            val peakX = (full * maNorm(peakDb)).coerceIn(0f, full - 2f)
+            drawRect(
+                color = maDbColour(peakDb, tint),
+                topLeft = Offset(peakX, h * 0.1f),
+                size = Size(2.5f, h * 0.8f),
+            )
+            // Marks at -18 and -6, the two that matter when speaking.
+            for (mark in intArrayOf(-18, -6)) {
+                val x = full * maNorm(mark.toFloat())
+                drawRect(
+                    color = tint.copy(alpha = 0.30f),
+                    topLeft = Offset(x, h * 0.15f),
+                    size = Size(1f, h * 0.7f),
+                )
+            }
+        }
+        Text(
+            text = if (smoothed <= FLOOR_DB + 0.5f) "-∞" else "%.0f dB".format(smoothed),
+            color = tint.copy(alpha = 0.85f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(end = 14.dp),
+        )
+    }
+}
+
+/** Below this a speech signal is silence as far as this meter is concerned. */
+private const val FLOOR_DB = -54f
+
+/** Amplitude 0..1 to dBFS, floored so log10(0) never reaches the UI. */
+private fun maToDb(level: Float): Float {
+    val v = level.coerceIn(0f, 1f)
+    if (v <= 0.0005f) return FLOOR_DB
+    return (20.0 * kotlin.math.log10(v.toDouble())).toFloat().coerceIn(FLOOR_DB, 0f)
+}
+
+/** dBFS to a 0..1 position on the scale. */
+private fun maNorm(db: Float): Float = ((db - FLOOR_DB) / (0f - FLOOR_DB)).coerceIn(0f, 1f)
+
+/** Green while there is headroom, amber approaching, red where consonants start to clip. */
+private fun maDbColour(db: Float, tint: Color): Color = when {
+    db >= -3f -> Color(0xFFF85149)
+    db >= -9f -> Color(0xFFF0883E)
+    db >= -30f -> Color(0xFF56D364)
+    else -> tint.copy(alpha = 0.55f)
 }
 
 /**
