@@ -235,6 +235,14 @@ fun Modifier.legacySwipeToggle(
 @Composable
 fun LegacyDictateLayout(
     modifier: Modifier = Modifier,
+    /**
+     * Voice Type: how to leave this screen and return to the typing keyboard.
+     *
+     * Null in the original use, where this layout *is* the keyboard by the user's choice and the
+     * bottom-left key hands over to another keyboard app. Non-null when it is opened as a mode from
+     * the microphone key, where that would be a trap: there would be no way back to QWERTY.
+     */
+    onExitToKeyboard: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val keyboardManager by context.keyboardManager()
@@ -306,6 +314,7 @@ fun LegacyDictateLayout(
                 LegacyBottomRow(
                     modifier = Modifier.fillMaxWidth().height(SideRowHeight),
                     keyboardManager = keyboardManager,
+                    onExitToKeyboard = onExitToKeyboard,
                 )
             }
         }
@@ -747,6 +756,7 @@ private fun LegacyRecordRow(
 private fun LegacyBottomRow(
     modifier: Modifier,
     keyboardManager: KeyboardManager,
+    onExitToKeyboard: (() -> Unit)? = null,
 ) {
     val sideKey = Modifier.fillMaxHeight().aspectRatio(1f)
     Row(
@@ -754,12 +764,17 @@ private fun LegacyBottomRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ThemedIconKey(
-            code = KeyCode.SYSTEM_PREV_INPUT_METHOD,
-            icon = Icons.Default.KeyboardHide,
+            // Voice Type: when this screen is a mode rather than the whole keyboard, the left key
+            // returns to typing. Long press still reaches the system keyboard picker either way.
+            code = if (onExitToKeyboard != null) KeyCode.IME_UI_MODE_TEXT else KeyCode.SYSTEM_PREV_INPUT_METHOD,
+            icon = if (onExitToKeyboard != null) Icons.Default.Keyboard else Icons.Default.KeyboardHide,
             contentDescription = stringRes(R.string.dictate__legacy_switch_keyboard),
             modifier = sideKey,
             onLongClick = { keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER) },
-            onClick = { keyboardManager.tapKey(KeyCode.SYSTEM_PREV_INPUT_METHOD) },
+            onClick = {
+                if (onExitToKeyboard != null) onExitToKeyboard()
+                else keyboardManager.tapKey(KeyCode.SYSTEM_PREV_INPUT_METHOD)
+            },
         )
 
         LegacySpaceKey(

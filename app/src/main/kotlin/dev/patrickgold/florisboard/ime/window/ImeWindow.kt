@@ -283,7 +283,18 @@ private fun ImeInnerWindow() {
                 ImeUiMode.GIF -> ProvideActualLayoutDirection { GifPanel() }
                 // Voice Type: the microphone opens the original record-first layout, which already
                 // surrounds the record bar with the editing keys that voice typing still needs.
-                ImeUiMode.TRANSCRIBE -> ProvideActualLayoutDirection { LegacyDictateLayout() }
+                ImeUiMode.TRANSCRIBE -> ProvideActualLayoutDirection {
+                    // Voice Type: opened from the microphone key, so it must be leavable. The left
+                    // key returns to typing, and a horizontal swipe does the same.
+                    LegacyDictateLayout(
+                        modifier = Modifier.legacySwipeToggle {
+                            keyboardManager.activeState.imeUiMode = ImeUiMode.TEXT
+                        },
+                        onExitToKeyboard = {
+                            keyboardManager.activeState.imeUiMode = ImeUiMode.TEXT
+                        },
+                    )
+                }
             }
             ImeSystemUiFloating()
         }
