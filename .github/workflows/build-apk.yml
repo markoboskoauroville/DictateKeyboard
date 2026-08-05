@@ -1,4 +1,4 @@
-name: Build Voice Type APK
+name: Build Mantra Voice Type APK
 
 on:
   workflow_dispatch:
@@ -54,5 +54,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          cp "$APK" voice-type-build-${{ github.run_number }}.apk
-          gh release create "build-${{ github.run_number }}" voice-type-build-${{ github.run_number }}.apk --title "Voice Type build ${{ github.run_number }}" --notes "Voice Type, by Mantra Productions. Built from source."
+          cp "$APK" mantra-voice-type-build-${{ github.run_number }}.apk
+          gh release create "build-${{ github.run_number }}" mantra-voice-type-build-${{ github.run_number }}.apk --title "Mantra Voice Type build ${{ github.run_number }}" --notes "Mantra Voice Type, by Mantra Productions. Installs over the previous build."
