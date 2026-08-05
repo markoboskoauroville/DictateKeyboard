@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
+import dev.patrickgold.florisboard.dictate.provider.MaKeys
 
 /**
  * A single client implementation that talks to any OpenAI Chat Completions / Audio Transcriptions
@@ -1283,7 +1284,9 @@ class OpenAiCompatibleClient(
         ): OpenAiCompatibleClient = OpenAiCompatibleClient(
             ProviderConfig(
                 baseUrl = baseUrlOverride ?: preset.baseUrl,
-                apiKey = apiKey,
+                // MA TWIST: the stored field may hold several keys, one per line. A header can
+                // hold exactly one, so take the first unless a caller named a specific key.
+                apiKey = MaKeys.split(apiKey).firstOrNull().orEmpty(),
                 extraHeaders = preset.extraHeaders,
                 proxy = proxy,
                 transcriptionApi = preset.transcriptionApi,

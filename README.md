@@ -1,3 +1,20 @@
+# Voice Type
+
+Voice typing keyboard for Android, by Marko Boško, Mantra Productions.
+
+Speech to text with AssemblyAI, Gemini, Anthropic, or fully offline on the device with
+Whisper and Parakeet. Keys are imported from a file, never pasted. Audio is compressed
+to Opus before upload. The microphone key opens a dedicated transcribe screen with a
+live oscilloscope, a braille spinner and a clock.
+
+Built from a fork of Dictate by DevEmperor, which is built on FlorisBoard.
+See [ATTRIBUTION.md](ATTRIBUTION.md). Apache License 2.0.
+
+Builds are produced by GitHub Actions and published to
+[Releases](../../releases).
+
+---
+
 <div align="center">
 
 <img src="img/Icon_512x512_2_round.png" alt="Dictate Keyboard logo" width="120">

@@ -937,7 +937,9 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 gifSearchSubmit.value = null
                 activeState.imeUiMode = ImeUiMode.GIF
             }
-            KeyCode.IME_UI_MODE_DICTATE -> dev.patrickgold.florisboard.dictate.DictateController.onMicClick(appContext)
+            // MA TWIST: the microphone is a view switcher now, not a record button. Recording
+            // happens on the transcribe screen, where there is room to show what is happening.
+            KeyCode.IME_UI_MODE_DICTATE -> activeState.imeUiMode = ImeUiMode.TRANSCRIBE
             KeyCode.DICTATE_LIVE_PROMPT -> dev.patrickgold.florisboard.dictate.DictateController.startLivePrompt(appContext)
             KeyCode.DICTATE_PROMPTS -> {
                 dev.patrickgold.florisboard.dictate.DictateController.refreshPrompts(appContext)

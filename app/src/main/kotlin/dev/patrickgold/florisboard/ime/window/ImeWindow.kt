@@ -90,6 +90,7 @@ import org.florisboard.lib.snygg.ui.SnyggBox
 import org.florisboard.lib.snygg.ui.SnyggIcon
 import org.florisboard.lib.snygg.ui.SnyggIconButton
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
+import dev.patrickgold.florisboard.dictate.ui.MaTranscribeLayout
 
 /**
  * The main entry point of the IME user interface. This includes the keyboard itself, devtools overlays,
@@ -281,6 +282,7 @@ private fun ImeInnerWindow() {
                 ImeUiMode.DICTATE -> ProvideActualLayoutDirection { DictateInputLayout() }
                 ImeUiMode.HISTORY -> ProvideActualLayoutDirection { DictateHistoryLayout() }
                 ImeUiMode.GIF -> ProvideActualLayoutDirection { GifPanel() }
+                ImeUiMode.TRANSCRIBE -> ProvideActualLayoutDirection { MaTranscribeLayout() }
             }
             ImeSystemUiFloating()
         }

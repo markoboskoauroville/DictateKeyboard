@@ -88,6 +88,9 @@ import java.io.File
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import dev.patrickgold.florisboard.dictate.audio.MaOpus
+import dev.patrickgold.florisboard.dictate.provider.MaKeys
+import dev.patrickgold.florisboard.dictate.provider.maWithKeyFallback
 
 /**
  * Orchestrates the dictation flow that fuses the recording, the provider layer and the editor: tap
@@ -1288,6 +1291,14 @@ object DictateController {
                 // and formats together (cloud chat models only, never the on-device engine).
                 val chatAudio = account.transcriptionViaChat &&
                     preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE
+                // MA TWIST: shrink the upload. Cloud only, never the on-device engine, which is
+                // handed the audio locally. Null on anything unexpected, and the WAV goes as before.
+                if (preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE) {
+                    MaOpus.compress(uploadFile)?.let { small ->
+                        if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
+                        uploadFile = small
+                    }
+                }
                 val request = TranscriptionRequest(
                     audioFile = uploadFile,
                     model = model,
@@ -1310,17 +1321,21 @@ object DictateController {
                         .transcribe(request)
                 } else {
                     try {
-                        OpenAiCompatibleClient.from(
-                            preset, apiKey,
-                            baseUrlOverride = baseUrlOverrideFor(account),
-                            proxy = prefs.dictate.dictateProxyConfig(),
-                            // Single-call multimodal (issue #130): route audio through chat/completions.
-                            useChatAudio = chatAudio,
-                            trustUserCerts = prefs.dictate.trustUserCertificates.get(),
-                        ).transcribe(
-                            request,
-                            onRetry = { attempt -> _state.value = UiState.Transcribing(attempt) },
-                        )
+                        // MA TWIST: the key field may hold several keys, one per line. A rejected or
+                        // exhausted key rolls to the next one; anything else fails straight away.
+                        maWithKeyFallback(MaKeys.split(apiKey)) { maKey ->
+                            OpenAiCompatibleClient.from(
+                                preset, maKey,
+                                baseUrlOverride = baseUrlOverrideFor(account),
+                                proxy = prefs.dictate.dictateProxyConfig(),
+                                // Single-call multimodal (issue #130): route audio through chat/completions.
+                                useChatAudio = chatAudio,
+                                trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+                            ).transcribe(
+                                request,
+                                onRetry = { attempt -> _state.value = UiState.Transcribing(attempt) },
+                            )
+                        }
                     } catch (e: DictateApiException) {
                         // Offline fallback (#104): the cloud call failed because we're offline (after its
                         // retries) — transcribe on-device with the downloaded model instead of erroring.

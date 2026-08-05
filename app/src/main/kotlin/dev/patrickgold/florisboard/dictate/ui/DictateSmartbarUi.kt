@@ -116,6 +116,12 @@ import org.florisboard.lib.snygg.ui.SnyggIconButton
 import org.florisboard.lib.snygg.ui.SnyggRow
 import org.florisboard.lib.snygg.ui.SnyggText
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 /** Recording red, shared by the indicator dot and the armed slide-to-cancel bin (#235). */
 private val RecordingRed = Color(0xFFE53935)
@@ -237,9 +243,8 @@ private fun RecordingContent(state: DictateController.UiState.Recording) {
                 }
             }
         }
-        RecordingAudioDot(paused = state.paused, frozen = ptt.discarding)
-        Spacer(modifier = Modifier.width(10.dp))
-        SnyggText(text = formatElapsed(elapsedMs))
+        // MA TWIST: oscilloscope behind, braille spinner and stopwatch in front.
+        MaRecordingScope(paused = state.paused, frozen = ptt.discarding, elapsedMs = elapsedMs)
         // Segmented mode: how many cut segments are transcribing in the background right now.
         if (segmentsInFlight > 0) {
             Spacer(modifier = Modifier.width(8.dp))
@@ -363,6 +368,7 @@ internal const val PULSE_MIN_SCALE = 0.65f
 internal const val PULSE_MAX_SCALE = 1.15f
 internal const val PULSE_DURATION_MS = 650
 
+@Suppress("unused") // MA TWIST: replaced by MaRecordingScope, kept so upstream diffs stay small
 @Composable
 private fun RecordingAudioDot(paused: Boolean, frozen: Boolean = false) {
     val prefs by FlorisPreferenceStore
@@ -831,4 +837,96 @@ private fun PromoContent(kind: DictateController.PromoKind, message: String? = n
 private fun formatElapsed(ms: Long): String {
     val totalSec = (ms / 1000L).coerceAtLeast(0L)
     return "%d:%02d".format(totalSec / 60L, totalSec % 60L)
+}
+
+
+// --------------------------------------------------------------------------------
+// MA TWIST, Mantra Productions
+// The house palette Marko uses across his apps, so the keyboard matches maha_transcribe.
+// --------------------------------------------------------------------------------
+
+private val MaCyan = Color(0xFF39D0D8)
+private val MaViolet = Color(0xFFA371F7)
+private val MaMuted = Color(0xFF8B949E)
+private val MaInk = Color(0xFFE6EDF3)
+private const val MA_BRAILLE = "\u280B\u2819\u2839\u2838\u283C\u2834\u2826\u2827\u2807\u280F"
+
+/** How many level samples the scope keeps on screen. */
+private const val MA_SCOPE_POINTS = 64
+
+/** Sampling period of the scope, fast enough to look alive, slow enough to cost nothing. */
+private const val MA_SCOPE_TICK_MS = 50L
+
+/** Braille frame rate while recording. */
+private const val MA_SPINNER_TICK_MS = 90L
+
+/**
+ * The centre of the recording bar: a live oscilloscope drawn behind, with the braille spinner and the
+ * elapsed stopwatch in front of it.
+ *
+ * The scope keeps a rolling window of [DictateController.audioLevel] rather than reading the raw PCM,
+ * because that flow is already smoothed and published at a rate the UI can follow. Alternate samples
+ * are mirrored above and below the centre line, which is what turns a level meter into something that
+ * reads as a waveform.
+ *
+ * Paused or discarded, everything freezes and dims instead of animating, on the same reasoning as the
+ * dot this replaces: motion should mean something is being captured.
+ */
+@Composable
+private fun MaRecordingScope(paused: Boolean, frozen: Boolean, elapsedMs: Long) {
+    val still = paused || frozen
+    val history = remember { mutableStateListOf<Float>() }
+    LaunchedEffect(still) {
+        while (!still) {
+            history.add(DictateController.audioLevel.value)
+            if (history.size > MA_SCOPE_POINTS) history.removeAt(0)
+            delay(MA_SCOPE_TICK_MS)
+        }
+    }
+    var frame by remember { mutableIntStateOf(0) }
+    LaunchedEffect(still) {
+        while (!still) {
+            frame++
+            delay(MA_SPINNER_TICK_MS)
+        }
+    }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .height(FlorisImeSizing.smartbarHeight)
+            .width(158.dp),
+    ) {
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val points = history.size
+            if (points < 2) return@Canvas
+            val midY = size.height / 2f
+            val step = size.width / (points - 1)
+            val path = Path()
+            for (i in 0 until points) {
+                val amp = history[i].coerceIn(0f, 1f) * (size.height * 0.40f)
+                val y = if (i % 2 == 0) midY - amp else midY + amp
+                val x = step * i
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            drawPath(
+                path = path,
+                color = MaCyan.copy(alpha = if (still) 0.18f else 0.45f),
+                style = Stroke(width = 2.5f),
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = MA_BRAILLE[frame % MA_BRAILLE.length].toString(),
+                color = if (still) MaMuted else MaViolet,
+                fontSize = 17.sp,
+            )
+            Spacer(modifier = Modifier.width(9.dp))
+            Text(
+                text = formatElapsed(elapsedMs),
+                color = MaInk,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
 }

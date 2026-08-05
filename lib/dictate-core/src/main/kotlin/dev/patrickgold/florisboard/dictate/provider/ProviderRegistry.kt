@@ -384,9 +384,11 @@ object ProviderRegistry {
     )
 
     /** All built-in presets in display order. The custom option is added by the UI on top of these. */
+    // MA TWIST: three cloud providers plus the on-device engine, nothing else. LOCAL is the
+    // offline Whisper/Parakeet runner that needs no key and no network. The other presets stay
+    // defined above so code referencing them by name still compiles, they are simply not offered.
     val presets: List<ProviderPreset> = listOf(
-        OPENAI, GROQ, OPENROUTER, GEMINI, ANTHROPIC, TOGETHER, DEEPINFRA, MISTRAL, SONIOX,
-        ELEVENLABS, DEEPGRAM, ASSEMBLYAI, XAI, DEEPSEEK, OLLAMA, LOCAL,
+        ASSEMBLYAI, GEMINI, ANTHROPIC, LOCAL,
     )
 
     fun byId(id: String): ProviderPreset? = presets.firstOrNull { it.id == id }

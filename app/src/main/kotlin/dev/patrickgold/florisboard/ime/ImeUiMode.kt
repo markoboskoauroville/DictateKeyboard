@@ -22,7 +22,10 @@ enum class ImeUiMode(val value: Int) {
     CLIPBOARD(2),
     DICTATE(3),
     HISTORY(4),
-    GIF(5);
+    GIF(5),
+
+    /** MA TWIST: the dictation screen the microphone key opens. */
+    TRANSCRIBE(6);
 
     companion object {
         fun fromInt(int: Int) = entries.firstOrNull { it.value == int } ?: TEXT

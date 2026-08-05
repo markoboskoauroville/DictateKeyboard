@@ -89,6 +89,9 @@ import kotlinx.coroutines.launch
 import org.florisboard.lib.compose.florisDialogScroll
 import org.florisboard.lib.compose.persistentVerticalScrollbar
 import org.florisboard.lib.compose.stringRes
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import dev.patrickgold.florisboard.dictate.provider.MaKeys
 
 /**
  * The central "AI providers" manager: configure an API key and model(s) for any number of providers
@@ -597,13 +600,37 @@ private fun ProviderEditorDialog(
                     keyboardType = KeyboardType.Uri,
                 )
             }
-            EditorField(
-                label = stringRes(R.string.dictate__api_key_title),
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                placeholder = stringRes(R.string.dictate__api_key_placeholder),
-                isSecret = true,
-            )
+            // MA TWIST: no paste field. Keys only ever arrive from a file, so what is shown
+            // here is what is stored, masked, and the button below replaces it.
+            Text(text = MaKeys.describe(apiKey))
+            // Pick a text file instead of pasting. Everything that is not a key is
+            // ignored, and several keys are kept so a rate limited one rolls to the next.
+            val maFileContext = LocalContext.current
+            var maImportNote by remember { mutableStateOf("") }
+            val maPicker = rememberLauncherForActivityResult(
+                ActivityResultContracts.OpenDocument(),
+            ) { uri ->
+                if (uri != null) {
+                    val text = runCatching {
+                        maFileContext.contentResolver.openInputStream(uri)?.use { stream ->
+                            String(stream.readBytes())
+                        }
+                    }.getOrNull().orEmpty()
+                    val keys = MaKeys.extract(text, effectivePreset.id)
+                    maImportNote = if (keys.isEmpty()) {
+                        "No keys found in that file"
+                    } else {
+                        apiKey = MaKeys.join(keys)
+                        if (keys.size == 1) "1 key imported" else "${keys.size} keys imported, tried in order"
+                    }
+                }
+            }
+            TextButton(onClick = { maPicker.launch(arrayOf("*/*")) }) {
+                Text(text = "Import keys from a file")
+            }
+            if (maImportNote.isNotEmpty()) {
+                Text(text = maImportNote)
+            }
             ConnectionTestRow(preset = effectivePreset, apiKey = apiKey)
             if (showTranscription) {
                 EditorField(
@@ -833,7 +860,8 @@ private fun ConnectionTestRow(preset: ProviderPreset, apiKey: String) {
                             .size
                         true to successTemplate.replace("{count}", count.toString())
                     } catch (e: Exception) {
-                        false to (e.message ?: failedFallback)
+                        // MA TWIST: a short sentence rather than a raw exception or a JSON body.
+                        false to MaKeys.tidyError(e.message, failedFallback)
                     } finally {
                         testing = false
                     }
