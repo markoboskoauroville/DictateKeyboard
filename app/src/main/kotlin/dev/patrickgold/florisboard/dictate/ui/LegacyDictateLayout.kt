@@ -137,10 +137,8 @@ import org.florisboard.lib.snygg.SnyggSelector
 import org.florisboard.lib.snygg.ui.SnyggColumn
 import org.florisboard.lib.snygg.ui.SnyggText
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.Path
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.animateFloatAsState
 
 /**
  * Cross-composable state for the legacy layout. [suppressGlide] is set while the modern typing keyboard
@@ -1218,45 +1216,43 @@ private fun formatElapsed(ms: Long): String {
 
 private const val MA_BRAILLE = "\u280B\u2819\u2839\u2838\u283C\u2834\u2826\u2827\u2807\u280F"
 
-/** How many level samples the scope holds on screen. */
-private const val MA_SCOPE_POINTS = 72
-
 /**
- * A live waveform painted across the record button.
+ * The level meter painted across the record button.
  *
- * Reads [DictateController.audioLevel], which is already smoothed and published at a rate the UI
- * can follow, and mirrors alternate samples across the centre line so a level meter reads as a
- * wave. Drawn at low alpha in the button's own foreground colour, so it works with any theme and
- * never fights the label sitting on top of it.
+ * Deliberately not a waveform of the take. A scrolling history draws what you already said, which
+ * is of no use while speaking and reads as clutter. These bars answer one question instead, is the
+ * microphone hearing me right now, so every bar responds to the current level and falls back to
+ * rest when you stop. Bar heights are shaped by a fixed per-bar factor so the row breathes as a
+ * body rather than moving as one block.
  */
 @Composable
 private fun MaScopeCanvas(active: Boolean, tint: Color) {
-    val history = remember { mutableStateListOf<Float>() }
-    LaunchedEffect(active) {
-        if (!active) {
-            history.clear()
-        } else {
-            while (true) {
-                history.add(DictateController.audioLevel.value)
-                if (history.size > MA_SCOPE_POINTS) history.removeAt(0)
-                delay(50L)
-            }
-        }
-    }
     if (!active) return
+    val level by DictateController.audioLevel.collectAsState()
+    // Smoothed so the bars settle rather than flicker at the sampling rate.
+    val smoothed by animateFloatAsState(
+        targetValue = level.coerceIn(0f, 1f),
+        animationSpec = tween(90),
+        label = "maLevel",
+    )
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val points = history.size
-        if (points < 2) return@Canvas
+        val bars = 22
+        val gap = size.width / (bars * 2f)
+        val barWidth = gap
         val midY = size.height / 2f
-        val step = size.width / (points - 1)
-        val path = Path()
-        for (i in 0 until points) {
-            val amp = history[i].coerceIn(0f, 1f) * (size.height * 0.34f)
-            val y = if (i % 2 == 0) midY - amp else midY + amp
-            val x = step * i
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        for (i in 0 until bars) {
+            // A fixed shape across the row: taller in the middle, shorter at the edges.
+            val position = i / (bars - 1f)
+            val shape = 0.35f + 0.65f * kotlin.math.sin(position * Math.PI).toFloat()
+            val height = (0.06f + smoothed * shape * 0.80f) * size.height
+            val x = gap + i * (barWidth + gap)
+            drawLine(
+                color = tint.copy(alpha = 0.30f + smoothed * 0.25f),
+                start = androidx.compose.ui.geometry.Offset(x, midY - height / 2f),
+                end = androidx.compose.ui.geometry.Offset(x, midY + height / 2f),
+                strokeWidth = barWidth,
+            )
         }
-        drawPath(path = path, color = tint.copy(alpha = 0.30f), style = Stroke(width = 2.5f))
     }
 }
 
