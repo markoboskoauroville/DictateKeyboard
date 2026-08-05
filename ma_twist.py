@@ -20,6 +20,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 REG = "lib/dictate-core/src/main/kotlin/dev/patrickgold/florisboard/dictate/provider/ProviderRegistry.kt"
 UI = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/ui/DictateSmartbarUi.kt"
 CTRL = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/DictateController.kt"
+CLIENT = "lib/dictate-core/src/main/kotlin/dev/patrickgold/florisboard/dictate/provider/OpenAiCompatibleClient.kt"
 OPUS = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/audio/MaOpus.kt"
 
 changes = []
@@ -394,7 +395,9 @@ write(CTRL, ctrl)
 # several of them are kept so a rate limited key rolls to the next one mid dictation.
 
 SCREEN = "app/src/main/kotlin/dev/patrickgold/florisboard/app/settings/dictate/DictateProvidersScreen.kt"
-KEYS_FILE_KT = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/provider/MaKeys.kt"
+# MaKeys lives in the core library, not the app: the HTTP client is in the library and a
+# library cannot depend on the app module. The package name is identical either way.
+KEYS_FILE_KT = "lib/dictate-core/src/main/kotlin/dev/patrickgold/florisboard/dictate/provider/MaKeys.kt"
 
 MA_KEYS_SOURCE = r'''/*
  * MA TWIST, Mantra Productions.
@@ -417,6 +420,16 @@ object MaKeys {
 
     /** AssemblyAI keys are 32 hex characters standing alone. */
     private val HEX32 = Regex("(?<![0-9A-Za-z])[0-9a-fA-F]{32}(?![0-9A-Za-z])")
+
+    /** Google keys: AIza then the body. Deliberately open ended, a fixed length would
+     *  silently truncate a key that is a character longer and look like a bad key forever. */
+    private val GEMINI = Regex("AIza[0-9A-Za-z_-]{20,}")
+
+    /** Anthropic keys: sk-ant- then the body. */
+    private val ANTHROPIC = Regex("sk-ant-[0-9A-Za-z_-]{20,}")
+
+    /** OpenAI style, kept for custom endpoints. */
+    private val OPENAI = Regex("sk-(?!ant-)[0-9A-Za-z_-]{20,}")
 
     /** Fallback shape for anything else key-like, used only when no hex key is present. */
     private val LOOSE = Regex("[A-Za-z0-9_-]{24,80}")
@@ -459,9 +472,28 @@ object MaKeys {
      * prose, dates and other providers' keys. Only if that finds nothing does tier two accept any
      * long token containing a digit, so an unusual key format is never silently lost.
      */
-    fun extract(text: String): List<String> {
+    fun extract(text: String, providerId: String = ""): List<String> {
         val lines = text.split('\n')
         val found = LinkedHashSet<String>()
+        // Each provider has its own key shape. Matching the right one is what keeps a file
+        // holding keys for all three services from handing Gemini's key to Anthropic.
+        val shape = when (providerId) {
+            "gemini" -> GEMINI
+            "anthropic" -> ANTHROPIC
+            "assemblyai" -> HEX32
+            "openai", "groq" -> OPENAI
+            else -> null
+        }
+        if (shape != null) {
+            for (line in lines) {
+                if (line.trim().startsWith("#")) continue
+                for (m in shape.findAll(line)) {
+                    // Hex keys are case-insensitive, the prefixed ones are not.
+                    found.add(if (shape === HEX32) m.value.lowercase() else m.value)
+                }
+            }
+            if (found.isNotEmpty()) return found.toList()
+        }
         for (line in lines) {
             if (line.trim().startsWith("#")) continue
             for (m in HEX32.findAll(line)) {
@@ -593,7 +625,7 @@ screen = swap(
                             String(stream.readBytes())
                         }
                     }.getOrNull().orEmpty()
-                    val keys = MaKeys.extract(text)
+                    val keys = MaKeys.extract(text, effectivePreset.id)
                     maImportNote = if (keys.isEmpty()) {
                         "No keys found in that file"
                     } else {
@@ -613,6 +645,33 @@ screen = swap(
 )
 write(SCREEN, screen)
 changes.append("key file picker")
+
+
+
+# --------------------------------------------------------------- 5. NO KEYS IN HEADERS
+# The key field can hold several keys, one per line. Only the transcription path knew
+# that; connection tests, rewording and model fetches were handing the whole block to
+# OkHttp, which rejects a newline in a header value. Normalising at the single client
+# factory fixes every one of those paths at once. The transcription path still passes a
+# specific key explicitly, so its fallback is unaffected.
+
+client = read(CLIENT)
+client = ensure_import(client, "import dev.patrickgold.florisboard.dictate.provider.MaKeys")
+client = swap(
+    client,
+    """        ): OpenAiCompatibleClient = OpenAiCompatibleClient(
+            ProviderConfig(
+                baseUrl = baseUrlOverride ?: preset.baseUrl,
+                apiKey = apiKey,""",
+    """        ): OpenAiCompatibleClient = OpenAiCompatibleClient(
+            ProviderConfig(
+                baseUrl = baseUrlOverride ?: preset.baseUrl,
+                // MA TWIST: the stored field may hold several keys, one per line. A header can
+                // hold exactly one, so take the first unless a caller named a specific key.
+                apiKey = MaKeys.split(apiKey).firstOrNull().orEmpty(),""",
+    "single key per header",
+)
+write(CLIENT, client)
 
 
 print("MA TWIST applied:")
