@@ -233,6 +233,16 @@ object DictateController {
     private val _state = MutableStateFlow<UiState>(UiState.Idle)
     val state: StateFlow<UiState> = _state.asStateFlow()
 
+    /**
+     * Voice Type: a plain sentence describing what the request is doing right now.
+     *
+     * The spinner alone says "something is happening", which is not the same as "your first key was
+     * out of quota and the second one is uploading 240 kB". Everything that used to be invisible
+     * behind the spinner is written here and shown under it.
+     */
+    private val _maStatus = MutableStateFlow("")
+    val maStatus: StateFlow<String> = _maStatus.asStateFlow()
+
     private val _prompts = MutableStateFlow<List<PromptModel>>(emptyList())
     /** The user's saved prompts (shared `prompts.db`), refreshed via [refreshPrompts]; drives the Smartbar prompt chips. */
     val prompts: StateFlow<List<PromptModel>> = _prompts.asStateFlow()
@@ -747,7 +757,13 @@ object DictateController {
         DictateApiException.Kind.FORMAT_NOT_SUPPORTED,
     )
 
+    /** Voice Type: clears the verbose line once nothing is in flight. */
+    private fun maClearStatus() {
+        _maStatus.value = ""
+    }
+
     private fun apiError(e: DictateApiException, context: Context, canResend: Boolean): UiState.Error {
+        maClearStatus()
         val action = when {
             canResend && e.kind in EXPORTABLE_ERROR_KINDS -> ErrorAction.SAVE_AUDIO
             canResend && e.kind.isRetryable -> ErrorAction.RESEND
@@ -1323,7 +1339,19 @@ object DictateController {
                     try {
                         // MA TWIST: the key field may hold several keys, one per line. A rejected or
                         // exhausted key rolls to the next one; anything else fails straight away.
-                        maWithKeyFallback(MaKeys.split(apiKey)) { maKey ->
+                        val maKeys = MaKeys.split(apiKey)
+                        val maSizeKb = uploadFile.length() / 1024L
+                        _maStatus.value = if (maKeys.size > 1) {
+                            "sending ${maSizeKb} kB, key 1 of ${maKeys.size}"
+                        } else {
+                            "sending ${maSizeKb} kB"
+                        }
+                        maWithKeyFallback(
+                            maKeys,
+                            onKeyRejected = { index, total, reason ->
+                                _maStatus.value = "key $index of $total $reason, trying key ${index + 1}"
+                            },
+                        ) { maKey ->
                             OpenAiCompatibleClient.from(
                                 preset, maKey,
                                 baseUrlOverride = baseUrlOverrideFor(account),
@@ -1333,7 +1361,10 @@ object DictateController {
                                 trustUserCerts = prefs.dictate.trustUserCertificates.get(),
                             ).transcribe(
                                 request,
-                                onRetry = { attempt -> _state.value = UiState.Transcribing(attempt) },
+                                onRetry = { attempt ->
+                                    _maStatus.value = "no answer, retrying, attempt $attempt"
+                                    _state.value = UiState.Transcribing(attempt)
+                                },
                             )
                         }
                     } catch (e: DictateApiException) {

@@ -189,14 +189,23 @@ internal val KEY_PROBLEMS = setOf(
  * dead connection only makes the user wait twice for the same failure. If every key is refused the
  * last exception is thrown, so the message the user sees is a real one.
  */
-inline fun <T> maWithKeyFallback(keys: List<String>, block: (String) -> T): T {
+inline fun <T> maWithKeyFallback(
+    keys: List<String>,
+    onKeyRejected: (index: Int, total: Int, reason: String) -> Unit = { _, _, _ -> },
+    block: (String) -> T,
+): T {
     var last: DictateApiException? = null
-    for (key in keys) {
+    for ((i, key) in keys.withIndex()) {
         try {
             return block(key)
         } catch (e: DictateApiException) {
             if (e.kind !in KEY_PROBLEMS) throw e
             last = e
+            val reason = when (e.kind) {
+                DictateApiException.Kind.QUOTA_EXCEEDED -> "out of quota"
+                else -> "rejected"
+            }
+            onKeyRejected(i + 1, keys.size, reason)
         }
     }
     throw last ?: IllegalStateException("no API key configured")

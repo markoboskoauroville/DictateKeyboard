@@ -688,7 +688,13 @@ private fun LegacyRecordRow(
                         // Voice Type: braille spinner instead of the material ring.
                         MaBrailleSpinner(color = onAccent, fontSize = 18.sp)
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = stringRes(R.string.dictate__status_transcribing), color = onAccent)
+                        // Voice Type: say what is actually happening, not just that something is.
+                        val maLine by DictateController.maStatus.collectAsState()
+                        Text(
+                            text = maLine.ifBlank { stringRes(R.string.dictate__status_transcribing) },
+                            color = onAccent,
+                            fontSize = 13.sp,
+                        )
                         Spacer(modifier = Modifier.width(10.dp))
                         Icon(Icons.Default.Stop, contentDescription = null, tint = onAccent, modifier = Modifier.size(20.dp))
                     }
@@ -1256,20 +1262,37 @@ private fun MaScopeCanvas(active: Boolean, tint: Color) {
     }
 }
 
-/** The braille spinner, in place of a material ring, while a request is in flight. */
+/**
+ * The braille spinner, in place of a material ring, while a request is in flight.
+ *
+ * It also has to prove it is alive. A spinner that stops looks identical to an app that has died,
+ * so after [BLINK_AFTER_MS] of the same request it starts pulsing its opacity as well as turning:
+ * a still frame then reads as waiting rather than as frozen, and the line beside it says what for.
+ */
 @Composable
 private fun MaBrailleSpinner(color: Color, fontSize: androidx.compose.ui.unit.TextUnit) {
     var frame by remember { mutableIntStateOf(0) }
+    var waitedMs by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         while (true) {
             frame++
+            waitedMs += 90L
             delay(90L)
         }
     }
+    val longWait = waitedMs > BLINK_AFTER_MS
+    val blink by animateFloatAsState(
+        targetValue = if (longWait && (frame / 6) % 2 == 0) 0.35f else 1f,
+        animationSpec = tween(420),
+        label = "maBlink",
+    )
     Text(
         text = MA_BRAILLE[frame % MA_BRAILLE.length].toString(),
-        color = color,
+        color = color.copy(alpha = blink),
         fontSize = fontSize,
         fontWeight = FontWeight.SemiBold,
     )
 }
+
+/** After this long on one request the spinner starts blinking, so a pause never reads as a crash. */
+private const val BLINK_AFTER_MS = 6_000L
