@@ -387,6 +387,233 @@ ctrl = swap(
 write(CTRL, ctrl)
 
 
+
+# --------------------------------------------------------------- 4. KEY FILE IMPORT
+# Marko never pastes keys, he picks a file. The file can hold anything: prose, JSON,
+# keys for other services, old dead keys. Only AssemblyAI shaped tokens are taken, and
+# several of them are kept so a rate limited key rolls to the next one mid dictation.
+
+SCREEN = "app/src/main/kotlin/dev/patrickgold/florisboard/app/settings/dictate/DictateProvidersScreen.kt"
+KEYS_FILE_KT = "app/src/main/kotlin/dev/patrickgold/florisboard/dictate/provider/MaKeys.kt"
+
+MA_KEYS_SOURCE = r'''/*
+ * MA TWIST, Mantra Productions.
+ * Licensed under the Apache License, Version 2.0.
+ */
+
+package dev.patrickgold.florisboard.dictate.provider
+
+/**
+ * Several API keys per provider, and a parser that digs them out of an arbitrary text file.
+ *
+ * The keyring upstream stores one key string per provider. Rather than change that storage, the
+ * keys are kept in that same field one per line, which older builds still read as a single key and
+ * which the editor shows as an ordinary multi-line value. [split] turns it back into a list.
+ *
+ * [extract] is the file import: it accepts whatever the user picked and keeps only what looks like
+ * a key, so a notes file full of prose and other services' credentials imports cleanly.
+ */
+object MaKeys {
+
+    /** AssemblyAI keys are 32 hex characters standing alone. */
+    private val HEX32 = Regex("(?<![0-9A-Za-z])[0-9a-fA-F]{32}(?![0-9A-Za-z])")
+
+    /** Fallback shape for anything else key-like, used only when no hex key is present. */
+    private val LOOSE = Regex("[A-Za-z0-9_\-]{24,80}")
+
+    /** Prefixes belonging to other services, never imported. */
+    private val FOREIGN = listOf(
+        "sk-", "sk_", "gsk_", "aiza", "xai-", "hf_", "ghp_", "gho_", "github_pat_",
+        "pk_", "rk_", "xoxb-", "xoxp-", "akia", "eyj",
+    )
+
+    /** Words that mark a line as belonging to another service, unless it also says assembly. */
+    private val FOREIGN_WORDS = listOf(
+        "groq", "gemini", "google", "openai", "anthropic", "claude", "elevenlabs",
+        "deepgram", "huggingface", "replicate", "tidal", "spotify",
+    )
+
+    /** The stored field, one key per line, back into a list. Blank and # lines are ignored. */
+    fun split(stored: String): List<String> {
+        val keys = stored.split('\n')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("#") }
+            .distinct()
+        return if (keys.isEmpty()) listOf(stored.trim()) else keys
+    }
+
+    /** How the list is written back into the single stored field. */
+    fun join(keys: List<String>): String = keys.joinToString("\n")
+
+    private fun foreign(token: String, line: String): Boolean {
+        val low = token.lowercase()
+        if (FOREIGN.any { low.startsWith(it) }) return true
+        val context = line.lowercase()
+        return FOREIGN_WORDS.any { context.contains(it) } && !context.contains("assembly")
+    }
+
+    /**
+     * Pulls keys out of an arbitrary text file, in order, without duplicates.
+     *
+     * Tier one takes bare 32 character hex tokens, the AssemblyAI shape, which walks straight past
+     * prose, dates and other providers' keys. Only if that finds nothing does tier two accept any
+     * long token containing a digit, so an unusual key format is never silently lost.
+     */
+    fun extract(text: String): List<String> {
+        val lines = text.split('\n')
+        val found = LinkedHashSet<String>()
+        for (line in lines) {
+            if (line.trim().startsWith("#")) continue
+            for (m in HEX32.findAll(line)) {
+                val token = m.value.lowercase()
+                if (!foreign(token, line)) found.add(token)
+            }
+        }
+        if (found.isNotEmpty()) return found.toList()
+        for (line in lines) {
+            if (line.trim().startsWith("#")) continue
+            for (m in LOOSE.findAll(line)) {
+                val token = m.value
+                if (foreign(token, line)) continue
+                if (!token.any { it.isDigit() }) continue
+                found.add(token)
+            }
+        }
+        return found.toList()
+    }
+}
+
+/** Failures that mean this particular key is the problem, so the next one is worth trying. */
+private val KEY_PROBLEMS = setOf(
+    DictateApiException.Kind.INVALID_API_KEY,
+    DictateApiException.Kind.QUOTA_EXCEEDED,
+)
+
+/**
+ * Runs [block] with each key in turn, moving on when a key is rejected or out of quota.
+ *
+ * Anything else, a timeout or a network drop, is thrown immediately: trying a second key against a
+ * dead connection only makes the user wait twice for the same failure. If every key is refused the
+ * last exception is thrown, so the message the user sees is a real one.
+ */
+inline fun <T> maWithKeyFallback(keys: List<String>, block: (String) -> T): T {
+    var last: DictateApiException? = null
+    for (key in keys) {
+        try {
+            return block(key)
+        } catch (e: DictateApiException) {
+            if (e.kind !in KEY_PROBLEMS) throw e
+            last = e
+        }
+    }
+    throw last ?: IllegalStateException("no API key configured")
+}
+'''
+
+write(KEYS_FILE_KT, MA_KEYS_SOURCE)
+changes.append("MaKeys parser and fallback")
+
+# --- the transcription call site tries every key
+ctrl = read(CTRL)
+ctrl = ensure_import(ctrl, "import dev.patrickgold.florisboard.dictate.provider.MaKeys")
+ctrl = ensure_import(ctrl, "import dev.patrickgold.florisboard.dictate.provider.maWithKeyFallback")
+ctrl = swap(
+    ctrl,
+    """                    try {
+                        OpenAiCompatibleClient.from(
+                            preset, apiKey,
+                            baseUrlOverride = baseUrlOverrideFor(account),
+                            proxy = prefs.dictate.dictateProxyConfig(),
+                            // Single-call multimodal (issue #130): route audio through chat/completions.
+                            useChatAudio = chatAudio,
+                            trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+                        ).transcribe(
+                            request,
+                            onRetry = { attempt -> _state.value = UiState.Transcribing(attempt) },
+                        )""",
+    """                    try {
+                        // MA TWIST: the key field may hold several keys, one per line. A rejected or
+                        // exhausted key rolls to the next one; anything else fails straight away.
+                        maWithKeyFallback(MaKeys.split(apiKey)) { maKey ->
+                            OpenAiCompatibleClient.from(
+                                preset, maKey,
+                                baseUrlOverride = baseUrlOverrideFor(account),
+                                proxy = prefs.dictate.dictateProxyConfig(),
+                                // Single-call multimodal (issue #130): route audio through chat/completions.
+                                useChatAudio = chatAudio,
+                                trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+                            ).transcribe(
+                                request,
+                                onRetry = { attempt -> _state.value = UiState.Transcribing(attempt) },
+                            )
+                        }""",
+    "key fallback at the transcribe call",
+)
+write(CTRL, ctrl)
+
+# --- the file picker in the provider editor
+screen = read(SCREEN)
+for imp in [
+    "import androidx.activity.compose.rememberLauncherForActivityResult",
+    "import androidx.activity.result.contract.ActivityResultContracts",
+    "import androidx.compose.material3.Text",
+    "import androidx.compose.material3.TextButton",
+    "import dev.patrickgold.florisboard.dictate.provider.MaKeys",
+]:
+    screen = ensure_import(screen, imp)
+
+screen = swap(
+    screen,
+    """            EditorField(
+                label = stringRes(R.string.dictate__api_key_title),
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                placeholder = stringRes(R.string.dictate__api_key_placeholder),
+                isSecret = true,
+            )
+            ConnectionTestRow(preset = effectivePreset, apiKey = apiKey)""",
+    """            EditorField(
+                label = stringRes(R.string.dictate__api_key_title),
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                placeholder = stringRes(R.string.dictate__api_key_placeholder),
+                isSecret = true,
+            )
+            // MA TWIST: pick a text file instead of pasting. Everything that is not a key is
+            // ignored, and several keys are kept so a rate limited one rolls to the next.
+            val maFileContext = LocalContext.current
+            var maImportNote by remember { mutableStateOf("") }
+            val maPicker = rememberLauncherForActivityResult(
+                ActivityResultContracts.OpenDocument(),
+            ) { uri ->
+                if (uri != null) {
+                    val text = runCatching {
+                        maFileContext.contentResolver.openInputStream(uri)?.use { stream ->
+                            String(stream.readBytes())
+                        }
+                    }.getOrNull().orEmpty()
+                    val keys = MaKeys.extract(text)
+                    maImportNote = if (keys.isEmpty()) {
+                        "No keys found in that file"
+                    } else {
+                        apiKey = MaKeys.join(keys)
+                        if (keys.size == 1) "1 key imported" else "${keys.size} keys imported, tried in order"
+                    }
+                }
+            }
+            TextButton(onClick = { maPicker.launch(arrayOf("*/*")) }) {
+                Text(text = "Import keys from a file")
+            }
+            if (maImportNote.isNotEmpty()) {
+                Text(text = maImportNote)
+            }
+            ConnectionTestRow(preset = effectivePreset, apiKey = apiKey)""",
+    "key file picker",
+)
+write(SCREEN, screen)
+changes.append("key file picker")
+
+
 print("MA TWIST applied:")
 for c in changes:
     print("  - " + c)
