@@ -663,7 +663,7 @@
     <string name="apptour__intro_body">Here’s what’s new in Dictate 5.0 — the highlights in under a minute. Tap “Try it” on any page to jump straight to that setting.</string>
     <string name="apptour__glide_eyebrow">Keyboard</string>
     <string name="apptour__glide_title">Swipe to type</string>
-    <string name="apptour__glide_body">Slide your finger from key to key and Dictate turns the path into whole words. Each language brings its own dictionary that downloads on demand — switch it on under Gestures.</string>
+    <string name="apptour__glide_body">Slide your finger from key to key and {app_name} turns the path into whole words. Each language brings its own dictionary that downloads on demand — switch it on under Gestures.</string>
     <string name="apptour__glide_cta">Set up glide typing</string>
     <string name="apptour__suggestions_eyebrow">Keyboard</string>
     <string name="apptour__suggestions_title">Autocorrect &amp; suggestions</string>
@@ -794,15 +794,15 @@
 
     <string name="setup__grant_notification_permission__title">Permit Crash Report Notifications</string>
     <string name="setup__grant_notification_permission__description">As of Android 13+, apps must ask for permission to
-        send notifications. In Dictate Keyboard, this is only used to open a crash report screen in the event of a crash.
+        send notifications. {app_name} does not use them for crash reports at all.
         This permission can be changed at any time in the system settings.
     </string>
     <string name="setup__grant_notification_permission__btn">Grant Permission</string>
 
     <!-- Setup: connect an AI provider (Dictate onboarding for non-technical users) -->
-    <string name="setup__provider__title">Connect a free AI service</string>
-    <string name="setup__provider__intro">Dictate turns your speech into text with the help of an online AI service. To use it, you need your own personal key for such a service.</string>
-    <string name="setup__provider__what_is_key">An API key is like a personal password that lets Dictate use the service for you. Creating one is free and takes about two minutes.</string>
+    <string name="setup__provider__title">Load your API keys</string>
+    <string name="setup__provider__intro">{app_name} turns speech into text using an online service, which needs your own API key.</string>
+    <string name="setup__provider__what_is_key">An API key is a personal password that lets {app_name} use a service on your behalf.</string>
     <string name="setup__provider__recommended">We recommend <b>Groq</b> — it\'s fast and free for everyday dictation.</string>
     <string name="setup__provider__steps_groq">1. Tap the button below to open Groq.\n2. Sign in with Google or your email address.\n3. Tap “Create API Key”, give it any name, and confirm.\n4. Copy the key (it begins with “gsk_”).\n5. Come back here and tap “Paste API key” below.</string>
     <string name="setup__provider__steps_generic">1. Tap the button below to open {provider}.\n2. Create an account if you don\'t have one yet.\n3. Create a new API key and copy it.\n4. Come back here and tap “Paste API key” below.</string>
@@ -819,9 +819,9 @@
 
     <string name="setup__finish_up__title">You\'re all set!</string>
     <string name="setup__finish_up__description_p1">{app_name} is ready. Switch to it with the keyboard switcher, tap the microphone, and start speaking.</string>
-    <string name="setup__finish_up__description_p2">You can change languages, the AI provider and everything else anytime in the settings. If you ever run into a problem or have an idea, reach out from the about screen!</string>
+    <string name="setup__finish_up__description_p2">Languages, providers and everything else can be changed later. Keys live under API keys, where each one can be tested on its own.</string>
     <string name="setup__finish_up__add_key_hint">Tip: you haven\'t added an AI key yet. Add one anytime in Settings → Dictate → AI providers to start dictating.</string>
-    <string name="setup__finish_up__finish_btn">Start using Dictate</string>
+    <string name="setup__finish_up__finish_btn">Start using {app_name}</string>
     <string name="setup__floating_button__btn" comment="Onboarding button that opens the floating-button settings">Set up the floating button</string>
     <string name="setup__floating_button__title" comment="Title of the optional floating-button onboarding step">Dictate anywhere (optional)</string>
     <string name="setup__floating_button__intro" comment="Explanation on the optional floating-button onboarding step">The floating button puts a small dictation bubble over any app, so you can speak into any text field without switching keyboards.</string>
@@ -1034,7 +1034,7 @@
     <string name="ext__export__failure">Failed to export extension: {error_message}</string>
     <string name="ext__import__success">Successfully imported extension!</string>
     <string name="ext__import__failure">Failed to import extension: {error_message}</string>
-    <string name="ext__import__ext_any" comment="Title of Importer screen for import of any supported Dictate Keyboard extension">Import extension</string>
+    <string name="ext__import__ext_any" comment="Title of Importer screen for import of any supported {app_name} extension">Import extension</string>
     <string name="ext__import__ext_keyboard" comment="Title of Importer screen for keyboard extension import">Import keyboard extension</string>
     <string name="ext__import__ext_theme" comment="Title of Importer screen for theme extension import">Import theme extension</string>
     <string name="ext__import__ext_languagepack" comment="Title of Importer screen for language pack extension import">Import language pack extension</string>
@@ -1074,7 +1074,7 @@
     <string name="ext__addon_management_box__managing_placeholder">Managing {extensions}</string>
     <string name="ext__addon_management_box__addon_manager_info">All tasks related to importing, exporting, creating, customizing, and removing extensions can be handled through the centralized addon manager.</string>
     <string name="ext__addon_management_box__go_to_page">Go to {ext_home_title}</string>
-    <string name="ext__home__info">You can download and install extensions from the Dictate Keyboard Addons Store or import any extension file you have downloaded from the internet.</string>
+    <string name="ext__home__info">You can download and install extensions from the FlorisBoard Addons Store or import any extension file you have downloaded from the internet.</string>
     <string name="ext__home__visit_store">Visit Addons Store</string>
     <string name="ext__home__manage_extensions">Manage installed extensions</string>
     <string name="ext__list__view_details">View details</string>

@@ -503,8 +503,18 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
     }
 
-    /** The panel a fresh editor field should open in. */
+    /**
+     * The panel a fresh editor field should open in.
+     *
+     * A pin is an explicit instruction and beats everything else. With nothing pinned the older
+     * behaviour still applies: reopen whichever view was last used, unless that is switched off, in
+     * which case the typing keyboard is the plain default.
+     */
     private fun maRestoredUiMode(): ImeUiMode {
+        when (prefs.dictate.maPinnedView.get()) {
+            ImeUiMode.TRANSCRIBE.name -> return ImeUiMode.TRANSCRIBE
+            ImeUiMode.TEXT.name -> return ImeUiMode.TEXT
+        }
         if (!prefs.dictate.maStickyTranscribeView.get()) return ImeUiMode.TEXT
         return if (prefs.dictate.maLastImeUiMode.get() == ImeUiMode.TRANSCRIBE.name) {
             ImeUiMode.TRANSCRIBE

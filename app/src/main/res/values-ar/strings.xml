@@ -466,8 +466,6 @@
     <string name="setup__grant_notification_permission__btn">منح الإذن</string>
     <string name="setup__finish_up__title">تم انهاء الاعداد</string>
     <string name="setup__finish_up__description_p1">تم تمكين{app_name} في النظام وجاهز للتخصيص بأسلوبك.</string>
-    <string name="setup__finish_up__description_p2">إذا واجهت أي مشاكل أو أخطاء أو أعطال أو اذا كنت ترغب فقط في تقديم اقتراح ، تحقق من مستودع المشروع من شاشة \"حول التطبيق\"!</string>
-    <string name="setup__finish_up__finish_btn">أبدأ بالتخصيص</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__system_settings__title">إعدادات لوحة المفاتيح الفيزيائية</string>
     <!-- Back up & Restore -->
@@ -931,9 +929,6 @@
     <string name="about__feedback__summary">أرسل بريدًا إلكترونيًا بأسئلة أو أخطاء أو أفكار</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">اتصل بخدمة ذكاء اصطناعي مجانية</string>
-    <string name="setup__provider__intro">يحوّل Dictate كلامك إلى نص بمساعدة خدمة ذكاء اصطناعي عبر الإنترنت. لاستخدامه، تحتاج إلى مفتاحك الشخصي الخاص بهذه الخدمة.</string>
-    <string name="setup__provider__what_is_key">مفتاح API يشبه كلمة مرور شخصية تتيح لـ Dictate استخدام الخدمة نيابةً عنك. إنشاؤه مجاني ويستغرق نحو دقيقتين.</string>
     <string name="setup__provider__recommended">نوصي بـ <b>Groq</b> — فهو سريع ومجاني للإملاء اليومي.</string>
     <string name="setup__provider__steps_groq">1. انقر الزر أدناه لفتح Groq.\n2. سجّل الدخول بحساب Google أو بعنوان بريدك الإلكتروني.\n3. انقر على ”Create API Key“، وأعطه أي اسم، ثم أكّد.\n4. انسخ المفتاح (يبدأ بـ ”gsk_“).\n5. عُد إلى هنا وانقر على ”لصق مفتاح API“ أدناه.</string>
     <string name="setup__provider__steps_generic">1. انقر الزر أدناه لفتح {provider}.\n2. أنشئ حسابًا إن لم يكن لديك واحد بعد.\n3. أنشئ مفتاح API جديدًا وانسخه.\n4. عُد إلى هنا وانقر على ”لصق مفتاح API“ أدناه.</string>
@@ -1523,7 +1518,6 @@
     <string name="apptour__intro_body">إليك ما هو جديد في Dictate 5.0 — أبرز الميزات في أقل من دقيقة. اضغط على «جرّبها» في أي صفحة للانتقال مباشرةً إلى ذلك الإعداد.</string>
     <string name="apptour__glide_eyebrow">لوحة المفاتيح</string>
     <string name="apptour__glide_title">اسحب للكتابة</string>
-    <string name="apptour__glide_body">مرِّر إصبعك من مفتاح إلى مفتاح، وسيحوّل Dictate المسار إلى كلمات كاملة. تأتي كل لغة بقاموسها الخاص الذي يُنزَّل عند الحاجة — فعِّله ضمن الإيماءات.</string>
     <string name="apptour__glide_cta">إعداد الكتابة بالسحب</string>
     <string name="apptour__suggestions_eyebrow">لوحة المفاتيح</string>
     <string name="apptour__suggestions_title">التصحيح التلقائي والاقتراحات</string>

@@ -582,8 +582,6 @@
     <string name="setup__grant_notification_permission__btn">Przyznaj uprawnienie</string>
     <string name="setup__finish_up__title">Zakończ</string>
     <string name="setup__finish_up__description_p1">Aplikacja {app_name} jest teraz włączona w systemie i gotowa do dostosowania przez Ciebie.</string>
-    <string name="setup__finish_up__description_p2">Jeśli napotkasz jakieś problemy, błędy, awarie lub po prostu chcesz coś zasugerować, sprawdź repozytorium projektu z ekranu \"Informacje o oprogramowaniu\"!</string>
-    <string name="setup__finish_up__finish_btn">Rozpocznij personalizowanie</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__title">Klawiatura fizyczna</string>
     <string name="physical_keyboard__system_settings__title">Ustawienia klawiatury fizycznej</string>
@@ -1088,9 +1086,6 @@
     <string name="about__feedback__summary">Wyślij e-mail z pytaniami, błędami lub pomysłami</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">Połącz darmową usługę AI</string>
-    <string name="setup__provider__intro">Dictate zamienia Twój głos w tekst za pomocą internetowej usługi AI. Aby z niej korzystać, potrzebujesz własnego, osobistego klucza do takiej usługi.</string>
-    <string name="setup__provider__what_is_key">Klucz API jest jak osobiste hasło, które pozwala aplikacji Dictate korzystać z usługi w Twoim imieniu. Utworzenie go jest darmowe i zajmuje około dwóch minut.</string>
     <string name="setup__provider__recommended">Polecamy <b>Groq</b> – jest szybki i darmowy do codziennego dyktowania.</string>
     <string name="setup__provider__steps_groq">1. Dotknij przycisku poniżej, aby otworzyć Groq.\n2. Zaloguj się za pomocą Google lub adresu e-mail.\n3. Dotknij „Create API Key\", nadaj mu dowolną nazwę i potwierdź.\n4. Skopiuj klucz (zaczyna się od „gsk_\").\n5. Wróć tutaj i dotknij „Wklej klucz API\" poniżej.</string>
     <string name="setup__provider__steps_generic">1. Dotknij przycisku poniżej, aby otworzyć {provider}.\n2. Utwórz konto, jeśli jeszcze go nie masz.\n3. Utwórz nowy klucz API i skopiuj go.\n4. Wróć tutaj i dotknij „Wklej klucz API\" poniżej.</string>
@@ -1680,7 +1675,6 @@
     <string name="apptour__intro_body">Oto nowości w Dictate 5.0 — najważniejsze punkty w mniej niż minutę. Dotknij „Wypróbuj” na dowolnej stronie, aby przejść prosto do danego ustawienia.</string>
     <string name="apptour__glide_eyebrow">Klawiatura</string>
     <string name="apptour__glide_title">Przesuwaj, aby pisać</string>
-    <string name="apptour__glide_body">Przesuwaj palcem od klawisza do klawisza, a Dictate zamieni tę ścieżkę w całe słowa. Każdy język ma własny słownik pobierany na żądanie — włącz go w sekcji Gesty.</string>
     <string name="apptour__glide_cta">Skonfiguruj pisanie gestami</string>
     <string name="apptour__suggestions_eyebrow">Klawiatura</string>
     <string name="apptour__suggestions_title">Autokorekta i podpowiedzi</string>

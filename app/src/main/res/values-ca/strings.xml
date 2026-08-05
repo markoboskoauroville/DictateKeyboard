@@ -484,8 +484,6 @@
     <string name="setup__grant_notification_permission__btn">Concedeix permís</string>
     <string name="setup__finish_up__title">Finalitza</string>
     <string name="setup__finish_up__description_p1">{app_name} s\'habilitat al sistema i està preparat perquè el personalitzis.</string>
-    <string name="setup__finish_up__description_p2">Si trobes cap incidència, error, fallada o simplement vols suggerir alguna cosa, només has d\'anar al repositori del projecte des de la pantalla Quant a!</string>
-    <string name="setup__finish_up__finish_btn">Comença a personalitzar</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__system_settings__title">Configuració del teclat físic</string>
     <!-- Back up & Restore -->
@@ -948,9 +946,6 @@
     <string name="about__feedback__summary">Envia un correu amb preguntes, errors o idees</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">Connecta un servei d\'IA gratuït</string>
-    <string name="setup__provider__intro">El Dictate converteix la teva veu en text amb l\'ajuda d\'un servei d\'IA en línia. Per usar-lo, necessites la teva pròpia clau personal per a aquest servei.</string>
-    <string name="setup__provider__what_is_key">Una clau d\'API és com una contrasenya personal que permet al Dictate usar el servei per tu. Crear-ne una és gratuït i triga uns dos minuts.</string>
     <string name="setup__provider__recommended">Recomanem <b>Groq</b>: és ràpid i gratuït per al dictat diari.</string>
     <string name="setup__provider__steps_groq">1. Toca el botó de sota per obrir Groq.\n2. Inicia la sessió amb Google o el teu correu electrònic.\n3. Toca «Create API Key», posa-li qualsevol nom i confirma.\n4. Copia la clau (comença per «gsk_»).\n5. Torna aquí i toca «Enganxa la clau d\'API» a sota.</string>
     <string name="setup__provider__steps_generic">1. Toca el botó de sota per obrir {provider}.\n2. Crea un compte si encara no en tens cap.\n3. Crea una nova clau d\'API i copia-la.\n4. Torna aquí i toca «Enganxa la clau d\'API» a sota.</string>
@@ -1540,7 +1535,6 @@
     <string name="apptour__intro_body">Això és el que hi ha de nou a Dictate 5.0 — el més destacat en menys d’un minut. Toca «Prova-ho» a qualsevol pàgina per anar directament a aquell ajust.</string>
     <string name="apptour__glide_eyebrow">Teclat</string>
     <string name="apptour__glide_title">Llisca per escriure</string>
-    <string name="apptour__glide_body">Llisca el dit de tecla en tecla i Dictate converteix el recorregut en paraules senceres. Cada idioma porta el seu propi diccionari que es baixa quan cal — activa’l a Gestos.</string>
     <string name="apptour__glide_cta">Configura l’escriptura lliscant</string>
     <string name="apptour__suggestions_eyebrow">Teclat</string>
     <string name="apptour__suggestions_title">Correcció automàtica i suggeriments</string>

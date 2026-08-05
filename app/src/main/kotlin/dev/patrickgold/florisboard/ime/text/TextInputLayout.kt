@@ -18,6 +18,7 @@ package dev.patrickgold.florisboard.ime.text
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -33,7 +34,9 @@ import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
+import dev.patrickgold.florisboard.dictate.ui.MaPinButton
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
+import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
 import dev.patrickgold.florisboard.ime.smartbar.InlineSuggestionsStyleCache
 import dev.patrickgold.florisboard.ime.smartbar.Smartbar
@@ -85,7 +88,14 @@ fun TextInputLayout(
                 GifSearchPanel()
             }
         } else {
-            Smartbar()
+            // The pin sits at the very left of the top row, so it is the first thing in the corner
+            // of the keyboard view. The Smartbar takes the rest of the width unchanged.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                MaPinButton(mode = ImeUiMode.TEXT)
+                Box(modifier = Modifier.weight(1f)) {
+                    Smartbar()
+                }
+            }
         }
         // Cursor row (Marko): sits between the Smartbar and the keys so the caret can be moved without
         // swiping the space bar or digging the arrows out of the Smartbar overflow. Hidden unless

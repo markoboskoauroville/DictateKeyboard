@@ -501,8 +501,6 @@ Deze toestemming kan op elk moment worden gewijzigd in de systeeminstellingen.  
     <string name="setup__grant_notification_permission__btn">Toestemming verlenen</string>
     <string name="setup__finish_up__title">Afronden</string>
     <string name="setup__finish_up__description_p1">{app_name} is nu ingeschakeld in het systeem en kan door jou worden aangepast.</string>
-    <string name="setup__finish_up__description_p2">Als je problemen, bugs, crashes tegenkomt of gewoon een suggestie wilt doen, bekijk dan de projectrepository vanaf het about-scherm!</string>
-    <string name="setup__finish_up__finish_btn">Begin met aanpassen</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__title">Fysiek toetsenbord</string>
     <string name="physical_keyboard__system_settings__title">Instellingen fysiek toetsenbord</string>
@@ -972,9 +970,6 @@ Deze toestemming kan op elk moment worden gewijzigd in de systeeminstellingen.  
     <string name="about__feedback__summary">Stuur een e-mail met vragen, bugs of ideeën</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">Verbind een gratis AI-dienst</string>
-    <string name="setup__provider__intro">Dictate zet je spraak om in tekst met behulp van een online AI-dienst. Om het te gebruiken heb je je eigen persoonlijke sleutel voor zo\'n dienst nodig.</string>
-    <string name="setup__provider__what_is_key">Een API-sleutel is als een persoonlijk wachtwoord waarmee Dictate de dienst voor je kan gebruiken. Er een aanmaken is gratis en duurt ongeveer twee minuten.</string>
     <string name="setup__provider__recommended">We raden <b>Groq</b> aan: snel en gratis voor dagelijks dicteren.</string>
     <string name="setup__provider__steps_groq">1. Tik op de knop hieronder om Groq te openen.\n2. Meld je aan met Google of je e-mailadres.\n3. Tik op «Create API Key», geef hem een willekeurige naam en bevestig.\n4. Kopieer de sleutel (begint met «gsk_»).\n5. Kom hier terug en tik hieronder op «API-sleutel plakken».</string>
     <string name="setup__provider__steps_generic">1. Tik op de knop hieronder om {provider} te openen.\n2. Maak een account aan als je er nog geen hebt.\n3. Maak een nieuwe API-sleutel aan en kopieer hem.\n4. Kom hier terug en tik hieronder op «API-sleutel plakken».</string>
@@ -1564,7 +1559,6 @@ Deze toestemming kan op elk moment worden gewijzigd in de systeeminstellingen.  
     <string name="apptour__intro_body">Dit is nieuw in Dictate 5.0 — de hoogtepunten in minder dan een minuut. Tik op elke pagina op ‘Uitproberen’ om meteen naar die instelling te springen.</string>
     <string name="apptour__glide_eyebrow">Toetsenbord</string>
     <string name="apptour__glide_title">Veeg om te typen</string>
-    <string name="apptour__glide_body">Veeg met je vinger van toets naar toets en Dictate maakt van het pad hele woorden. Elke taal heeft een eigen woordenboek dat op verzoek wordt gedownload — zet het aan bij Gebaren.</string>
     <string name="apptour__glide_cta">Veegtypen instellen</string>
     <string name="apptour__suggestions_eyebrow">Toetsenbord</string>
     <string name="apptour__suggestions_title">Autocorrectie &amp; suggesties</string>

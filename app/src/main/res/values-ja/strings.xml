@@ -549,8 +549,6 @@
     <string name="setup__grant_notification_permission__btn">許可を与える</string>
     <string name="setup__finish_up__title">完了</string>
     <string name="setup__finish_up__description_p1">{app_name}はシステムで有効になり、カスタマイズの準備ができました。</string>
-    <string name="setup__finish_up__description_p2">問題、バグ、クラッシュが発生した場合、または単に提案をしたい場合は、概要画面からプロジェクトリポジトリを確認してください！</string>
-    <string name="setup__finish_up__finish_btn">カスタマイズを開始</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__system_settings__title">物理キーボードの設定</string>
     <!-- Back up & Restore -->
@@ -1005,9 +1003,6 @@
     <string name="about__feedback__summary">質問・不具合・アイデアをメールで送信</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">無料のAIサービスに接続</string>
-    <string name="setup__provider__intro">Dictateは、オンラインのAIサービスを利用して音声をテキストに変換します。利用するには、そのサービスのご自身の個人キーが必要です。</string>
-    <string name="setup__provider__what_is_key">APIキーは、Dictateがあなたに代わってサービスを利用できるようにする個人用パスワードのようなものです。作成は無料で、約2分で済みます。</string>
     <string name="setup__provider__recommended"><b>Groq</b>をおすすめします。日常の音声入力に高速で無料です。</string>
     <string name="setup__provider__steps_groq">1. 下のボタンをタップしてGroqを開きます。\n2. Googleまたはメールアドレスでサインインします。\n3. 「Create API Key」をタップし、任意の名前を付けて確定します。\n4. キー（「gsk_」で始まります）をコピーします。\n5. ここに戻り、下の「APIキーを貼り付け」をタップします。</string>
     <string name="setup__provider__steps_generic">1. 下のボタンをタップして{provider}を開きます。\n2. アカウントがなければ作成します。\n3. 新しいAPIキーを作成してコピーします。\n4. ここに戻り、下の「APIキーを貼り付け」をタップします。</string>
@@ -1597,7 +1592,6 @@
     <string name="apptour__intro_body">Dictate 5.0 の新機能をご紹介します。要点を 1 分以内で。どのページでも「試す」をタップすれば、その設定に直接ジャンプできます。</string>
     <string name="apptour__glide_eyebrow">キーボード</string>
     <string name="apptour__glide_title">スワイプで入力</string>
-    <string name="apptour__glide_body">指をキーからキーへ滑らせると、Dictate がその軌跡を単語全体に変換します。言語ごとに専用の辞書があり、必要に応じてダウンロードされます。ジェスチャーからオンにしてください。</string>
     <string name="apptour__glide_cta">グライド入力を設定</string>
     <string name="apptour__suggestions_eyebrow">キーボード</string>
     <string name="apptour__suggestions_title">自動修正と候補</string>

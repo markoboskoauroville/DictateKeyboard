@@ -488,8 +488,6 @@
     <string name="setup__grant_notification_permission__btn">Berechtigung erteilen</string>
     <string name="setup__finish_up__title">Fertigstellen</string>
     <string name="setup__finish_up__description_p1">{app_name} ist nun im System aktiviert und bereit von dir angepasst zu werden.</string>
-    <string name="setup__finish_up__description_p2">Falls dir irgendwelche Probleme, Bugs oder Abstürze begegnen, oder du einfach einen Vorschlag machen möchtest, besuche einfach die GitHub Seite des Projekts (zu finden im About \"Über die App\" Screen)!</string>
-    <string name="setup__finish_up__finish_btn">Anpassung beginnen</string>
     <string name="physical_keyboard__system_settings__title">Einstellungen für physische Tastatur</string>
     <string name="setup__floating_button__btn">Floating Button einrichten</string>
     <string name="setup__nav_back">Zurück</string>
@@ -974,9 +972,6 @@
     <string name="about__feedback__summary">Eine E-Mail mit Fragen, Fehlern oder Ideen senden</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">Kostenlosen KI-Dienst verbinden</string>
-    <string name="setup__provider__intro">Dictate wandelt deine Sprache mit Hilfe eines Online-KI-Dienstes in Text um. Zur Nutzung brauchst du einen eigenen, persönlichen Schlüssel für einen solchen Dienst.</string>
-    <string name="setup__provider__what_is_key">Ein API-Schlüssel ist wie ein persönliches Passwort, mit dem Dictate den Dienst für dich nutzen kann. Einen zu erstellen ist kostenlos und dauert etwa zwei Minuten.</string>
     <string name="setup__provider__recommended">Wir empfehlen <b>Groq</b> — schnell und kostenlos für den täglichen Gebrauch.</string>
     <string name="setup__provider__steps_groq">1. Tippe auf den Button unten, um Groq zu öffnen.\n2. Melde dich mit Google oder deiner E-Mail-Adresse an.\n3. Tippe auf „Create API Key\", gib einen beliebigen Namen ein und bestätige.\n4. Kopiere den Schlüssel (er beginnt mit „gsk_\").\n5. Komm hierher zurück und tippe unten auf „API-Schlüssel einfügen\".</string>
     <string name="setup__provider__steps_generic">1. Tippe auf den Button unten, um {provider} zu öffnen.\n2. Erstelle ein Konto, falls du noch keines hast.\n3. Erstelle einen neuen API-Schlüssel und kopiere ihn.\n4. Komm hierher zurück und tippe unten auf „API-Schlüssel einfügen\".</string>
@@ -1539,7 +1534,6 @@
     <string name="apptour__intro_body">Das ist neu in Dictate 5.0 — die Highlights in unter einer Minute. Tippe auf jeder Seite auf „Ausprobieren“, um direkt zur jeweiligen Einstellung zu springen.</string>
     <string name="apptour__glide_eyebrow">Tastatur</string>
     <string name="apptour__glide_title">Wischen zum Tippen</string>
-    <string name="apptour__glide_body">Streiche mit dem Finger von Taste zu Taste und Dictate macht aus dem Pfad ganze Wörter. Jede Sprache bringt ihr eigenes Wörterbuch mit, das bei Bedarf geladen wird — aktiviere es unter Gesten.</string>
     <string name="apptour__glide_cta">Wischtippen einrichten</string>
     <string name="apptour__suggestions_eyebrow">Tastatur</string>
     <string name="apptour__suggestions_title">Autokorrektur &amp; Vorschläge</string>

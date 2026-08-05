@@ -580,8 +580,6 @@
     <string name="setup__grant_notification_permission__btn">授予权限</string>
     <string name="setup__finish_up__title">完成</string>
     <string name="setup__finish_up__description_p1">{app_name} 现在已在系统中启用，可供您自定义。</string>
-    <string name="setup__finish_up__description_p2">如果您遇到任何问题、错误、崩溃或只是想提出建议，请从“关于”界面中查看项目源码库！</string>
-    <string name="setup__finish_up__finish_btn">开始自定义</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__title">实体键盘</string>
     <string name="physical_keyboard__system_settings__title">物理键盘设置</string>
@@ -1068,9 +1066,6 @@
     <string name="about__feedback__summary">发送电子邮件提出问题、漏洞或建议</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">连接一个免费的 AI 服务</string>
-    <string name="setup__provider__intro">Dictate 借助在线 AI 服务将您的语音转换为文字。要使用它，您需要拥有该服务的个人密钥。</string>
-    <string name="setup__provider__what_is_key">API 密钥就像一个个人密码，让 Dictate 代您使用该服务。创建它是免费的，大约需要两分钟。</string>
     <string name="setup__provider__recommended">我们推荐 <b>Groq</b>——它快速且对日常听写免费。</string>
     <string name="setup__provider__steps_groq">1. 点按下方按钮打开 Groq。\n2. 使用 Google 或您的电子邮箱登录。\n3. 点按“Create API Key”，任意命名并确认。\n4. 复制密钥（以“gsk_”开头）。\n5. 返回此处，点按下方的“粘贴 API 密钥”。</string>
     <string name="setup__provider__steps_generic">1. 点按下方按钮打开 {provider}。\n2. 如果还没有账户，请先创建。\n3. 创建一个新的 API 密钥并复制。\n4. 返回此处，点按下方的“粘贴 API 密钥”。</string>
@@ -1659,7 +1654,6 @@
     <string name="apptour__intro_body">这是 Dictate 5.0 的新变化——精华内容，一分钟内看完。在任意页面点按「试一试」即可直接跳到该设置。</string>
     <string name="apptour__glide_eyebrow">键盘</string>
     <string name="apptour__glide_title">滑动输入</string>
-    <string name="apptour__glide_body">手指在按键之间滑动，Dictate 就会把轨迹变成完整的词语。每种语言都有各自的词典，按需下载——在「手势」中开启它。</string>
     <string name="apptour__glide_cta">设置滑动输入</string>
     <string name="apptour__suggestions_eyebrow">键盘</string>
     <string name="apptour__suggestions_title">自动更正与建议</string>

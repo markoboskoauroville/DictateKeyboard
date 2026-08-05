@@ -567,8 +567,6 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="setup__grant_notification_permission__btn">Izinkan</string>
     <string name="setup__finish_up__title">Selesaikan</string>
     <string name="setup__finish_up__description_p1">{app_name} sekarang sudah diaktifkan di sistem ini dan siap untuk disesuaikan oleh Anda.</string>
-    <string name="setup__finish_up__description_p2">Jika Anda mengalami masalah, bug, crash, atau hanya ingin membuat saran, lihat repositori proyek di layar tentang!</string>
-    <string name="setup__finish_up__finish_btn">Mulai Menyesuaikan</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__title">Keyboard fisik</string>
     <string name="physical_keyboard__system_settings__title">Pengaturan keyboard fisik</string>
@@ -1028,9 +1026,6 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="about__feedback__summary">Kirim email berisi pertanyaan, bug, atau ide</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">Hubungkan layanan AI gratis</string>
-    <string name="setup__provider__intro">Dictate mengubah ucapan Anda menjadi teks dengan bantuan layanan AI online. Untuk menggunakannya, Anda memerlukan kunci pribadi Anda sendiri untuk layanan tersebut.</string>
-    <string name="setup__provider__what_is_key">Kunci API seperti kata sandi pribadi yang memungkinkan Dictate menggunakan layanan untuk Anda. Membuatnya gratis dan memakan waktu sekitar dua menit.</string>
     <string name="setup__provider__recommended">Kami merekomendasikan <b>Groq</b> — cepat dan gratis untuk dikte sehari-hari.</string>
     <string name="setup__provider__steps_groq">1. Ketuk tombol di bawah untuk membuka Groq.\n2. Masuk dengan Google atau alamat email Anda.\n3. Ketuk “Create API Key”, beri nama apa saja, lalu konfirmasi.\n4. Salin kuncinya (diawali dengan “gsk_”).\n5. Kembali ke sini dan ketuk “Tempel kunci API” di bawah.</string>
     <string name="setup__provider__steps_generic">1. Ketuk tombol di bawah untuk membuka {provider}.\n2. Buat akun jika Anda belum punya.\n3. Buat kunci API baru dan salin.\n4. Kembali ke sini dan ketuk “Tempel kunci API” di bawah.</string>
@@ -1620,7 +1615,6 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="apptour__intro_body">Inilah yang baru di Dictate 5.0 — sorotannya dalam waktu kurang dari semenit. Ketuk «Coba» di halaman mana pun untuk langsung menuju pengaturan tersebut.</string>
     <string name="apptour__glide_eyebrow">Keyboard</string>
     <string name="apptour__glide_title">Geser untuk mengetik</string>
-    <string name="apptour__glide_body">Geser jarimu dari tombol ke tombol dan Dictate mengubah jejaknya menjadi kata-kata utuh. Setiap bahasa membawa kamusnya sendiri yang diunduh sesuai kebutuhan — aktifkan di Gerakan.</string>
     <string name="apptour__glide_cta">Siapkan ketik geser</string>
     <string name="apptour__suggestions_eyebrow">Keyboard</string>
     <string name="apptour__suggestions_title">Koreksi otomatis &amp; saran</string>

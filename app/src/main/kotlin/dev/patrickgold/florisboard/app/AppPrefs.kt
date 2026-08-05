@@ -794,6 +794,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_cursor_row",
             default = false,
         )
+        // The pinned view, set by the pin in each view's top-left corner. "TEXT" or "TRANSCRIBE"
+        // means always open there; empty means nothing is pinned and the last-used view wins, which
+        // is the behaviour that existed before the pin and is still a reasonable default.
+        val maPinnedView = string(
+            key = "dictate__ma_pinned_view",
+            default = "",
+        )
         // Which panel was showing when the keyboard was last closed. Written by FlorisImeService,
         // read back on the next open when maStickyTranscribeView is on. Stored as the enum name so a
         // future panel that no longer exists simply fails to resolve and falls back to the keyboard.

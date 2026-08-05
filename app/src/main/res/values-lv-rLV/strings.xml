@@ -533,8 +533,6 @@
     <string name="setup__grant_notification_permission__btn">Piešķirt atļauju</string>
     <string name="setup__finish_up__title">Pabeigt</string>
     <string name="setup__finish_up__description_p1">{app_name} tagad ir iespējots un ir gatavs pielāgojumiem.</string>
-    <string name="setup__finish_up__description_p2">Ja tiek pamanītas kādas nepilnības, kļūdas, avārijas vai ir vēlme kaut ko ieteikt, apskati projekta glabātavu, kuras saite ir sadaļā \"Par\"!</string>
-    <string name="setup__finish_up__finish_btn">Sākt pielāgošanu</string>
     <!-- Physical keyboard -->
     <string name="physical_keyboard__title">Fiziska tastatūra</string>
     <string name="physical_keyboard__system_settings__title">Fiziskās tastatūras iestatījumi</string>
@@ -1016,9 +1014,6 @@
     <string name="about__feedback__summary">Nosūtiet e-pastu ar jautājumiem, kļūdām vai idejām</string>
     <string name="about__feedback__email">contact@devemperor.net</string>
     <string name="about__feedback__subject">Dictate Feedback</string>
-    <string name="setup__provider__title">Pievienojiet bezmaksas MI pakalpojumu</string>
-    <string name="setup__provider__intro">Dictate pārvērš jūsu runu tekstā ar tiešsaistes MI pakalpojuma palīdzību. Lai to izmantotu, jums ir vajadzīga sava personīgā atslēga šādam pakalpojumam.</string>
-    <string name="setup__provider__what_is_key">API atslēga ir kā personīga parole, kas ļauj Dictate izmantot pakalpojumu jūsu vietā. Tās izveide ir bezmaksas un aizņem aptuveni divas minūtes.</string>
     <string name="setup__provider__recommended">Mēs iesakām <b>Groq</b> — tas ir ātrs un bezmaksas ikdienas diktēšanai.</string>
     <string name="setup__provider__steps_groq">1. Pieskarieties zemāk esošajai pogai, lai atvērtu Groq.\n2. Pierakstieties ar Google vai savu e-pasta adresi.\n3. Pieskarieties “Create API Key”, piešķiriet jebkādu nosaukumu un apstipriniet.\n4. Nokopējiet atslēgu (tā sākas ar “gsk_”).\n5. Atgriezieties šeit un zemāk pieskarieties “Ielīmēt API atslēgu”.</string>
     <string name="setup__provider__steps_generic">1. Pieskarieties zemāk esošajai pogai, lai atvērtu {provider}.\n2. Izveidojiet kontu, ja jums tāda vēl nav.\n3. Izveidojiet jaunu API atslēgu un nokopējiet to.\n4. Atgriezieties šeit un zemāk pieskarieties “Ielīmēt API atslēgu”.</string>
@@ -1608,7 +1603,6 @@
     <string name="apptour__intro_body">Lūk, kas jauns programmā Dictate 5.0 — svarīgākais mazāk nekā minūtē. Pieskaries «Izmēģināt» jebkurā lapā, lai uzreiz pārietu uz attiecīgo iestatījumu.</string>
     <string name="apptour__glide_eyebrow">Tastatūra</string>
     <string name="apptour__glide_title">Velc, lai rakstītu</string>
-    <string name="apptour__glide_body">Slidini pirkstu no taustiņa uz taustiņu, un Dictate pārvērš šo ceļu par veseliem vārdiem. Katrai valodai ir sava vārdnīca, ko lejupielādē pēc pieprasījuma — ieslēdz to sadaļā Žesti.</string>
     <string name="apptour__glide_cta">Iestatīt vilkšanas rakstīšanu</string>
     <string name="apptour__suggestions_eyebrow">Tastatūra</string>
     <string name="apptour__suggestions_title">Automātiskā labošana un ieteikumi</string>
