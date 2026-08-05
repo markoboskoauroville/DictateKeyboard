@@ -2647,6 +2647,10 @@ object DictateController {
      * Gated by a per-version flag; skipped once the user has enabled it or opened its screen. No-op unless idle.
      */
     fun maybePromptFloatingButton(context: Context) {
+        // Mantra Voice Type: the floating bubble is gone, its accessibility service is no longer
+        // registered, so advertising it would send the user to a screen that can do nothing.
+        if (true) return
+        @Suppress("UNREACHABLE_CODE")
         if (_state.value !is UiState.Idle) return
         if (!DEBUG_FORCE_FB_SPOTLIGHT) {
             if (prefs.dictate.floatingButtonEnabled.get() || prefs.dictate.floatingButtonHintSeen.get()) return

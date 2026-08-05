@@ -228,20 +228,8 @@ fun DictateScreen() = FlorisScreen {
             onClick = { navController.navigate(Routes.Settings.DictateOutput) },
         )
 
-        // Floating button keeps its own screen and the "New" badge until first opened (issue #88).
-        val floatingHintSeen by prefs.dictate.floatingButtonHintSeen.collectAsState()
-        Preference(
-            icon = Icons.Default.Adjust,
-            modifier = Modifier.settingsSearchAnchor("dictate__floating_button_enable_title"),
-            title = stringRes(R.string.dictate__floating_button_enable_title),
-            summary = stringRes(R.string.dictate__floating_button_enable_summary),
-            onClick = { navController.navigate(Routes.Settings.DictateFloatingButton) },
-            trailing = if (!floatingHintSeen) {
-                { NewBadge() }
-            } else {
-                null
-            },
-        )
+        // Mantra Voice Type: the floating button entry is gone. Its accessibility service is no
+        // longer declared in the manifest, so the screen behind it could only ever fail.
 
         Preference(
             icon = Icons.Default.Watch,
