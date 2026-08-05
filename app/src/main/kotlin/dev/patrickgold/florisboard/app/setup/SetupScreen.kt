@@ -56,6 +56,7 @@ import androidx.navigation.NavController
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisAppActivity
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
+import dev.patrickgold.florisboard.dictate.MaKeyImport
 import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
@@ -291,19 +292,25 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
     scope: CoroutineScope,
 ): List<FlorisStep> {
 
-    // Persists the entered key into the keyring and points the active transcription (and, where the
-    // provider also supports chat, rewording) provider at it. Done in this scope so the step composable
-    // stays free of preference plumbing.
-    fun saveKey(providerId: String, key: String) {
-        scope.launch {
-            this@steps.prefs.dictate.providerAccounts.set(
-                accounts.edit(providerId) { it.copy(apiKey = key.trim()) }
-            )
-            this@steps.prefs.dictate.transcriptionProviderId.set(providerId)
-            if (ProviderRegistry.byId(providerId)?.capabilities?.chat == true) {
-                this@steps.prefs.dictate.rewordingProviderId.set(providerId)
+    // Sorts one file into every provider and stores the result. Returns the sentence the step shows,
+    // so the composable stays free of preference plumbing. The active transcription and rewording
+    // providers are pointed at the two that do those jobs here, but only when they actually got a
+    // key, so a file holding just one of them does not leave the app pointed at an empty provider.
+    fun importKeys(text: String): String {
+        val result = MaKeyImport.importAll(text, accounts)
+        if (result.added > 0) {
+            scope.launch {
+                this@steps.prefs.dictate.providerAccounts.set(result.accounts)
+                if (result.accounts.accounts["assemblyai"]?.apiKey.orEmpty().isNotBlank()) {
+                    this@steps.prefs.dictate.transcriptionProviderId.set("assemblyai")
+                }
+                if (result.accounts.accounts["anthropic"]?.apiKey.orEmpty().isNotBlank()) {
+                    this@steps.prefs.dictate.rewordingProviderId.set("anthropic")
+                }
             }
+            MaVault.write(text)
         }
+        return result.summary
     }
 
     return listOfNotNull(
@@ -339,7 +346,7 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
             title = stringRes(R.string.setup__provider__title),
         ) {
             ProviderSetupStep(
-                onSaveKey = ::saveKey,
+                onImport = ::importKeys,
                 onSkip = onSkipProvider,
             )
         },
@@ -369,31 +376,45 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
 }
 
 /**
- * The key step: three file pickers, nothing else.
+ * The key step: one picker.
  *
- * What was here before was written for a stranger who has never heard of an API key: a recommended
- * free provider, a five-point guide to signing up for it, a sign-up link and a paste box. None of
- * that applies. The keys already exist in a file on the phone, and the three providers this build
- * actually uses are fixed, so the whole step is three buttons that read that file.
- *
- * Each picker parses the same file for its own provider, so one file holding all three keys can be
- * picked three times, or a separate file used for each. Importing twice adds nothing.
+ * It used to be three, one per provider, which asked the user to know which key belongs to which
+ * service before importing it. The parser already knows. So this reads the file once, sorts every
+ * key it finds to the right provider, and says what it filed where. The same import runs in the key
+ * manager, so the two behave identically.
  */
 @Composable
 private fun FlorisStepLayoutScope.ProviderSetupStep(
-    onSaveKey: (providerId: String, key: String) -> Unit,
+    onImport: (String) -> String,
     onSkip: () -> Unit,
 ) {
     val context = LocalContext.current
+    var note by remember { mutableStateOf("") }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val text = runCatching {
+                context.contentResolver.openInputStream(uri)?.use { String(it.readBytes()) }
+            }.getOrNull().orEmpty()
+            note = onImport(text)
+        }
+    }
+
     StepText(
-        "Point each provider at your keys file. The same file can be used for all three, since " +
-            "each one takes only the keys that belong to it."
+        "Point this at your keys file. Every key in it is sorted to the provider it belongs to, " +
+            "so one file with all of them is the normal case. Nothing is ever pasted."
     )
     Spacer(modifier = Modifier.height(8.dp))
-
-    MaSetupKeyPicker("assemblyai", "AssemblyAI", "transcription", onSaveKey)
-    MaSetupKeyPicker("anthropic", "Anthropic Claude", "rewording", onSaveKey)
-    MaSetupKeyPicker("gemini", "Google Gemini", "optional", onSaveKey)
+    StepButton(label = "Load keys from file") {
+        picker.launch(arrayOf("*/*"))
+    }
+    if (note.isNotEmpty()) {
+        StepText(note)
+    }
+    Spacer(modifier = Modifier.height(4.dp))
+    StepText(
+        "AssemblyAI does the transcribing, Anthropic does the rewording, Gemini is an optional " +
+            "second engine. All of this can be changed later under API keys."
+    )
 
     TextButton(
         modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp),
@@ -403,43 +424,6 @@ private fun FlorisStepLayoutScope.ProviderSetupStep(
             text = "Set up later",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-/**
- * One provider's picker. Reports how many keys it took, so the step gives the same feedback the key
- * manager does rather than silently succeeding.
- */
-@Composable
-private fun FlorisStepLayoutScope.MaSetupKeyPicker(
-    providerId: String,
-    label: String,
-    role: String,
-    onSaveKey: (providerId: String, key: String) -> Unit,
-) {
-    val context = LocalContext.current
-    var note by remember { mutableStateOf("") }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            val text = runCatching {
-                context.contentResolver.openInputStream(uri)?.use { String(it.readBytes()) }
-            }.getOrNull().orEmpty()
-            val keys = MaKeys.extract(text, providerId)
-            if (keys.isEmpty()) {
-                note = MaKeys.mismatchWarning(text, providerId, keys)
-                    ?: "No $label key found in that file"
-            } else {
-                onSaveKey(providerId, MaKeys.join(keys))
-                MaVault.write(text)
-                note = if (keys.size == 1) "1 key imported" else "${keys.size} keys imported"
-            }
-        }
-    }
-    StepButton(label = "$label ($role)") {
-        picker.launch(arrayOf("*/*"))
-    }
-    if (note.isNotEmpty()) {
-        StepText(note)
     }
 }
 

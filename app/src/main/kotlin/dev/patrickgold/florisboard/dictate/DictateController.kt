@@ -2273,6 +2273,10 @@ object DictateController {
         val seconds = recordedSecondsOf(current)
         val wasLive = livePromptArmed
         val audioFile = activeRecorder.stop()
+        // Into the ring of ten before anything else decides this audio's fate. Upstream keeps exactly
+        // one interrupted file at a fixed path, so a second interruption overwrote the first and it
+        // was gone. Everything below may still discard or move the file; this copy survives either way.
+        MaRecordingBuffer.add(context, audioFile, seconds)
         cleanupAudioRouting()
         livePromptArmed = false
         _pendingPrompts.value = emptyList()

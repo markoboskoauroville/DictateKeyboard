@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.patrickgold.florisboard.dictate.MaKeyImport
 import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
@@ -108,13 +109,8 @@ private data class KeyStatus(val health: KeyHealth, val detail: String = "")
  * Providers this build actually uses, in the order they matter, with what each one is for. Anything
  * else in the registry is still supported if a key turns up for it, but is not advertised here.
  */
-private val MA_PROVIDERS = listOf(
-    "assemblyai" to "speech to text, the transcription engine",
-    "anthropic" to "rewording and the restyle prompts",
-    "gemini" to "optional second engine, transcription and rewording",
-    "groq" to "optional fast fallback",
-    "openai" to "optional, for custom endpoints",
-)
+/** Shared with the setup wizard so both places import the same way. */
+private val MA_PROVIDERS = MaKeyImport.PROVIDERS
 
 /**
  * The key manager. One picker, one list, one place.
@@ -226,29 +222,12 @@ fun DictateKeysScreen() = FlorisScreen {
                 val text = runCatching {
                     context.contentResolver.openInputStream(uri)?.use { String(it.readBytes()) }
                 }.getOrNull().orEmpty()
-                var working = accounts
-                val summary = mutableListOf<String>()
-                var totalNew = 0
-                for ((id, _) in MA_PROVIDERS) {
-                    val preset = ProviderRegistry.byId(id) ?: continue
-                    val found = MaKeys.extract(text, id)
-                    if (found.isEmpty()) continue
-                    val existing = working.accounts[id] ?: ProviderAccount(providerId = id)
-                    val current = MaKeys.split(existing.apiKey).filter { it.isNotBlank() }
-                    val (merged, added) = MaKeys.merge(current, found)
-                    if (added > 0) {
-                        working = working.put(existing.copy(apiKey = MaKeys.join(merged)))
-                        summary += "${preset.displayName} +$added"
-                        totalNew += added
-                    }
-                }
-                if (totalNew > 0) {
-                    save(working)
+                val result = MaKeyImport.importAll(text, accounts)
+                if (result.added > 0) {
+                    save(result.accounts)
                     MaVault.write(text)
-                    note = "Imported: " + summary.joinToString(", ")
-                } else {
-                    note = "Nothing new. Every key in that file is already here."
                 }
+                note = result.summary
             }
         }
 
