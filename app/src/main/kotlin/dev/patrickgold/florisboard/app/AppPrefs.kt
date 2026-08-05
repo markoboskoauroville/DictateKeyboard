@@ -247,7 +247,16 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // ("openai", "groq") or a "custom:<uuid>" endpoint. The actual key/model live in the keyring.
         val transcriptionProviderId = string(
             key = "dictate__transcription_provider_id",
-            default = "openai",
+            // Voice Type: AssemblyAI out of the box. The upstream default was openai, a provider
+            // this build does not offer, so a fresh install pointed at nothing.
+            default = "assemblyai",
+        )
+
+        // Voice Type: the keys file the user picked last, kept as a persisted SAF grant so an
+        // update or a reinstall over the top reloads the keys with no clicks at all.
+        val maKeysFileUri = string(
+            key = "dictate__ma_keys_file_uri",
+            default = "",
         )
 
         // On-device offline fallback (issue #104): when the active provider is a cloud one and its call
@@ -784,7 +793,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // "openrouter", … or "custom"). Independent from the transcription provider.
         val rewordingProviderId = string(
             key = "dictate__rewording_provider_id",
-            default = "openai",
+            // Voice Type: Claude for rewording, out of the box.
+            default = "anthropic",
         )
         // --- DEPRECATED flat rewording credential prefs (migration source only) ------------------
         // Kept solely for the one-time keyring import; live calls read providerAccounts instead.

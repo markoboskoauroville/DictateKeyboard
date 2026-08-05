@@ -607,21 +607,54 @@ private fun ProviderEditorDialog(
             // ignored, and several keys are kept so a rate limited one rolls to the next.
             val maFileContext = LocalContext.current
             var maImportNote by remember { mutableStateOf("") }
+            // Voice Type: reading the picked file, shared by the picker and the automatic reload.
+            fun maReadKeys(uri: android.net.Uri): List<String> {
+                val text = runCatching {
+                    maFileContext.contentResolver.openInputStream(uri)?.use { stream ->
+                        String(stream.readBytes())
+                    }
+                }.getOrNull().orEmpty()
+                return MaKeys.extract(text, effectivePreset.id)
+            }
+
             val maPicker = rememberLauncherForActivityResult(
                 ActivityResultContracts.OpenDocument(),
             ) { uri ->
                 if (uri != null) {
-                    val text = runCatching {
-                        maFileContext.contentResolver.openInputStream(uri)?.use { stream ->
-                            String(stream.readBytes())
-                        }
-                    }.getOrNull().orEmpty()
-                    val keys = MaKeys.extract(text, effectivePreset.id)
+                    // Hold on to the grant so the same file can be re-read after an update or a
+                    // reinstall, which is the whole point: keys should never be imported twice.
+                    runCatching {
+                        maFileContext.contentResolver.takePersistableUriPermission(
+                            uri,
+                            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                    }
+                    val keys = maReadKeys(uri)
                     maImportNote = if (keys.isEmpty()) {
                         "No keys found in that file"
                     } else {
                         apiKey = MaKeys.join(keys)
+                        prefs.dictate.maKeysFileUri.set(uri.toString())
                         if (keys.size == 1) "1 key imported" else "${keys.size} keys imported, tried in order"
+                    }
+                }
+            }
+
+            // Voice Type: nothing stored, but a file was picked before. Load it silently.
+            LaunchedEffect(effectivePreset.id) {
+                if (apiKey.isBlank()) {
+                    val remembered = prefs.dictate.maKeysFileUri.get()
+                    if (remembered.isNotBlank()) {
+                        val keys = runCatching { maReadKeys(android.net.Uri.parse(remembered)) }
+                            .getOrDefault(emptyList())
+                        if (keys.isNotEmpty()) {
+                            apiKey = MaKeys.join(keys)
+                            maImportNote = if (keys.size == 1) {
+                                "1 key loaded from your saved file"
+                            } else {
+                                "${keys.size} keys loaded from your saved file"
+                            }
+                        }
                     }
                 }
             }
