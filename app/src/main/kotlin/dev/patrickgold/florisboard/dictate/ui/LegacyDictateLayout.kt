@@ -137,6 +137,10 @@ import org.florisboard.lib.snygg.SnyggSelector
 import org.florisboard.lib.snygg.ui.SnyggColumn
 import org.florisboard.lib.snygg.ui.SnyggText
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Path
+import androidx.compose.foundation.Canvas
 
 /**
  * Cross-composable state for the legacy layout. [suppressGlide] is set while the modern typing keyboard
@@ -633,6 +637,9 @@ private fun LegacyRecordRow(
                 ),
             contentAlignment = Alignment.Center,
         ) {
+            // Voice Type: the oscilloscope lives inside this button, behind its content, so the
+            // bar keeps the shape and the surrounding editing keys the original author designed.
+            MaScopeCanvas(active = isRecording, tint = onAccent)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 when {
                     recording != null -> {
@@ -673,14 +680,15 @@ private fun LegacyRecordRow(
                     rewording != null -> {
                         // Reworded, not transcribed: show the rewording label (prompt name / "Rewording…").
                         // A trailing stop icon signals a tap cancels the request (issue #192).
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = onAccent, strokeWidth = 2.dp)
+                        MaBrailleSpinner(color = onAccent, fontSize = 18.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(text = rewording.label.ifBlank { stringRes(R.string.dictate__status_rewording) }, color = onAccent)
                         Spacer(modifier = Modifier.width(10.dp))
                         Icon(Icons.Default.Stop, contentDescription = null, tint = onAccent, modifier = Modifier.size(20.dp))
                     }
                     busy -> {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = onAccent, strokeWidth = 2.dp)
+                        // Voice Type: braille spinner instead of the material ring.
+                        MaBrailleSpinner(color = onAccent, fontSize = 18.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(text = stringRes(R.string.dictate__status_transcribing), color = onAccent)
                         Spacer(modifier = Modifier.width(10.dp))
@@ -1200,4 +1208,72 @@ private fun computeWordBoundaries(before: String): List<Int> {
 private fun formatElapsed(ms: Long): String {
     val totalSec = (ms / 1000L).coerceAtLeast(0L)
     return "%d:%02d".format(totalSec / 60L, totalSec % 60L)
+}
+
+// ---------------------------------------------------------------------------------------
+// Voice Type additions. Both live inside the original record button rather than replacing
+// anything around it: the layout the upstream author built here works, and the editing keys
+// surrounding this button stay useful precisely because voice typing still needs editing.
+// ---------------------------------------------------------------------------------------
+
+private const val MA_BRAILLE = "\u280B\u2819\u2839\u2838\u283C\u2834\u2826\u2827\u2807\u280F"
+
+/** How many level samples the scope holds on screen. */
+private const val MA_SCOPE_POINTS = 72
+
+/**
+ * A live waveform painted across the record button.
+ *
+ * Reads [DictateController.audioLevel], which is already smoothed and published at a rate the UI
+ * can follow, and mirrors alternate samples across the centre line so a level meter reads as a
+ * wave. Drawn at low alpha in the button's own foreground colour, so it works with any theme and
+ * never fights the label sitting on top of it.
+ */
+@Composable
+private fun MaScopeCanvas(active: Boolean, tint: Color) {
+    val history = remember { mutableStateListOf<Float>() }
+    LaunchedEffect(active) {
+        if (!active) {
+            history.clear()
+        } else {
+            while (true) {
+                history.add(DictateController.audioLevel.value)
+                if (history.size > MA_SCOPE_POINTS) history.removeAt(0)
+                delay(50L)
+            }
+        }
+    }
+    if (!active) return
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val points = history.size
+        if (points < 2) return@Canvas
+        val midY = size.height / 2f
+        val step = size.width / (points - 1)
+        val path = Path()
+        for (i in 0 until points) {
+            val amp = history[i].coerceIn(0f, 1f) * (size.height * 0.34f)
+            val y = if (i % 2 == 0) midY - amp else midY + amp
+            val x = step * i
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        drawPath(path = path, color = tint.copy(alpha = 0.30f), style = Stroke(width = 2.5f))
+    }
+}
+
+/** The braille spinner, in place of a material ring, while a request is in flight. */
+@Composable
+private fun MaBrailleSpinner(color: Color, fontSize: androidx.compose.ui.unit.TextUnit) {
+    var frame by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            frame++
+            delay(90L)
+        }
+    }
+    Text(
+        text = MA_BRAILLE[frame % MA_BRAILLE.length].toString(),
+        color = color,
+        fontSize = fontSize,
+        fontWeight = FontWeight.SemiBold,
+    )
 }
