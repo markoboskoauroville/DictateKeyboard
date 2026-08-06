@@ -764,6 +764,7 @@ private fun LegacyBottomRow(
     keyboardManager: KeyboardManager,
     onExitToKeyboard: (() -> Unit)? = null,
 ) {
+    val prefs by FlorisPreferenceStore
     val sideKey = Modifier.fillMaxHeight().aspectRatio(1f)
     Row(
         modifier = modifier,
