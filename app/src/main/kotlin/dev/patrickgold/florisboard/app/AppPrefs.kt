@@ -787,6 +787,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // The extra row above the keyboard. Off by default; the two Smartbar actions turn it on and
         // swap its contents. Croatian diacritics are the other thing constantly reached for on this
         // phone, and hunting them through long-press popups mid-sentence is slower than a row.
+        // Volume keys as dictation controls while the keyboard is up: volume up starts and then
+        // sends, volume down swaps view. On by default because it was asked for, and switchable
+        // because taking the volume keys is a real trade and somebody should be able to decline it.
+        val maVolumeKeys = boolean(
+            key = "dictate__ma_volume_keys",
+            default = true,
+        )
         val maExtraRow = boolean(
             key = "dictate__ma_extra_row",
             default = false,

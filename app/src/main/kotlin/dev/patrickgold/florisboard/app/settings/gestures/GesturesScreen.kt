@@ -40,34 +40,18 @@ fun GesturesScreen() = FlorisScreen {
     previewFieldVisible = true
 
     content {
-        PreferenceGroup(title = stringRes(R.string.pref__gestures__general_title)) {
-            ListPreference(
-                prefs.gestures.swipeUp,
-                modifier = Modifier.settingsSearchAnchor("pref__gestures__swipe_up__label"),
-                title = stringRes(R.string.pref__gestures__swipe_up__label),
-                entries = enumDisplayEntriesOf(SwipeAction::class, "general"),
-                enabledIf = { prefs.glide.enabled isEqualTo false },
-            )
-            ListPreference(
-                prefs.gestures.swipeDown,
-                modifier = Modifier.settingsSearchAnchor("pref__gestures__swipe_down__label"),
-                title = stringRes(R.string.pref__gestures__swipe_down__label),
-                entries = enumDisplayEntriesOf(SwipeAction::class, "general"),
-                enabledIf = { prefs.glide.enabled isEqualTo false },
-            )
-            ListPreference(
-                prefs.gestures.swipeLeft,
-                modifier = Modifier.settingsSearchAnchor("pref__gestures__swipe_left__label"),
-                title = stringRes(R.string.pref__gestures__swipe_left__label),
-                entries = enumDisplayEntriesOf(SwipeAction::class, "general"),
-                enabledIf = { prefs.glide.enabled isEqualTo false },
-            )
-            ListPreference(
-                prefs.gestures.swipeRight,
-                modifier = Modifier.settingsSearchAnchor("pref__gestures__swipe_right__label"),
-                title = stringRes(R.string.pref__gestures__swipe_right__label),
-                entries = enumDisplayEntriesOf(SwipeAction::class, "general"),
-                enabledIf = { prefs.glide.enabled isEqualTo false },
+        // General gestures are gone. Swipe up for shift, down to hide, left and right to change
+        // subtype: four whole-keyboard swipes on a keyboard whose words arrive by voice, where every
+        // one of them is a way to trigger something by accident mid-sentence. The space bar gestures
+        // stay, because those are aimed at one key and do the one thing worth doing there.
+        PreferenceGroup(title = "Volume keys") {
+            SwitchPreference(
+                prefs.dictate.maVolumeKeys,
+                modifier = Modifier.settingsSearchAnchor("ma__volume_keys"),
+                title = "Volume keys control dictation",
+                summary = "Volume up starts recording, then sends it. Volume down swaps between " +
+                    "the keyboard and the transcribe view. Only while the keyboard is on screen; " +
+                    "they are ordinary volume keys again the moment it closes.",
             )
         }
 

@@ -655,10 +655,56 @@ class FlorisImeService : LifecycleInputMethodService() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (maHandleVolumeKey(keyCode)) return true
         return keyboardManager.onHardwareKeyDown(keyCode, event) || super.onKeyDown(keyCode, event)
     }
 
+    /**
+     * Volume keys as dictation controls, while the keyboard is on screen.
+     *
+     * Volume up starts a recording and, pressed again, ends it and sends it. Volume down swaps
+     * between the typing keyboard and the transcribe view. Both are things otherwise done by looking
+     * at the screen and aiming a thumb, and both are exactly what a physical button is good for:
+     * speaking into a phone held away from the face, or in the dark.
+     *
+     * Deliberately scoped to while the input view is shown. An input method only receives key events
+     * then, and taking the volume keys away from the whole system would be indefensible; the moment
+     * the keyboard closes they go back to being volume keys.
+     *
+     * The event is consumed so the system neither changes the volume nor flashes its slider, which
+     * would otherwise happen on top of the keyboard on every press.
+     */
+    private fun maHandleVolumeKey(keyCode: Int): Boolean {
+        if (!prefs.dictate.maVolumeKeys.get()) return false
+        if (!isInputViewShown) return false
+        return when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP -> {
+                // One button, both ends of a dictation: onMicClick already starts when idle and
+                // stops and sends when recording, which is the behaviour asked for.
+                DictateController.onMicClick(this)
+                true
+            }
+            KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                activeState.imeUiMode = if (activeState.imeUiMode == ImeUiMode.TRANSCRIBE) {
+                    ImeUiMode.TEXT
+                } else {
+                    ImeUiMode.TRANSCRIBE
+                }
+                true
+            }
+            else -> false
+        }
+    }
+
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        // The matching release must be swallowed too. Consuming only the press still lets the system
+        // act on the release, which is how a half-handled volume key ends up changing the volume
+        // anyway.
+        if (prefs.dictate.maVolumeKeys.get() && isInputViewShown &&
+            (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
+        ) {
+            return true
+        }
         return keyboardManager.onHardwareKeyUp(keyCode, event) || super.onKeyUp(keyCode, event)
     }
 }

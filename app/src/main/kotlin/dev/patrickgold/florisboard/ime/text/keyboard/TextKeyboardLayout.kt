@@ -799,19 +799,12 @@ private class TextKeyboardLayoutController(
                                 inputEventDispatcher.sendDownUp(corner)
                                 return true
                             }
-                            val swipeAction = when (event.direction) {
-                                SwipeGesture.Direction.UP -> prefs.gestures.swipeUp.get()
-                                SwipeGesture.Direction.DOWN -> prefs.gestures.swipeDown.get()
-                                SwipeGesture.Direction.LEFT -> prefs.gestures.swipeLeft.get()
-                                SwipeGesture.Direction.RIGHT -> prefs.gestures.swipeRight.get()
-                                else -> SwipeAction.NO_ACTION
-                            }
-                            if (swipeAction != SwipeAction.NO_ACTION) {
-                                keyboardManager.executeSwipeAction(swipeAction)
-                                true
-                            } else {
-                                false
-                            }
+                            // Whole-keyboard swipes no longer do anything. Shift on swipe up, hide on
+                            // swipe down and subtype switching left and right were four ways to fire
+                            // something by accident while aiming for a letter, on a keyboard where
+                            // the words mostly arrive by voice anyway. The space bar gestures are
+                            // untouched: those are aimed at one key and are wanted.
+                            false
                         }
                         else -> false
                     }
