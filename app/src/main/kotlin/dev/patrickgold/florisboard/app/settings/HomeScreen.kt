@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Restore
@@ -64,6 +65,7 @@ import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 import dev.patrickgold.florisboard.lib.util.InputMethodUtils
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import dev.patrickgold.jetpref.datastore.ui.Preference
+import dev.patrickgold.jetpref.datastore.ui.PreferenceGroup
 import java.text.NumberFormat
 import org.florisboard.lib.compose.FlorisErrorCard
 import org.florisboard.lib.compose.FlorisIconButton
@@ -117,115 +119,121 @@ fun HomeScreen() = FlorisScreen {
         //
         // Removed rather than hidden: Emojis & GIFs, Addons & Extensions, and Other. They belong to
         // the general-purpose keyboard this was forked from, not to a voice-typing tool.
-        Preference(
-            icon = Icons.Default.Edit,
-            title = "Try the keyboard",
-            summary = "A blank page to dictate into",
-            onClick = { navController.navigate(Routes.Settings.TryIt) },
-        )
-        Preference(
-            icon = Icons.Default.RecordVoiceOver,
-            title = "Little man",
-            summary = "His buttons, their prompts, and what he remembers",
-            onClick = { navController.navigate(Routes.Settings.DictateLittleMan) },
-        )
-        Preference(
-            icon = Icons.Default.Key,
-            title = "API keys",
-            summary = "Import, test and manage every key",
-            onClick = { navController.navigate(Routes.Settings.DictateKeys) },
-        )
-        // Dictate as a menu is gone. It was a lobby: a screen whose only job was to hold five other
-        // screens, so everything worth reaching sat one tap further away than it needed to. Its
-        // children are here now, and the two that only duplicated the key manager, provider roles
-        // and model choice, are not, because that is where those already live.
-        Preference(
-            icon = Icons.Default.RecordVoiceOver,
-            title = "Little man",
-            summary = "Speak an instruction; the AI rewrites what is in the field",
-            onClick = { navController.navigate(Routes.Settings.DictatePrompts()) },
-        )
-        Preference(
-            icon = Icons.Default.Mic,
-            title = stringRes(R.string.dictate__recording_group),
-            onClick = { navController.navigate(Routes.Settings.DictateRecording) },
-        )
-        Preference(
-            icon = Icons.Outlined.Keyboard,
-            title = stringRes(R.string.dictate__output_group),
-            onClick = { navController.navigate(Routes.Settings.DictateOutput) },
-        )
-        Preference(
-            icon = Icons.Default.AutoAwesome,
-            title = stringRes(R.string.dictate__rewording_title),
-            onClick = { navController.navigate(Routes.Settings.DictateRewording) },
-        )
-        Preference(
-            icon = Icons.Default.Spellcheck,
-            title = stringRes(R.string.dictate__mappings_title),
-            onClick = { navController.navigate(Routes.Settings.DictateMappings) },
-        )
-        Preference(
-            icon = Icons.Default.Translate,
-            title = stringRes(R.string.dictate__languages_title),
-            onClick = { navController.navigate(Routes.Settings.DictateLanguages) },
-        )
-        // The transcription archive already existed, three levels down under Dictate, which is why it
-        // read as missing. Every finished dictation is logged and can be re-inserted or re-transcribed
-        // from here, so it belongs beside dictation itself rather than buried under it.
-        Preference(
-            icon = Icons.Default.Schedule,
-            title = stringRes(R.string.dictate__history_title),
-            summary = "Every transcription, re-insert or re-transcribe",
-            onClick = { navController.navigate(Routes.Settings.DictateHistory) },
-        )
-        Preference(
-            icon = Icons.Default.Bolt,
-            title = "Macro bar",
-            summary = "Buttons that type text or press keys",
-            onClick = { navController.navigate(Routes.Settings.DictateMacros) },
-        )
-        Preference(
-            icon = Icons.Default.Restore,
-            title = "Recovered recordings",
-            summary = "Audio saved when a recording was cut short",
-            onClick = { navController.navigate(Routes.Settings.DictateRecovered) },
-        )
-        Preference(
-            icon = Icons.Default.Language,
-            title = stringRes(R.string.settings__localization__title),
-            onClick = { navController.navigate(Routes.Settings.Localization) },
-        )
-        Preference(
-            icon = Icons.Outlined.Palette,
-            title = stringRes(R.string.settings__theme__title),
-            onClick = { navController.navigate(Routes.Settings.Theme) },
-        )
-        Preference(
-            icon = Icons.Outlined.Keyboard,
-            title = stringRes(R.string.settings__keyboard__title),
-            onClick = { navController.navigate(Routes.Settings.Keyboard) },
-        )
-        Preference(
-            icon = Icons.Default.SmartButton,
-            title = stringRes(R.string.settings__smartbar__title),
-            onClick = { navController.navigate(Routes.Settings.Smartbar) },
-        )
-        Preference(
-            icon = Icons.Default.Gesture,
-            title = stringRes(R.string.settings__gestures__title),
-            onClick = { navController.navigate(Routes.Settings.Gestures) },
-        )
-        Preference(
-            icon = Icons.Default.Spellcheck,
-            title = stringRes(R.string.settings__typing__title),
-            onClick = { navController.navigate(Routes.Settings.Typing) },
-        )
-        Preference(
-            icon = Icons.AutoMirrored.Outlined.Assignment,
-            title = stringRes(R.string.settings__clipboard__title),
-            onClick = { navController.navigate(Routes.Settings.Clipboard) },
-        )
+        // Grouped by what a person is actually trying to do, rather than by which codebase a screen
+        // came from. Four groups: getting set up, the dictation itself, what is kept, and how the
+        // keyboard looks and behaves. Within each, the thing used most often is first.
+        //
+        // "Little man" appeared twice before this: once from the prompts work and once from an
+        // earlier pass, which is exactly the kind of drift that comes from adding rows to the top of
+        // a list instead of maintaining the list.
+        PreferenceGroup(title = "Start here") {
+            Preference(
+                icon = Icons.Default.Edit,
+                title = "Try the keyboard",
+                summary = "A blank page to dictate into",
+                onClick = { navController.navigate(Routes.Settings.TryIt) },
+            )
+            Preference(
+                icon = Icons.Default.Key,
+                title = "API keys",
+                summary = "Import, test and manage every key",
+                onClick = { navController.navigate(Routes.Settings.DictateKeys) },
+            )
+        }
+
+        PreferenceGroup(title = "Dictation") {
+            Preference(
+                icon = Icons.Default.Mic,
+                title = stringRes(R.string.dictate__recording_group),
+                onClick = { navController.navigate(Routes.Settings.DictateRecording) },
+            )
+            Preference(
+                icon = Icons.Default.Translate,
+                title = stringRes(R.string.dictate__languages_title),
+                onClick = { navController.navigate(Routes.Settings.DictateLanguages) },
+            )
+            Preference(
+                icon = Icons.Default.RecordVoiceOver,
+                title = "Little man",
+                summary = "His buttons, their prompts, and what he remembers",
+                onClick = { navController.navigate(Routes.Settings.DictateLittleMan) },
+            )
+            Preference(
+                icon = Icons.Default.AutoAwesome,
+                title = stringRes(R.string.dictate__rewording_title),
+                onClick = { navController.navigate(Routes.Settings.DictateRewording) },
+            )
+            Preference(
+                icon = Icons.Default.Spellcheck,
+                title = stringRes(R.string.dictate__mappings_title),
+                onClick = { navController.navigate(Routes.Settings.DictateMappings) },
+            )
+            Preference(
+                icon = Icons.Default.Keyboard,
+                title = stringRes(R.string.dictate__output_group),
+                onClick = { navController.navigate(Routes.Settings.DictateOutput) },
+            )
+        }
+
+        PreferenceGroup(title = "Saved") {
+            Preference(
+                icon = Icons.Default.History,
+                title = stringRes(R.string.dictate__history_title),
+                summary = "Every transcription, with its audio",
+                onClick = { navController.navigate(Routes.Settings.DictateHistory) },
+            )
+            Preference(
+                icon = Icons.Default.History,
+                title = "Recovered recordings",
+                summary = "Audio saved when a recording was cut short",
+                onClick = { navController.navigate(Routes.Settings.DictateRecovered) },
+            )
+            Preference(
+                icon = Icons.AutoMirrored.Outlined.Assignment,
+                title = stringRes(R.string.settings__clipboard__title),
+                onClick = { navController.navigate(Routes.Settings.Clipboard) },
+            )
+        }
+
+        PreferenceGroup(title = "Keyboard") {
+            Preference(
+                icon = Icons.Outlined.Palette,
+                title = stringRes(R.string.settings__theme__title),
+                onClick = { navController.navigate(Routes.Settings.Theme) },
+            )
+            Preference(
+                icon = Icons.Default.Bolt,
+                title = "Macro bar",
+                summary = "Buttons that type text or press keys",
+                onClick = { navController.navigate(Routes.Settings.DictateMacros) },
+            )
+            Preference(
+                icon = Icons.Outlined.Keyboard,
+                title = stringRes(R.string.settings__keyboard__title),
+                onClick = { navController.navigate(Routes.Settings.Keyboard) },
+            )
+            Preference(
+                icon = Icons.Default.SmartButton,
+                title = stringRes(R.string.settings__smartbar__title),
+                onClick = { navController.navigate(Routes.Settings.Smartbar) },
+            )
+            Preference(
+                icon = Icons.Default.Gesture,
+                title = stringRes(R.string.settings__gestures__title),
+                onClick = { navController.navigate(Routes.Settings.Gestures) },
+            )
+            Preference(
+                icon = Icons.Default.Language,
+                title = stringRes(R.string.settings__localization__title),
+                onClick = { navController.navigate(Routes.Settings.Localization) },
+            )
+            Preference(
+                icon = Icons.Default.Spellcheck,
+                title = stringRes(R.string.settings__typing__title),
+                onClick = { navController.navigate(Routes.Settings.Typing) },
+            )
+        }
+
         Preference(
             icon = Icons.Outlined.Info,
             title = stringRes(R.string.about__title),

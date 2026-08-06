@@ -40,56 +40,6 @@ fun GesturesScreen() = FlorisScreen {
     previewFieldVisible = true
 
     content {
-        PreferenceGroup(title = stringRes(R.string.pref__glide__title)) {
-            SwitchPreference(
-                prefs.glide.enabled,
-                modifier = Modifier.settingsSearchAnchor("pref__glide__enabled__label"),
-                title = stringRes(R.string.pref__glide__enabled__label),
-                summary = stringRes(R.string.pref__glide__enabled__summary),
-            )
-            SwitchPreference(
-                prefs.glide.showTrail,
-                modifier = Modifier.settingsSearchAnchor("pref__glide__show_trail__label"),
-                title = stringRes(R.string.pref__glide__show_trail__label),
-                summary = stringRes(R.string.pref__glide__show_trail__summary),
-                enabledIf = { prefs.glide.enabled isEqualTo true },
-            )
-            DialogSliderPreference(
-                prefs.glide.trailDuration,
-                modifier = Modifier.settingsSearchAnchor("pref__glide_trail_fade_duration"),
-                title = stringRes(R.string.pref__glide_trail_fade_duration),
-                valueLabel = { stringRes(R.string.unit__milliseconds__symbol, "v" to it) },
-                min = 0,
-                max = 500,
-                stepIncrement = 10,
-                enabledIf = { prefs.glide.enabled isEqualTo true && prefs.glide.showTrail isEqualTo true },
-            )
-            SwitchPreference(
-                prefs.glide.showPreview,
-                modifier = Modifier.settingsSearchAnchor("pref__glide__show_preview"),
-                title = stringRes(R.string.pref__glide__show_preview),
-                summary = stringRes(R.string.pref__glide__show_preview__summary),
-                enabledIf = { prefs.glide.enabled isEqualTo true },
-            )
-            DialogSliderPreference(
-                prefs.glide.previewRefreshDelay,
-                modifier = Modifier.settingsSearchAnchor("pref__glide_preview_refresh_delay"),
-                title = stringRes(R.string.pref__glide_preview_refresh_delay),
-                valueLabel = { stringRes(R.string.unit__milliseconds__symbol, "v" to it) },
-                min = 50,
-                max = 500,
-                stepIncrement = 25,
-                enabledIf = { prefs.glide.enabled isEqualTo true && prefs.glide.showPreview isEqualTo true },
-            )
-            SwitchPreference(
-                prefs.glide.immediateBackspaceDeletesWord,
-                modifier = Modifier.settingsSearchAnchor("pref__glide__immediate_backspace_deletes_word__label"),
-                title = stringRes(R.string.pref__glide__immediate_backspace_deletes_word__label),
-                summary = stringRes(R.string.pref__glide__immediate_backspace_deletes_word__summary),
-                enabledIf = { prefs.glide.enabled isEqualTo true },
-            )
-        }
-
         PreferenceGroup(title = stringRes(R.string.pref__gestures__general_title)) {
             ListPreference(
                 prefs.gestures.swipeUp,

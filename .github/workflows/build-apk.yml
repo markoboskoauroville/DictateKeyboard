@@ -47,7 +47,11 @@ jobs:
           keytool -list -keystore voicetype.jks -storepass "$KS_PW" | grep -i 'SHA-256' || true
 
       - name: Build release APK
-        run: ./gradlew :app:assembleRelease -x lintVitalRelease --no-daemon
+        # The build number the release is named after is passed into the build itself, so About can
+        # report the number that is actually on the APK someone downloaded. Previously the app
+        # carried a hand-bumped version code that had drifted far from the run number, and reported
+        # a build nobody had ever installed.
+        run: ./gradlew :app:assembleRelease -x lintVitalRelease --no-daemon -PprojectVersionCode=${{ github.run_number }}
 
       - name: Publish APK
         env:

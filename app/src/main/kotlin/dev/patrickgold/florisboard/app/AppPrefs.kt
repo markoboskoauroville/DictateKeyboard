@@ -1099,6 +1099,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
 
     val glide = Glide()
     inner class Glide {
+        // Off, and no longer exposed. Glide typing is for typing, and this is a keyboard whose
+        // words arrive by voice; the setting was a section of a screen nobody used.
         val enabled = boolean(
             key = "glide__enabled",
             default = false,

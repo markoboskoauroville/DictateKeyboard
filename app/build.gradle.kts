@@ -79,10 +79,11 @@ configure<ApplicationExtension> {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // sherpa-onnx on-device STT (issue #104): ship the ABIs the vendored native libs cover —
-        // arm64-v8a (modern phones) and armeabi-v7a (older 32-bit devices).
+        // arm64 only. The 32-bit slice was 20.8 MB of the APK, almost entirely a second copy of
+        // libonnxruntime.so for the on-device engine, and every phone that can run this app is
+        // 64-bit. Nothing else in the build has been anywhere near that expensive.
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            abiFilters += listOf("arm64-v8a")
         }
 
         buildConfigField("String", "BUILD_COMMIT_HASH", "\"${getGitCommitHash().get()}\"")

@@ -75,6 +75,10 @@ fun AboutScreen() = FlorisScreen {
 
     // Account suffix (a) marks which machine last built this, matching the convention across the
     // rest of Marko's apps. The build number is what the GitHub release is named after.
+    // The build number is now the CI run number, passed in at build time, so this is the number
+    // printed on the release that was actually downloaded. It used to be a hand-bumped version code
+    // that had drifted to 127 while releases were named build 57, meaning About confidently reported
+    // a build nobody had ever installed.
     val appVersion = "${BuildConfig.VERSION_NAME} (a), build ${BuildConfig.VERSION_CODE}"
 
     content {
