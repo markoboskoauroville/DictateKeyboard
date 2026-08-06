@@ -590,9 +590,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // Additionally keep the source audio (WAV) of each logged dictation so a flaky transcription can be
         // replayed and re-transcribed. Off by default (privacy + disk: ~1.9 MB per recorded minute); the
         // audio lives in the app's private storage and is pruned by the byte budget below.
+        // On by default. Keeping the transcript without its audio makes re-transcribing impossible,
+        // which is most of what the archive is for: the same recording through a different model or
+        // upload format, compared side by side. The size caps below still bound what it costs.
         val historyAudioRetention = boolean(
             key = "dictate__history_audio_retention",
-            default = false,
+            default = true,
         )
         // Cap: how many entries to keep (oldest dropped first).
         val historyMaxEntries = int(
@@ -790,7 +793,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v3_applied",
+            key = "dictate__ma_row_v4_applied",
             default = false,
         )
         val maSunriseApplied = boolean(

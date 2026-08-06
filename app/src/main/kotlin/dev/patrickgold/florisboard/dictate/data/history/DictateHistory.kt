@@ -274,6 +274,19 @@ object DictateHistoryStore {
     }
 
     /** Clears the whole history and every retained audio file. */
+    /**
+     * Deletes only the kept audio, leaving the transcript.
+     *
+     * The three deletions are separate on purpose. Audio is what fills the phone up, and a transcript
+     * is what is worth keeping forever; being forced to lose the text to reclaim the megabytes is a
+     * false choice. The file goes first and the row is cleared afterwards, so a failed delete cannot
+     * leave a row pointing at nothing.
+     */
+    suspend fun deleteAudioOnly(context: Context, entry: DictateHistoryEntry) {
+        entry.audioPath?.let { path -> runCatching { java.io.File(path).delete() } }
+        db(context).dao().clearAudio(entry.id)
+    }
+
     suspend fun clearAll(context: Context) {
         db(context).dao().deleteAll()
         runCatching { audioDir(context).deleteRecursively() }

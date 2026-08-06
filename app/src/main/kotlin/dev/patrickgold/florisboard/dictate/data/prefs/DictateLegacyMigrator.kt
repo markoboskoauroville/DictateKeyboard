@@ -407,6 +407,10 @@ object DictateLegacyMigrator {
             if (at >= 0) entries.toMutableList().apply { add(at, "HISTORY") } else entries + "HISTORY"
         }
         prefs.dictate.legacyActionRow.set(withHistory.joinToString(","))
+        // Audio retention on, once, for the same reason as the row edits: a changed default cannot
+        // reach a preference an existing install has already written, and without the audio the
+        // archive cannot re-transcribe anything.
+        prefs.dictate.historyAudioRetention.set(true)
         prefs.dictate.maRowV2Applied.set(true)
     }
 

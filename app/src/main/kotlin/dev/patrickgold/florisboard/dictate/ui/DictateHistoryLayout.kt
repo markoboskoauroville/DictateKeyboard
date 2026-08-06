@@ -31,6 +31,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,11 +53,13 @@ import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import dev.patrickgold.jetpref.datastore.model.collectAsState as collectPrefAsState
 import org.florisboard.lib.compose.stringRes
+import org.florisboard.lib.snygg.ui.SnyggButton
 import org.florisboard.lib.snygg.ui.SnyggBox
 import org.florisboard.lib.snygg.ui.SnyggColumn
 import org.florisboard.lib.snygg.ui.SnyggIcon
@@ -88,6 +93,11 @@ fun DictateHistoryLayout(
     }.collectAsState(initial = null)
 
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    // Which entry is being deleted, if any. The three deletions are genuinely different outcomes, so
+    // the panel asks rather than guessing: the transcript is worth keeping forever, the audio is what
+    // fills the phone, and being made to lose one to reclaim the other is a false choice.
+    var pendingDelete by remember { mutableStateOf<DictateHistoryEntry?>(null) }
 
     SnyggColumn(
         elementName = FlorisImeUi.Media.elementName,
@@ -181,10 +191,71 @@ fun DictateHistoryLayout(
                             DictateController.retranscribeHistoryEntry(context, entry)
                             keyboardManager.activeState.imeUiMode = ImeUiMode.TEXT
                         },
+                        onDeleteRequested = {
+                            if (entry.audioPath != null) {
+                                pendingDelete = entry
+                            } else {
+                                // Nothing to choose between when there is no audio.
+                                scope.launch(Dispatchers.IO) {
+                                    DictateHistoryStore.delete(context, entry)
+                                }
+                            }
+                        },
                     )
                 }
             }
         }
+        pendingDelete?.let { target ->
+            MaDeleteChooser(
+                onAudioOnly = {
+                    scope.launch(Dispatchers.IO) { DictateHistoryStore.deleteAudioOnly(context, target) }
+                    pendingDelete = null
+                },
+                onEverything = {
+                    scope.launch(Dispatchers.IO) { DictateHistoryStore.delete(context, target) }
+                    pendingDelete = null
+                },
+                onCancel = { pendingDelete = null },
+            )
+        }
+    }
+}
+
+/**
+ * The delete choice, as a strip along the bottom of the panel rather than a dialog.
+ *
+ * A dialog over a keyboard is awkward: it steals focus from the field being typed into and can push
+ * the panel around. A strip stays inside the keyboard's own bounds and reads as part of it.
+ */
+@Composable
+private fun MaDeleteChooser(
+    onAudioOnly: () -> Unit,
+    onEverything: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    SnyggRow(
+        elementName = FlorisImeUi.MediaBottomRow.elementName,
+        modifier = Modifier.fillMaxWidth().padding(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MaHistoryAction(
+            label = "Audio only",
+            enabled = true,
+            onClick = onAudioOnly,
+            modifier = Modifier.weight(1f),
+        )
+        MaHistoryAction(
+            label = "Delete both",
+            enabled = true,
+            onClick = onEverything,
+            modifier = Modifier.weight(1f),
+        )
+        MaHistoryAction(
+            label = "Cancel",
+            enabled = true,
+            onClick = onCancel,
+            modifier = Modifier.weight(0.8f),
+        )
     }
 }
 
@@ -195,14 +266,16 @@ private fun HistoryPanelRow(
     onInsert: () -> Unit,
     onInsertOriginal: () -> Unit,
     onRetranscribe: () -> Unit,
+    onDeleteRequested: () -> Unit,
 ) {
     // Both versions exist only when a prompt actually rewrote the dictation (issue #240).
     val hasOriginal = entry.originalText.isNotEmpty() && entry.originalText != entry.text
-    // Compact text, large tap targets: the transcript uses the candidate-word text size and the meta line
-    // the (much smaller) secondary-candidate size, so the metadata clearly reads as a subordinate line;
-    // the insert / re-transcribe buttons are generous and easy to hit.
-    val buttonSize = 56.dp
-    val iconSize = 32.dp
+    // The transcript and its actions are one item, so they must sit in a column: two rows returned
+    // side by side from a lazy item would be placed in the same slot and overlap.
+    SnyggColumn(
+        elementName = FlorisImeUi.Media.elementName,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+    ) {
     SnyggRow(
         elementName = FlorisImeUi.MediaBottomRow.elementName,
         modifier = Modifier
@@ -249,31 +322,61 @@ private fun HistoryPanelRow(
                 },
             )
         }
-        if (entry.audioPath != null) {
-            SnyggIconButton(
-                elementName = FlorisImeUi.MediaBottomRowButton.elementName,
-                onClick = onRetranscribe,
-                modifier = Modifier.size(buttonSize),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Autorenew,
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSize),
-                )
-            }
-        }
-        SnyggIconButton(
-            elementName = FlorisImeUi.MediaBottomRowButton.elementName,
-            onClick = onInsert,
+    }
+
+    // Actions on their own line, with words on them. The icons alone were a guess: a circular arrow
+    // could mean replay, refresh or undo, and the only way to find out was to press it and see what
+    // happened to the text. Naming them costs one line of height and removes the guessing.
+    SnyggRow(
+        elementName = FlorisImeUi.MediaBottomRow.elementName,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MaHistoryAction(
+            label = "Insert",
             enabled = !entry.failed,
-            modifier = Modifier.size(buttonSize),
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardReturn,
-                contentDescription = null,
-                modifier = Modifier.size(iconSize),
+            onClick = onInsert,
+            modifier = Modifier.weight(1f),
+        )
+        if (entry.audioPath != null) {
+            MaHistoryAction(
+                label = "Transcribe again",
+                enabled = true,
+                onClick = onRetranscribe,
+                modifier = Modifier.weight(1.4f),
             )
         }
+        MaHistoryAction(
+            label = if (entry.audioPath != null) "Delete\u2026" else "Delete",
+            enabled = true,
+            onClick = onDeleteRequested,
+            modifier = Modifier.weight(1f),
+        )
+    }
+    }
+}
+
+/** One labelled action. Text rather than an icon, because the words are the whole point here. */
+@Composable
+private fun MaHistoryAction(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    SnyggButton(
+        elementName = FlorisImeUi.MediaBottomRowButton.elementName,
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.padding(horizontal = 2.dp),
+    ) {
+        SnyggText(
+            elementName = FlorisImeUi.KeyHint.elementName,
+            text = label,
+            maxLines = 1,
+        )
     }
 }
 
@@ -283,12 +386,18 @@ private fun historyPreview(text: String): String = text.replace('\n', ' ').trim(
 /** "5 min ago · OpenAI · 0:12 · 0.4 MB" — omits the parts that don't apply. */
 private fun historyMetaLine(entry: DictateHistoryEntry): String {
     val parts = ArrayList<String>(4)
+    // The provider is deliberately not here. It is the same on every row, so it told nobody
+    // anything, and the width is better spent on how long this one took and in which format, which
+    // differs row to row and is the whole reason for keeping the audio.
+    if (entry.sendMs > 0L) {
+        val secs = "%.1fs".format(entry.sendMs / 1000.0)
+        parts.add(if (entry.sendFormat.isNotBlank()) "$secs ${entry.sendFormat}" else secs)
+    }
     parts.add(
         DateUtils.getRelativeTimeSpanString(
             entry.createdAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS,
         ).toString()
     )
-    if (entry.providerName.isNotBlank()) parts.add(entry.providerName)
     formatHistoryDuration(entry.durationSecs)?.let { parts.add(it) }
     formatHistorySize(entry.audioBytes)?.let { parts.add(it) }
     return parts.joinToString(" · ")
