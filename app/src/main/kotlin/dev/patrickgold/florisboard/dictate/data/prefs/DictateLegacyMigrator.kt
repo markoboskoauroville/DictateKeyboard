@@ -14,6 +14,7 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.dictate.MaKeyImport
+import dev.patrickgold.florisboard.dictate.data.prompts.PromptsDatabaseHelper
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.theme.extCoreTheme
 import dev.patrickgold.florisboard.dictate.DictateLanguages
@@ -392,7 +393,7 @@ object DictateLegacyMigrator {
         }
     }
 
-    suspend fun applyRowV2IfNeeded() {
+    suspend fun applyRowV2IfNeeded(context: Context) {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.maRowV2Applied.get()) return
         val row = prefs.dictate.legacyActionRow.get()
@@ -415,6 +416,11 @@ object DictateLegacyMigrator {
         // reach a preference an existing install has already written, and without the audio the
         // archive cannot re-transcribe anything.
         prefs.dictate.historyAudioRetention.set(true)
+        // The fork's starter prompts give way to Marko's own, once, and only on an install where
+        // nobody has edited them. Someone's own prompts are not ours to overwrite.
+        runCatching {
+            PromptsDatabaseHelper.getInstance(context).replaceStarterSetIfUntouched()
+        }
         // The transcribe view becomes the main one. Only set when nothing is pinned, so an explicit
         // pin is never overwritten by a change of default.
         if (prefs.dictate.maPinnedView.get().isBlank()) {

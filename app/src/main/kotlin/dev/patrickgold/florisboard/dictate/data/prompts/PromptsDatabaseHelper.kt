@@ -51,8 +51,8 @@ class PromptsDatabaseHelper private constructor(
         defaultSeeds().forEachIndexed { index, seed ->
             val cv = ContentValues().apply {
                 put("POS", index)
-                put("NAME", context.getString(seed.nameRes))
-                put("PROMPT", context.getString(seed.promptRes))
+                put("NAME", seed.name)
+                put("PROMPT", seed.prompt)
                 put("REQUIRES_SELECTION", if (seed.requiresSelection) 1 else 0)
                 put("AUTO_APPLY", 0)
             }
@@ -103,6 +103,42 @@ class PromptsDatabaseHelper private constructor(
         } finally {
             db.endTransaction()
         }
+    }
+
+    /**
+     * Replaces the prompt list with the shipped seeds, once, for an install that already has the
+     * fork's originals.
+     *
+     * Only when nothing has been added or edited: the count and the names must both still match the
+     * old starter set exactly. Somebody who has written their own prompts keeps them, because
+     * overwriting a person's own work to install a better default is not an improvement.
+     */
+    fun replaceStarterSetIfUntouched(): Boolean {
+        val current = getAll()
+        val oldNames = setOf(
+            "Fix Grammar", "Improve Writing", "Make Formal", "Make Friendlier", "Make Shorter",
+            "Translate to English", "Quote", "Fun Fact", "Shrug", "Sign-off",
+        )
+        val untouched = current.isNotEmpty() && current.all { (it.name ?: "") in oldNames }
+        if (!untouched) return false
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete("PROMPTS", null, null)
+            defaultSeeds().forEachIndexed { index, seed ->
+                db.insert("PROMPTS", null, ContentValues().apply {
+                    put("POS", index)
+                    put("NAME", seed.name)
+                    put("PROMPT", seed.prompt)
+                    put("REQUIRES_SELECTION", if (seed.requiresSelection) 1 else 0)
+                    put("AUTO_APPLY", 0)
+                })
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        return true
     }
 
     fun update(model: PromptModel) {
@@ -196,7 +232,7 @@ class PromptsDatabaseHelper private constructor(
         )
     }
 
-    private data class Seed(val nameRes: Int, val promptRes: Int, val requiresSelection: Boolean)
+    private data class Seed(val name: String, val prompt: String, val requiresSelection: Boolean)
 
     companion object {
         const val DATABASE_NAME = "prompts.db"
@@ -216,21 +252,74 @@ class PromptsDatabaseHelper private constructor(
                 instance ?: PromptsDatabaseHelper(context.applicationContext).also { instance = it }
             }
 
-        // A useful starter set covering all three prompt types: six rewrite-the-selection editors
-        // (requiresSelection = true), two free generators and two literal `[snippet]` prompts (both
-        // requiresSelection = false). Resolved lazily so the strings pick up the device locale at seed
-        // time.
+        /**
+         * Marko's own restyle prompts, which is what ships instead of the fork's starter set.
+         *
+         * The originals were written for a general audience: Fix Grammar, Improve Writing, Make
+         * Formal, plus four novelty ones. None of them are how this keyboard is used. These are the
+         * voices actually wanted, written as voices rather than labels, with no length ceiling so a
+         * long piece comes back long.
+         *
+         * Plain strings rather than string resources on purpose: these are one person's writing
+         * instructions, not UI chrome, and translating them into forty languages would change what
+         * they ask for.
+         */
         private fun defaultSeeds() = listOf(
-            Seed(R.string.dictate__example_prompt_fix_grammar_name, R.string.dictate__example_prompt_fix_grammar_prompt, true),
-            Seed(R.string.dictate__example_prompt_improve_name, R.string.dictate__example_prompt_improve_prompt, true),
-            Seed(R.string.dictate__example_prompt_formal_name, R.string.dictate__example_prompt_formal_prompt, true),
-            Seed(R.string.dictate__example_prompt_friendly_name, R.string.dictate__example_prompt_friendly_prompt, true),
-            Seed(R.string.dictate__example_prompt_shorter_name, R.string.dictate__example_prompt_shorter_prompt, true),
-            Seed(R.string.dictate__example_prompt_translate_name, R.string.dictate__example_prompt_translate_prompt, true),
-            Seed(R.string.dictate__example_prompt_quote_name, R.string.dictate__example_prompt_quote_prompt, false),
-            Seed(R.string.dictate__example_prompt_funfact_name, R.string.dictate__example_prompt_funfact_prompt, false),
-            Seed(R.string.dictate__example_prompt_shrug_name, R.string.dictate__example_prompt_shrug_prompt, false),
-            Seed(R.string.dictate__example_prompt_signoff_name, R.string.dictate__example_prompt_signoff_prompt, false),
+            Seed(
+                name = "Yshai style",
+                prompt = "Rewrite the text in the voice of a quiet teacher writing to a student. All lowercase, including the start of sentences. Short simple sentences in plain everyday words. Warm and humble, never grand. Short paragraphs of one to three sentences with a blank line between them. No bullet points, no headings, no dashes or em dashes. Keep the length close to the original and keep the writer's own meaning; say less rather than more. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Condense",
+                prompt = "Rewrite the text so it says the same thing in fewer words. Remove repetition, filler and any word that carries no meaning. Merge sentences that make the same point. You may reorder sentences freely if a different order communicates more clearly. Lose no fact, no nuance and no intent. Keep the original language and the writer's tone. Return only the condensed text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "In a nutshell",
+                prompt = "Read the whole text and return what actually matters in it: the takeaways and the principles behind them, not the details or the examples. Ignore digressions, repetitions and thinking out loud. Write a short piece of prose, no more than a third the length of the original, in the original language. If the text contains decisions or actions, state them plainly. Return only that summary, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Business",
+                prompt = "Rewrite the text as clear professional business communication. Direct, courteous, no filler, no flattery, no exclamation marks. Lead with the point, then the detail. Keep the original language and every fact. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Casual",
+                prompt = "Rewrite the text the way you would say it to a colleague you like. Relaxed, natural, contractions welcome, no stiffness and no corporate wording. Keep the meaning and the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Friendly",
+                prompt = "Rewrite the text so it sounds open and kind without becoming sweet or exaggerated. Keep every fact, soften anything that reads as blunt, and keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Warm",
+                prompt = "Rewrite the text with real warmth, as if writing to someone you care about. Unhurried, personal, gentle in its wording, but never sentimental and never longer than it needs to be. Keep the meaning and the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Fun",
+                prompt = "Rewrite the text with a light touch and a sense of play. Keep it quick, let the humour come from rhythm and word choice rather than jokes bolted on, and never let the joke cost the meaning. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Spiritual",
+                prompt = "Rewrite the text in a contemplative voice: unhurried, grounded, attentive to what is underneath the words. Plain language rather than mystical vocabulary, and no preaching. Keep the writer's meaning and the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Technical",
+                prompt = "Rewrite the text as precise technical writing. Exact terms, unambiguous sentences, no marketing language and no hedging. Preserve every number, name and detail exactly. State assumptions where the original is vague rather than inventing facts. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
+            Seed(
+                name = "Musical",
+                prompt = "Rewrite the text with attention to its rhythm: vary sentence lengths, let it breathe, place the strongest word where the ear expects it, and use silence by keeping some sentences very short. Meaning first, music second, never the other way round. Keep the original language. Return only the rewritten text, without quotation marks or explanations.",
+                requiresSelection = true,
+            ),
         )
     }
 }

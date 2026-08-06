@@ -124,6 +124,12 @@ fun HomeScreen() = FlorisScreen {
             onClick = { navController.navigate(Routes.Settings.TryIt) },
         )
         Preference(
+            icon = Icons.Default.RecordVoiceOver,
+            title = "Little man",
+            summary = "His buttons, their prompts, and what he remembers",
+            onClick = { navController.navigate(Routes.Settings.DictateLittleMan) },
+        )
+        Preference(
             icon = Icons.Default.Key,
             title = "API keys",
             summary = "Import, test and manage every key",

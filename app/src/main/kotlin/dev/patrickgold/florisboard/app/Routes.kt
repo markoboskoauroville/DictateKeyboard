@@ -64,6 +64,7 @@ import dev.patrickgold.florisboard.app.settings.clipboard.ClipboardScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateLanguagesScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateMappingsScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateKeysScreen
+import dev.patrickgold.florisboard.app.settings.dictate.DictateLittleManScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateMacroEditorScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateRecoveredScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictatePromptLibraryScreen
@@ -136,6 +137,10 @@ object Routes {
         @Serializable
         @Deeplink("settings/tryit")
         object TryIt
+
+        @Serializable
+        @Deeplink("settings/dictate/littleman")
+        object DictateLittleMan
 
         @Serializable
         @Deeplink("settings/dictate/keys")
@@ -365,6 +370,7 @@ object Routes {
 
             composableWithDeepLink(Settings.DictateLanguages::class) { DictateLanguagesScreen() }
             composableWithDeepLink(Settings.TryIt::class) { TryItScreen() }
+            composableWithDeepLink(Settings.DictateLittleMan::class) { DictateLittleManScreen() }
             composableWithDeepLink(Settings.DictateKeys::class) { DictateKeysScreen() }
             composableWithDeepLink(Settings.DictateRecovered::class) { DictateRecoveredScreen() }
             composableWithDeepLink(Settings.DictateMacros::class) { DictateMacroEditorScreen() }
