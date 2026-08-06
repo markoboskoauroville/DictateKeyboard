@@ -83,6 +83,9 @@ object MaMacros {
         ),
     )
 
+    /** A usable empty preset: one row, one blank button, so there is always something to edit. */
+    fun blankPreset(): Preset = Preset("New bar", listOf(listOf(Macro("", ""))))
+
     fun serialize(presets: List<Preset>): String =
         presets.joinToString(PRESET_SEP.toString()) { preset ->
             val rows = preset.rows.joinToString(ROW_SEP.toString()) { row ->
@@ -114,7 +117,9 @@ object MaMacros {
                     }
                 }
                 .filter { it.isNotEmpty() }
-            Preset(name.ifBlank { "Bar" }, rows)
+            // A preset with no rows left is a dead end on screen: nothing to edit and nothing to add
+            // a button to. It keeps one blank row so there is always somewhere to start again.
+            Preset(name.ifBlank { "Bar" }, rows.ifEmpty { listOf(listOf(Macro("", ""))) })
         }
     }
 

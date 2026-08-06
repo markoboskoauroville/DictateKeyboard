@@ -72,6 +72,11 @@ configure<ApplicationExtension> {
         // exactly what was wanted: the old net.devemperor.dictate install stays behind as a separate
         // entry until it is removed by hand, and this one carries no trace of the fork's origin.
         applicationId = "com.mantraproductions.voicetype"
+        // LOCAL TEST ONLY, never committed: -PmaTestBuild=1 gives the APK its own application id so
+        // it installs beside the real app instead of colliding with it on a different signing key.
+        if (project.hasProperty("maTestBuild")) {
+            applicationIdSuffix = ".test"
+        }
         minSdk = projectMinSdk.toInt()
         targetSdk = projectTargetSdk.toInt()
         versionCode = projectVersionCode.toInt()

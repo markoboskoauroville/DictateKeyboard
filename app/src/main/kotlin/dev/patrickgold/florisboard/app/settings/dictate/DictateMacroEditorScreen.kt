@@ -86,16 +86,48 @@ fun DictateMacroEditorScreen() = FlorisScreen {
         val raw by prefs.dictate.maMacroBar.collectAsState()
         val activeIndex by prefs.dictate.maMacroPreset.collectAsState()
 
+        // Never zero presets. Deleting the last row of a preset leaves it with no rows, the parser
+        // drops an empty preset, and the screen was then returning early before the New preset button
+        // was ever drawn: no presets, and no way to make one. A blank preset stands in instead, so
+        // there is always something on screen to edit and always a way forward.
         val presets = remember(raw) {
-            if (raw.isBlank()) MaMacros.DEFAULT_PRESETS else MaMacros.parse(raw)
+            val parsed = if (raw.isBlank()) MaMacros.DEFAULT_PRESETS else MaMacros.parse(raw)
+            parsed.ifEmpty { listOf(MaMacros.blankPreset()) }
         }
-        val index = activeIndex.coerceIn(0, (presets.size - 1).coerceAtLeast(0))
-        val preset = presets.getOrNull(index) ?: return@content
+        val index = activeIndex.coerceIn(0, presets.size - 1)
+        val preset = presets[index]
 
+        /**
+         * Persists the preset list, refusing ever to store a state that reads back as nothing.
+         *
+         * The failure this prevents: a preset holding one empty button serialises to a string whose
+         * every field is empty, the parser discards empty buttons, and the preset comes back with
+         * nothing in it. Enough of those in a row and the list reads back shorter than it was
+         * written, which is how a list can quietly shrink to zero and strand the screen.
+         *
+         * So the result is parsed back before being trusted. If the round trip loses presets, a
+         * blank one is substituted rather than writing a string that cannot be read.
+         */
         fun write(updated: List<MaMacros.Preset>, newIndex: Int = index) {
+            val safe = updated.ifEmpty { listOf(MaMacros.blankPreset()) }
+            val encoded = MaMacros.serialize(safe)
+            val survives = MaMacros.parse(encoded).size >= safe.size
+            val finalEncoded = if (survives) {
+                encoded
+            } else {
+                MaMacros.serialize(safe.map { preset ->
+                    // A preset whose only button is empty gets a visible placeholder, so it has
+                    // something to survive on and something to see on screen.
+                    if (preset.rows.all { row -> row.all { it.label.isBlank() && it.macro.isBlank() } }) {
+                        preset.copy(rows = listOf(listOf(MaMacros.Macro("\u2022", ""))))
+                    } else {
+                        preset
+                    }
+                })
+            }
             scope.launch {
-                prefs.dictate.maMacroBar.set(MaMacros.serialize(updated))
-                prefs.dictate.maMacroPreset.set(newIndex.coerceIn(0, (updated.size - 1).coerceAtLeast(0)))
+                prefs.dictate.maMacroBar.set(finalEncoded)
+                prefs.dictate.maMacroPreset.set(newIndex.coerceIn(0, (safe.size - 1).coerceAtLeast(0)))
             }
         }
 
@@ -133,12 +165,18 @@ fun DictateMacroEditorScreen() = FlorisScreen {
                     TextButton(
                         enabled = presets.size < MaMacros.MAX_PRESETS,
                         onClick = {
-                            val fresh = MaMacros.Preset("New bar", listOf(listOf(MaMacros.Macro("", ""))))
-                            write(presets + fresh, presets.size)
+                            // Numbered, so a new preset is visibly a new one. Two called "New bar"
+                            // look like nothing happened, which is what "it does not work" describes.
+                            val used = presets.map { it.name }.toSet()
+                            var n = presets.size + 1
+                            while ("Bar $n" in used) n++
+                            write(presets + MaMacros.blankPreset().copy(name = "Bar $n"), presets.size)
                         },
                     ) { Text("New preset") }
                     TextButton(
-                        enabled = presets.size > 1,
+                        // Always available. Deleting the last one leaves a fresh blank rather than
+                        // nothing, so there is no state with no presets and no way back.
+                        enabled = true,
                         onClick = {
                             write(presets.filterIndexed { i, _ -> i != index }, 0)
                         },

@@ -1347,7 +1347,6 @@ object DictateController {
                 //
                 // The on-device engine is skipped: it is handed the audio locally and decodes it
                 // itself, so encoding would only give it something to undo.
-                val maRawBytes = uploadFile.length()
                 var maEncoded = false
                 if (preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE) {
                     val resampled = MaResample.toTargetRate(uploadFile)
@@ -1398,16 +1397,13 @@ object DictateController {
                         // MA TWIST: the key field may hold several keys, one per line. A rejected or
                         // exhausted key rolls to the next one; anything else fails straight away.
                         val maKeys = MaKeys.split(apiKey)
-                        // Both numbers, always. A single figure told nobody whether the 1.9 MB of
-                        // raw audio had been shrunk or was going out whole, which is exactly the
-                        // question worth answering while watching an upload crawl.
-                        val maRawKb = maRawBytes / 1024L
+                        // How long was spoken, and how much is going up. The raw WAV size is gone:
+                        // it was there to prove compression was happening, which is settled now, and
+                        // it crowded out the one number that means something while waiting, which is
+                        // how much of the recording there is.
                         val maSentKb = uploadFile.length() / 1024L
-                        val maSize = if (maEncoded && maRawKb > 0) {
-                            "$maRawKb kB to $maSentKb kB $maFormatTag"
-                        } else {
-                            "$maSentKb kB wav"
-                        }
+                        val maLen = "%d:%02d".format(recordedSeconds / 60, recordedSeconds % 60)
+                        val maSize = "$maLen, $maSentKb kB $maFormatTag"
                         _maStatus.value = if (maKeys.size > 1) {
                             "sending $maSize, key 1 of ${maKeys.size}"
                         } else {
