@@ -20,7 +20,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -152,6 +154,3 @@ private fun maDbColour(db: Float, tint: Color): Color = when {
     db >= -30f -> Color(0xFF56D364)
     else -> tint.copy(alpha = 0.55f)
 }
-
-
-/**
