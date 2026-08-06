@@ -1068,7 +1068,6 @@
     <string name="dictate__voice_input_stop">Fertig</string>
     <string name="dictate__voice_input_hint">Zum Senden tippen</string>
     <string name="dictate__voice_ime_label">Dictate Spracheingabe</string>
-    <string name="dictate__error_no_api_key">Kein API-Schlüssel gesetzt – richte ihn in den Dictate-Einstellungen ein.</string>
     <string name="dictate__error_transcription_failed">Transkription fehlgeschlagen.</string>
     <string name="dictate__error_unknown">Unbekannter Fehler bei der Transkription.</string>
     <string name="dictate__error_rewording_failed">Umformulierung fehlgeschlagen.</string>

@@ -12,6 +12,8 @@ package dev.patrickgold.florisboard.dictate.data.prefs
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import dev.patrickgold.florisboard.dictate.MaVault
+import dev.patrickgold.florisboard.dictate.MaKeyImport
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.theme.extCoreTheme
 import dev.patrickgold.florisboard.dictate.DictateLanguages
@@ -355,6 +357,41 @@ object DictateLegacyMigrator {
      * build, so folding this into it would mean the change never arrived anywhere. Only the emoji
      * entry is removed; whatever else the user has arranged is left exactly as it is.
      */
+    /**
+     * Loads the key backup at startup, when there are no keys at all.
+     *
+     * This used to happen only on the API keys screen, which meant a fresh install had an empty
+     * keyring until that screen happened to be opened. The keyboard would say "no API key set" while
+     * a perfectly good backup sat in Documents, and opening the screen and pressing test appeared to
+     * fix it. Nothing was being fixed; the screen was simply where the restore lived.
+     *
+     * Startup is the right place. The keys are in memory before the first recording can be started,
+     * so there is nothing to fiddle with and nothing to refresh.
+     *
+     * Runs whenever the keyring is empty rather than once ever, because a restore that quietly gives
+     * up after one failed attempt is worse than useless: the one attempt is likely to be the boot
+     * where all-files access had not been granted yet.
+     */
+    suspend fun restoreKeysFromVaultIfEmpty(context: Context) {
+        val prefs by FlorisPreferenceStore
+        val accounts = prefs.dictate.providerAccounts.get()
+        if (accounts.accounts.values.any { it.apiKey.isNotBlank() }) return
+        val text = MaVault.read() ?: return
+        if (text.isBlank()) return
+        val result = MaKeyImport.importAll(text, accounts)
+        if (result.added > 0) {
+            prefs.dictate.providerAccounts.set(result.accounts)
+            // Point the two roles at the providers that do them here, but only where a key actually
+            // arrived, so a partial backup never leaves the app aimed at an empty provider.
+            if (result.accounts.accounts["assemblyai"]?.apiKey.orEmpty().isNotBlank()) {
+                prefs.dictate.transcriptionProviderId.set("assemblyai")
+            }
+            if (result.accounts.accounts["anthropic"]?.apiKey.orEmpty().isNotBlank()) {
+                prefs.dictate.rewordingProviderId.set("anthropic")
+            }
+        }
+    }
+
     suspend fun applyRowV2IfNeeded() {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.maRowV2Applied.get()) return

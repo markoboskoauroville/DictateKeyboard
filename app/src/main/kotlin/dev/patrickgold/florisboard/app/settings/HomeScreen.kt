@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.app.Routes
-import dev.patrickgold.florisboard.dictate.data.stats.DictateStats
 import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 import dev.patrickgold.florisboard.lib.util.InputMethodUtils
 import dev.patrickgold.jetpref.datastore.model.collectAsState
@@ -104,88 +103,10 @@ fun HomeScreen() = FlorisScreen {
             )
         }
 
-        // Passive dictation-stats summary (issue #142): appears once the user has dictated, taps through
-        // to the full statistics screen. No interruption — just a glanceable "time saved".
-        val statDictations by prefs.dictate.statsDictations.collectAsState()
-        val statWords by prefs.dictate.statsWords.collectAsState()
-        val statSpoken by prefs.dictate.statsSpokenSeconds.collectAsState()
-        if (statDictations > 0L) {
-            val saved = DictateStats.savedSeconds(statWords, statSpoken)
-            Card(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxWidth()
-                    .clickable { navController.navigate(Routes.Settings.DictateStats) },
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(24.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        // Small "saved" label so it's clear the figure is time saved, not usage time.
-                        Text(
-                            stringRes(R.string.dictate__stats_time_saved),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
-                        )
-                        // Emphasized time + count on one line.
-                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                homeDuration(saved.toLong()),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                "· ${NumberFormat.getIntegerInstance().format(statDictations)} ${stringRes(R.string.dictate__stats_dictations)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(bottom = 2.dp),
-                            )
-                        }
-                    }
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                }
-            }
-        }
+        // No usage banner. Counting dictations, words and "time saved" meant a stats table being
+        // written on every single transcription for a number nobody acts on. The whole of it is
+        // gone, screen, storage and the counters that fed it.
 
-        // Milestone celebrations are shown on the keyboard (Smartbar nudge), consistent with rate/donate
-        // (issue #142) — see DictateController.showMilestoneNudge. Not surfaced here.
-
-        /*Card(modifier = Modifier.padding(8.dp)) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Welcome to the 0.4 alpha series!",
-                        style = MaterialTheme.typography.subtitle1,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.weight(1.0f))
-                    IconButton(onClick = { this@content.prefs.internal.homeIsBetaToolboxCollapsed.set(!isCollapsed) }) {
-                        Icon(
-                            painter = painterResource(if (isCollapsed) {
-                                R.drawable.ic_keyboard_arrow_down
-                            } else {
-                                R.drawable.ic_keyboard_arrow_up
-                            }),
-                            contentDescription = null,
-                        )
-                    }
-                }
-                if (!isCollapsed) {
-                    Text("0.4 will be quite a big release and finally work on adding support for word suggestion and inline autocorrect within the keyboard UI, at first for Latin-based languages. Additionally general improvements and bug fixes will also be made.\n")
-                    Text("Currently the alpha releases are preparations for the suggestions implementation and general improvements and bug fixes.\n")
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Note that this release does not contain support for word suggestions (will show the current word plus numbers as a placeholder).", color = Color.Red)
-                    Text("Please DO NOT file an issue for this. It is already more than known and a major goal for implementation in 0.4.0. Thank you!\n")
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-        }*/
         // Reorganised around how this app is actually used. Keys first, because nothing works
         // without one and everything else is decoration until one is green. Then dictation, then the
         // things that shape what the keyboard looks like and does, then About.

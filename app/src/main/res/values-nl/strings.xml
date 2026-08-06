@@ -1077,7 +1077,6 @@ Deze toestemming kan op elk moment worden gewijzigd in de systeeminstellingen.  
     <string name="dictate__voice_input_stop">Klaar</string>
     <string name="dictate__voice_input_hint">Tik om te verzenden</string>
     <string name="dictate__voice_ime_label">Dictate spraakinvoer</string>
-    <string name="dictate__error_no_api_key">Geen API-sleutel ingesteld – stel deze in via de Dictate-instellingen.</string>
     <string name="dictate__error_transcription_failed">Transcriptie mislukt.</string>
     <string name="dictate__error_unknown">Onbekende fout tijdens de transcriptie.</string>
     <string name="dictate__error_rewording_failed">Herformulering mislukt.</string>

@@ -961,7 +961,6 @@
     <string name="dictate__voice_input_stop">Fatto</string>
     <string name="dictate__voice_input_hint">Tocca per inviare</string>
     <string name="dictate__voice_ime_label">Input vocale di Dictate</string>
-    <string name="dictate__error_no_api_key">Nessuna chiave API impostata – configurala nelle impostazioni di Dictate.</string>
     <string name="dictate__error_transcription_failed">Trascrizione non riuscita.</string>
     <string name="dictate__error_unknown">Errore sconosciuto durante la trascrizione.</string>
     <string name="dictate__error_rewording_failed">Riformulazione non riuscita.</string>

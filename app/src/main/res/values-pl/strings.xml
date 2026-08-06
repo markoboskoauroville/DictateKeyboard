@@ -1193,7 +1193,6 @@
     <string name="dictate__voice_input_stop">Gotowe</string>
     <string name="dictate__voice_input_hint">Dotknij, aby wysłać</string>
     <string name="dictate__voice_ime_label">Wprowadzanie głosowe Dictate</string>
-    <string name="dictate__error_no_api_key">Nie ustawiono klucza API – skonfiguruj go w ustawieniach Dictate.</string>
     <string name="dictate__error_transcription_failed">Transkrypcja nie powiodła się.</string>
     <string name="dictate__error_unknown">Nieznany błąd podczas transkrypcji.</string>
     <string name="dictate__error_rewording_failed">Przeformułowanie nie powiodło się.</string>

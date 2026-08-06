@@ -1025,7 +1025,6 @@
     <string name="dictate__voice_input_stop">Готово</string>
     <string name="dictate__voice_input_hint">Торкніться, щоб надіслати</string>
     <string name="dictate__voice_ime_label">Голосовий ввід Dictate</string>
-    <string name="dictate__error_no_api_key">Ключ API не задано — налаштуйте його в налаштуваннях Dictate.</string>
     <string name="dictate__error_transcription_failed">Не вдалося виконати транскрибування.</string>
     <string name="dictate__error_unknown">Невідома помилка під час транскрибування.</string>
     <string name="dictate__error_rewording_failed">Не вдалося переформулювати.</string>

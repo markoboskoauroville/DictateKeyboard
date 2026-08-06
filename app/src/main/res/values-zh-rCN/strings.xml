@@ -1173,7 +1173,6 @@
     <string name="dictate__voice_input_stop">完成</string>
     <string name="dictate__voice_input_hint">点按发送</string>
     <string name="dictate__voice_ime_label">Dictate 语音输入</string>
-    <string name="dictate__error_no_api_key">未设置 API 密钥——请在 Dictate 设置中配置。</string>
     <string name="dictate__error_transcription_failed">转录失败。</string>
     <string name="dictate__error_unknown">转录时发生未知错误。</string>
     <string name="dictate__error_rewording_failed">改写失败。</string>

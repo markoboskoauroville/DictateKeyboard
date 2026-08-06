@@ -597,8 +597,11 @@ private fun LegacyRecordRow(
                 contentDescription = stringRes(R.string.dictate__action_cancel),
                 modifier = sideKey,
                 tint = Color(0xFFE53935),
-                // In long-form this drops only the current (uncut) segment and keeps recording (#183).
-                onClick = { DictateController.cancelOrDiscardSegment(context) },
+                // Hard discard: ends the recording outright and throws the audio away, rather than
+                // dropping only the current long-form segment and carrying on. One red button that
+                // always means the same thing beats two that mean nearly the same thing, which is
+                // why the separate X is gone and this took its job.
+                onClick = { DictateController.discardRecording(context) },
             )
         } else {
             ThemedIconKey(
@@ -744,14 +747,6 @@ private fun LegacyRecordRow(
                     ),
                     modifier = sideKey,
                     onClick = { DictateController.togglePause() },
-                )
-                ThemedIconKey(
-                    code = KeyCode.NOOP,
-                    icon = Icons.Default.Close,
-                    contentDescription = "Force stop",
-                    modifier = sideKey,
-                    tint = Color(0xFFE53935),
-                    onClick = { DictateController.forceStop(context) },
                 )
             }
             else -> LegacyBackspaceKey(modifier = sideKey)
@@ -1313,6 +1308,7 @@ private fun MaScopeCanvas(active: Boolean, tint: Color) {
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize()) {
         Canvas(
             modifier = Modifier
@@ -1351,9 +1347,15 @@ private fun MaScopeCanvas(active: Boolean, tint: Color) {
                 )
             }
         }
-        // No dB readout. A number nobody reads, sitting where the timer belongs. The bar itself
-        // already answers the only question being asked while speaking, which is whether anything is
-        // arriving at all, and it answers it by moving.
+    }
+        // dB back, but small and centred over the bar, out of the timer's way. Two readings that
+        // never collide: level in the middle, elapsed time at the far right. Inside the Box rather
+        // than the Row, because a Row can only align its children vertically.
+        Text(
+            text = if (smoothed <= FLOOR_DB + 0.5f) "-∞" else "%.0f".format(smoothed),
+            color = tint.copy(alpha = 0.75f),
+            fontSize = 10.sp,
+        )
     }
 }
 

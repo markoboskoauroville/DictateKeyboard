@@ -1178,7 +1178,6 @@
     <string name="dictate__voice_input_stop">Готово</string>
     <string name="dictate__voice_input_hint">Докосни за изпращане</string>
     <string name="dictate__voice_ime_label">Гласов вход на Dictate</string>
-    <string name="dictate__error_no_api_key">Няма зададен API ключ – конфигурирайте го в настройките на Dictate.</string>
     <string name="dictate__error_transcription_failed">Транскрибирането е неуспешно.</string>
     <string name="dictate__error_unknown">Неизвестна грешка при транскрибиране.</string>
     <string name="dictate__error_rewording_failed">Преформулирането е неуспешно.</string>

@@ -47,7 +47,6 @@ import dev.patrickgold.florisboard.dictate.data.prompts.PromptsDatabaseHelper
 import dev.patrickgold.florisboard.dictate.data.history.DictateHistoryEntry
 import dev.patrickgold.florisboard.dictate.data.history.DictateHistorySource
 import dev.patrickgold.florisboard.dictate.data.history.DictateHistoryStore
-import dev.patrickgold.florisboard.dictate.data.stats.DictateStats
 import dev.patrickgold.florisboard.dictate.provider.ChatRequest
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
 import dev.patrickgold.florisboard.dictate.provider.LocalModelCatalog
@@ -1591,7 +1590,6 @@ object DictateController {
             if (!committed && outputTarget == OutputTarget.OVERLAY && outputText.isNotEmpty()) {
                 rememberLastDictation(outputText)
                 if (capture?.isReplay != true) {
-                    DictateStats.recordDictation(prefs, outputText, recordedSeconds)
                     if (recordedSeconds > 0L) creditAudioSeconds(recordedSeconds)
                 }
                 recordHistory(appContext, outputText, originalForHistory, recordedSeconds, capture, reworded = live)
@@ -1605,7 +1603,6 @@ object DictateController {
         // Re-insert safety net (issue #111) + lifetime stats (issue #142) + history log (issue #140).
         rememberLastDictation(outputText)
         if (capture?.isReplay != true) {
-            DictateStats.recordDictation(prefs, outputText, recordedSeconds)
             if (recordedSeconds > 0L) creditAudioSeconds(recordedSeconds)
         }
         recordHistory(appContext, outputText, originalForHistory, recordedSeconds, capture, reworded = live)
@@ -2312,6 +2309,22 @@ object DictateController {
      * recording that keeps running while out of sight needs a way to be ended that does not involve
      * finding the keyboard again, and a way out if it ever gets stuck.
      */
+    /**
+     * Ends the recording now and throws the audio away.
+     *
+     * What the red trash button does. Distinct from [cancelOrDiscardSegment], which in long-form
+     * drops only the segment being recorded and keeps going: this stops everything, whatever mode is
+     * running and whatever state the UI thinks it is in, and nothing is transcribed or kept.
+     *
+     * Also the way out when something is stuck, which is why it releases the microphone first rather
+     * than relying on the normal teardown to get there.
+     */
+    fun discardRecording(context: Context) {
+        maReleaseMic()
+        runCatching { recorder?.stop() }
+        cancelRecording()
+    }
+
     fun forceStop(context: Context) {
         maReleaseMic()
         if (_state.value is UiState.Recording) {
@@ -2690,17 +2703,10 @@ object DictateController {
     private suspend fun showMilestoneNudge(context: Context): Boolean {
         // Milestone celebrations are gone with the rest of the banners. The pending marker is still
         // consumed so it cannot pile up and fire later if this ever comes back.
-        DictateStats.consumePendingMilestone(prefs)
         return false
     }
 
     /** Short, single-line celebration text for the milestone nudge (kept compact for the Smartbar). */
-    private fun milestoneMessage(context: Context, milestone: DictateStats.Milestone): String = when (milestone.kind) {
-        DictateStats.Milestone.Kind.TIME_MINUTES ->
-            context.getString(R.string.dictate__promo_milestone_time, "${milestone.value / 60}h")
-        DictateStats.Milestone.Kind.DICTATIONS ->
-            context.getString(R.string.dictate__promo_milestone_count, NumberFormat.getIntegerInstance().format(milestone.value))
-    }
 
     /**
      * Shows a one-time "Dictate was updated" nudge in the Smartbar right after an app update, so users
@@ -3029,7 +3035,6 @@ object DictateController {
             ChatRequest.ofUser(model, userContent, reasoningEffort = reasoningWire),
         ).text.trim()
         // Lifetime statistics (issue #142): every rewording/prompt pass funnels through here.
-        DictateStats.recordRewording(prefs)
         return result
     }
 

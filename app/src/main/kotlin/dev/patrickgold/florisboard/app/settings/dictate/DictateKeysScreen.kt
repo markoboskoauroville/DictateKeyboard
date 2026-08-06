@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
@@ -511,16 +512,35 @@ private fun ProviderSection(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
         )
-        val roles = buildList {
-            if (isTranscription) add("transcription")
-            if (isRewording) add("rewording")
-        }
-        if (roles.isNotEmpty()) {
-            Text(
-                text = roles.joinToString(" + "),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+    }
+
+    // The two roles, chosen here rather than on a separate screen. They are radio buttons and not
+    // checkboxes because each role belongs to exactly one provider: two providers cannot both be
+    // "the transcriber". A role only appears on a provider that can actually do it, so Anthropic
+    // never offers to transcribe, and only on one that has a key, since pointing a role at an empty
+    // provider is how the app ends up saying it has no key when it does.
+    val canTranscribe = preset.capabilities.transcription
+    val canReword = preset.capabilities.chat
+    if (keys.isNotEmpty() && (canTranscribe || canReword)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (canTranscribe) {
+                MaRoleChip(
+                    label = "transcription",
+                    selected = isTranscription,
+                    onSelect = { scope.launch { prefs.dictate.transcriptionProviderId.set(preset.id) } },
+                )
+            }
+            if (canReword) {
+                MaRoleChip(
+                    label = "rewording",
+                    selected = isRewording,
+                    onSelect = { scope.launch { prefs.dictate.rewordingProviderId.set(preset.id) } },
+                )
+            }
         }
     }
 
@@ -605,5 +625,38 @@ private fun ProviderSection(
                 )
             }
         }
+    }
+}
+
+/**
+ * One role, as a radio button with its name beside it.
+ *
+ * A radio rather than a checkbox because the choice is exclusive: selecting a provider for a role
+ * takes that role away from whoever had it, which is precisely what a radio group means and what a
+ * row of checkboxes would quietly fail to say.
+ */
+@Composable
+private fun MaRoleChip(
+    label: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(enabled = !selected, onClick = onSelect)
+            .padding(end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onSelect)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        )
     }
 }

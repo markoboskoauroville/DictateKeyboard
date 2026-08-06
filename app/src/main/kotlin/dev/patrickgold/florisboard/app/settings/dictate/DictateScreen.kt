@@ -144,21 +144,6 @@ fun DictateScreen() = FlorisScreen {
             summary = "Import, test and manage every key",
             onClick = { navController.navigate(Routes.Settings.DictateKeys) },
         )
-        Preference(
-            icon = Icons.Default.Cloud,
-            modifier = Modifier.settingsSearchAnchor("dictate__providers_title"),
-            title = stringRes(R.string.dictate__providers_title),
-            summary = if (rewordingEnabled && transcriptionName != rewordingName) {
-                stringRes(
-                    R.string.dictate__providers_summary_both,
-                    "transcription" to transcriptionName,
-                    "rewording" to rewordingName,
-                )
-            } else {
-                stringRes(R.string.dictate__providers_summary, "provider" to transcriptionName)
-            },
-            onClick = { navController.navigate(Routes.Settings.DictateProviders) },
-        )
 
         val selectionRaw by prefs.dictate.inputLanguages.collectAsState()
         val detectLabel = stringRes(R.string.dictate__language_detect)

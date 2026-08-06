@@ -187,7 +187,7 @@ private val WhatsNewPages50: List<WhatsNewPage> = listOf(
         title = R.string.apptour__providers_title,
         body = R.string.apptour__providers_body,
         cta = R.string.apptour__providers_cta,
-        route = Routes.Settings.DictateProviders,
+        route = Routes.Settings.DictateKeys,
     ),
     WhatsNewPage(
         icon = Icons.Filled.Mic,
@@ -206,21 +206,13 @@ private val WhatsNewPages50: List<WhatsNewPage> = listOf(
         cta = R.string.apptour__library_cta,
         route = Routes.Settings.DictatePromptLibrary,
     ),
-    WhatsNewPage(
-        icon = Icons.Filled.Insights,
-        eyebrow = R.string.apptour__stats_eyebrow,
-        title = R.string.apptour__stats_title,
-        body = R.string.apptour__stats_body,
-        cta = R.string.apptour__stats_cta,
-        route = Routes.Settings.DictateStats,
-    ),
-    WhatsNewPage(
+        WhatsNewPage(
         icon = Icons.Filled.CloudDownload,
         eyebrow = R.string.apptour__offline_eyebrow,
         title = R.string.apptour__offline_title,
         body = R.string.apptour__offline_body,
         cta = R.string.apptour__offline_cta,
-        route = Routes.Settings.DictateProviders,
+        route = Routes.Settings.DictateKeys,
         highlight = true,
     ),
     WhatsNewPage(
@@ -294,7 +286,7 @@ private val WhatsNewPages51: List<WhatsNewPage> = listOf(
         title = R.string.apptour51__models_title,
         body = R.string.apptour51__models_body,
         cta = R.string.apptour51__cta_try,
-        route = Routes.Settings.DictateProviders,
+        route = Routes.Settings.DictateKeys,
         highlight = true,
     ),
     WhatsNewPage(
@@ -351,7 +343,7 @@ private val WhatsNewPages52: List<WhatsNewPage> = listOf(
         title = R.string.apptour52__ondevice_title,
         body = R.string.apptour52__ondevice_body,
         cta = R.string.apptour52__cta_try,
-        route = Routes.Settings.DictateProviders,
+        route = Routes.Settings.DictateKeys,
     ),
     WhatsNewPage(
         icon = Icons.Filled.ContentCut,

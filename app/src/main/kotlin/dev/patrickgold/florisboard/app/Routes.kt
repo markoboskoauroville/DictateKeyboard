@@ -65,8 +65,6 @@ import dev.patrickgold.florisboard.app.settings.dictate.DictateMappingsScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateKeysScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateMacroEditorScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateRecoveredScreen
-import dev.patrickgold.florisboard.app.settings.dictate.DictateProvidersScreen
-import dev.patrickgold.florisboard.app.settings.dictate.DictateProxyScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictatePromptLibraryScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictatePromptsScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateFloatingButtonScreen
@@ -77,7 +75,6 @@ import dev.patrickgold.florisboard.app.settings.dictate.DictateRecordingScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateRewordingScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateHistoryScreen
-import dev.patrickgold.florisboard.app.settings.dictate.DictateStatsScreen
 import dev.patrickgold.florisboard.app.settings.dictionary.DictionaryScreen
 import dev.patrickgold.florisboard.app.settings.dictionary.UserDictionaryScreen
 import dev.patrickgold.florisboard.app.settings.dictionary.UserDictionaryType
@@ -141,10 +138,6 @@ object Routes {
         object DictateLanguages
 
         @Serializable
-        @Deeplink("settings/dictate/providers")
-        object DictateProviders
-
-        @Serializable
         @Deeplink("settings/dictate/keys")
         object DictateKeys
 
@@ -161,16 +154,8 @@ object Routes {
         object DictateMappings
 
         @Serializable
-        @Deeplink("settings/dictate/proxy")
-        object DictateProxy
-
-        @Serializable
         @Deeplink("settings/dictate/rewording")
         object DictateRewording
-
-        @Serializable
-        @Deeplink("settings/dictate/stats")
-        object DictateStats
 
         @Serializable
         @Deeplink("settings/dictate/history")
@@ -380,18 +365,15 @@ object Routes {
 
             composableWithDeepLink(Settings.Dictate::class) { DictateScreen() }
             composableWithDeepLink(Settings.DictateLanguages::class) { DictateLanguagesScreen() }
-            composableWithDeepLink(Settings.DictateProviders::class) { DictateProvidersScreen() }
             composableWithDeepLink(Settings.DictateKeys::class) { DictateKeysScreen() }
             composableWithDeepLink(Settings.DictateRecovered::class) { DictateRecoveredScreen() }
             composableWithDeepLink(Settings.DictateMacros::class) { DictateMacroEditorScreen() }
             composableWithDeepLink(Settings.DictateMappings::class) { DictateMappingsScreen() }
-            composableWithDeepLink(Settings.DictateProxy::class) { DictateProxyScreen() }
             composableWithDeepLink(Settings.DictateRewording::class) { DictateRewordingScreen() }
             composableWithDeepLink(Settings.DictateFormatting::class) { DictateFormattingScreen() }
             composableWithDeepLink(Settings.DictateRecording::class) { DictateRecordingScreen() }
             composableWithDeepLink(Settings.DictateOutput::class) { DictateOutputScreen() }
             composableWithDeepLink(Settings.DictateLayout::class) { DictateLayoutScreen() }
-            composableWithDeepLink(Settings.DictateStats::class) { DictateStatsScreen() }
             composableWithDeepLink(Settings.DictateHistory::class) { DictateHistoryScreen() }
             composableWithDeepLink(Settings.DictateFloatingButton::class) { DictateFloatingButtonScreen() }
             composableWithDeepLink(Settings.DictatePrompts::class) { navBackStack ->

@@ -1121,7 +1121,6 @@
     <string name="dictate__voice_input_stop">Gatavs</string>
     <string name="dictate__voice_input_hint">Pieskaries, lai sūtītu</string>
     <string name="dictate__voice_ime_label">Dictate balss ievade</string>
-    <string name="dictate__error_no_api_key">API atslēga nav iestatīta – konfigurējiet to Dictate iestatījumos.</string>
     <string name="dictate__error_transcription_failed">Transkribēšana neizdevās.</string>
     <string name="dictate__error_unknown">Nezināma kļūda transkribēšanas laikā.</string>
     <string name="dictate__error_rewording_failed">Pārformulēšana neizdevās.</string>

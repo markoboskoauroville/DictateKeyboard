@@ -1192,7 +1192,6 @@
     <string name="dictate__voice_input_stop">Hotovo</string>
     <string name="dictate__voice_input_hint">Klepnutím odešlete</string>
     <string name="dictate__voice_ime_label">Hlasový vstup Dictate</string>
-    <string name="dictate__error_no_api_key">Není nastaven klíč API – nastavte jej v nastavení Dictate.</string>
     <string name="dictate__error_transcription_failed">Přepis selhal.</string>
     <string name="dictate__error_unknown">Neznámá chyba při přepisu.</string>
     <string name="dictate__error_rewording_failed">Přeformulování selhalo.</string>

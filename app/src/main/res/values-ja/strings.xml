@@ -1110,7 +1110,6 @@
     <string name="dictate__voice_input_stop">完了</string>
     <string name="dictate__voice_input_hint">タップで送信</string>
     <string name="dictate__voice_ime_label">Dictate 音声入力</string>
-    <string name="dictate__error_no_api_key">APIキーが設定されていません – Dictate設定で構成してください。</string>
     <string name="dictate__error_transcription_failed">文字起こしに失敗しました。</string>
     <string name="dictate__error_unknown">文字起こし中に不明なエラーが発生しました。</string>
     <string name="dictate__error_rewording_failed">言い換えに失敗しました。</string>
