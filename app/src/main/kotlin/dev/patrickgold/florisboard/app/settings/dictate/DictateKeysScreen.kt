@@ -495,6 +495,8 @@ private fun ProviderSection(
     onTest: (String) -> Unit,
     onSave: (ProviderAccounts) -> Unit,
 ) {
+    val prefs by FlorisPreferenceStore
+    val scope = rememberCoroutineScope()
     val account = accounts.accounts[preset.id]
     val keys = remember(account?.apiKey) {
         MaKeys.split(account?.apiKey.orEmpty()).filter { it.isNotBlank() }
