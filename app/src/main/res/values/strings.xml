@@ -1984,4 +1984,6 @@
     <string name="quick_action__ma_extra_row__tooltip">Show or hide the row above the keyboard</string>
     <string name="quick_action__ma_extra_row_mode" comment="Quick action: cycle the extra row contents">Row contents</string>
     <string name="quick_action__ma_extra_row_mode__tooltip">Cycle the extra row: digits, Croatian letters, symbols, editing keys</string>
+    <string name="quick_action__ma_quick_record" comment="Quick action: record without leaving the keyboard">Record</string>
+    <string name="quick_action__ma_quick_record__tooltip">Record here, without leaving the keyboard. Press again to send.</string>
 </resources>

@@ -138,6 +138,7 @@ data class TextKeyData(
                 DICTATE_LIVE_PROMPT,
                 DICTATE_PROMPTS,
                 DICTATE_REINSERT,
+                MA_QUICK_RECORD,
                 MA_TOGGLE_EXTRA_ROW,
                 MA_CYCLE_EXTRA_ROW,
                 SYSTEM_INPUT_METHOD_PICKER,
@@ -458,6 +459,13 @@ data class TextKeyData(
             type = KeyType.SYSTEM_GUI,
             code = KeyCode.DICTATE_REINSERT,
             label = "dictate_reinsert",
+        )
+
+        /** Predefined key data for [KeyCode.MA_QUICK_RECORD] (record without changing view) */
+        val MA_QUICK_RECORD = TextKeyData(
+            type = KeyType.SYSTEM_GUI,
+            code = KeyCode.MA_QUICK_RECORD,
+            label = "ma_quick_record",
         )
 
         /** Predefined key data for [KeyCode.MA_TOGGLE_EXTRA_ROW] (show or hide the extra row) */

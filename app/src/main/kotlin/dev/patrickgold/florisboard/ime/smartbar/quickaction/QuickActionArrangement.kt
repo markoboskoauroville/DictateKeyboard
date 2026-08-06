@@ -92,6 +92,7 @@ data class QuickActionArrangement(
                 // (the numbered switcher keys do that), forward delete and hide keyboard.
                 QuickAction.InsertKey(TextKeyData.MA_TOGGLE_EXTRA_ROW),
                 QuickAction.InsertKey(TextKeyData.MA_CYCLE_EXTRA_ROW),
+                QuickAction.InsertKey(TextKeyData.MA_QUICK_RECORD),
                 QuickAction.InsertKey(TextKeyData.DICTATE_REINSERT),
             ),
             hiddenActions = listOf(

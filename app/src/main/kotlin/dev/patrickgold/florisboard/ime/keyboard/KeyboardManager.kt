@@ -265,6 +265,17 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
     }
 
     fun executeSwipeAction(swipeAction: SwipeAction) {
+        // Handled before the table below, because it changes a view rather than sending a key: there
+        // is no TextKeyData that means "swap panel", and inventing one to route through a dispatcher
+        // would be a longer way round to the same assignment.
+        if (swipeAction == SwipeAction.MA_SWITCH_DICTATE_VIEW) {
+            activeState.imeUiMode = if (activeState.imeUiMode == ImeUiMode.TRANSCRIBE) {
+                ImeUiMode.TEXT
+            } else {
+                ImeUiMode.TRANSCRIBE
+            }
+            return
+        }
         val keyData = when (swipeAction) {
             SwipeAction.CYCLE_TO_PREVIOUS_KEYBOARD_MODE -> when (activeState.keyboardMode) {
                 KeyboardMode.CHARACTERS -> TextKeyData.VIEW_NUMERIC_ADVANCED
@@ -298,6 +309,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             SwipeAction.SWITCH_TO_MEDIA_CONTEXT -> TextKeyData.IME_UI_MODE_MEDIA
             SwipeAction.SWITCH_TO_PREV_SUBTYPE -> TextKeyData.IME_PREV_SUBTYPE
             SwipeAction.SWITCH_TO_NEXT_SUBTYPE -> TextKeyData.IME_NEXT_SUBTYPE
+            SwipeAction.MA_SWITCH_DICTATE_VIEW -> null // handled above
             SwipeAction.SWITCH_TO_PREV_KEYBOARD -> TextKeyData.SYSTEM_PREV_INPUT_METHOD
             SwipeAction.TOGGLE_SMARTBAR_VISIBILITY -> TextKeyData.TOGGLE_SMARTBAR_VISIBILITY
             SwipeAction.TOGGLE_COMPACT_LAYOUT -> TextKeyData.TOGGLE_COMPACT_LAYOUT
@@ -1004,20 +1016,16 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             }
             // MA TWIST: the microphone is a view switcher now, not a record button. Recording
             // happens on the transcribe screen, where there is room to show what is happening.
-            KeyCode.IME_UI_MODE_DICTATE -> {
-                // Switch and start recording in one press. Reaching for the microphone from the
-                // typing keyboard has exactly one meaning, and making it two taps, one to arrive and
-                // one to begin, was a step that earned nothing. The view stays put afterwards, so
-                // the transcript lands where it was asked for.
-                //
-                // Only from a standing start: if something is already recording or transcribing,
-                // this just changes view, because interrupting work in progress is never the intent.
-                val wasIdle = DictateController.state.value is DictateController.UiState.Idle
-                activeState.imeUiMode = ImeUiMode.TRANSCRIBE
-                if (wasIdle) {
-                    DictateController.onMicClick(appContext)
-                }
-            }
+            // Switch view, and only that. Starting a recording as a side effect made one button mean
+            // two things, and there was then no way to reach the transcribe view without also
+            // committing to speak. Recording without leaving the keyboard is MA_QUICK_RECORD below.
+            KeyCode.IME_UI_MODE_DICTATE -> activeState.imeUiMode = ImeUiMode.TRANSCRIBE
+            // Record where you already are. The Smartbar draws the full recording bar in the typing
+            // view, meter and timer and all, so the recording is perfectly visible without the
+            // keyboard being replaced by another screen. Pressing it again stops and sends, the same
+            // as the record button and the volume key, because one control that means start and then
+            // stop is easier to hold in the head than two that each mean half of it.
+            KeyCode.MA_QUICK_RECORD -> DictateController.onMicClick(appContext)
             KeyCode.DICTATE_LIVE_PROMPT -> dev.patrickgold.florisboard.dictate.DictateController.startLivePrompt(appContext)
             KeyCode.DICTATE_PROMPTS -> {
                 dev.patrickgold.florisboard.dictate.DictateController.refreshPrompts(appContext)

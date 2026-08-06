@@ -48,6 +48,10 @@ enum class SwipeAction {
     SWITCH_TO_CLIPBOARD_CONTEXT,
     SWITCH_TO_MEDIA_CONTEXT,
     SWITCH_TO_PREV_KEYBOARD,
+    // Marko: swap between the typing keyboard and the transcribe view. On the space bar's long press
+    // by default, which is a gesture already under the thumb and previously spent on the system's
+    // input method picker, something reached for perhaps twice a year.
+    MA_SWITCH_DICTATE_VIEW,
     TOGGLE_COMPACT_LAYOUT,
     TOGGLE_SMARTBAR_VISIBILITY,
     UNDO;

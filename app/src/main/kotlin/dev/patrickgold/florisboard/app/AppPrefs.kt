@@ -1094,9 +1094,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "gestures__space_bar_swipe_right",
             default = SwipeAction.MOVE_CURSOR_RIGHT,
         )
+        // Long press on the space bar swaps between the typing keyboard and the transcribe view.
+        // The gesture was previously spent on the system input method picker, something reached for
+        // perhaps twice a year, while swapping views happens dozens of times an hour and the thumb
+        // is already resting there. Still changeable, like every other space bar gesture.
         val spaceBarLongPress = enum(
             key = "gestures__space_bar_long_press",
-            default = SwipeAction.SHOW_INPUT_METHOD_PICKER,
+            default = SwipeAction.MA_SWITCH_DICTATE_VIEW,
         )
         val deleteKeySwipeLeft = enum(
             key = "gestures__delete_key_swipe_left",

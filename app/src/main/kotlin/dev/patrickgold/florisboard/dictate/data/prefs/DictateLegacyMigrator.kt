@@ -13,6 +13,7 @@ package dev.patrickgold.florisboard.dictate.data.prefs
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import dev.patrickgold.florisboard.dictate.MaVault
+import dev.patrickgold.florisboard.ime.text.gestures.SwipeAction
 import dev.patrickgold.florisboard.dictate.MaKeyImport
 import dev.patrickgold.florisboard.dictate.data.prompts.PromptsDatabaseHelper
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
@@ -416,6 +417,12 @@ object DictateLegacyMigrator {
         // reach a preference an existing install has already written, and without the audio the
         // archive cannot re-transcribe anything.
         prefs.dictate.historyAudioRetention.set(true)
+        // Move the space bar long press over, once, but only from the old default. Anyone who chose
+        // their own action for it keeps it; a changed default cannot reach a preference that has
+        // already been written, which is why this pass exists at all.
+        if (prefs.gestures.spaceBarLongPress.get() == SwipeAction.SHOW_INPUT_METHOD_PICKER) {
+            prefs.gestures.spaceBarLongPress.set(SwipeAction.MA_SWITCH_DICTATE_VIEW)
+        }
         // The built-in numeric row is retired; the multi-purpose row occupies that slot now. Turning
         // the old preference off keeps the hinted-digits setting, which is gated on it, available.
         prefs.keyboard.numberRow.set(false)

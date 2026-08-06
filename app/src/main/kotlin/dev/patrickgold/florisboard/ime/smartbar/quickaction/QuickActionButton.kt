@@ -587,6 +587,12 @@ fun QuickActionButton(
                             }
                             icon to evaluator.computeLabel(action.data)
                         }
+                        // The record dot turns red while a recording runs, which is the whole reason
+                        // it is a dot rather than a microphone: the typing view then says at a glance
+                        // that it is listening, without the keyboard having to be replaced by another
+                        // screen to show it.
+                        val maRecordingNow = action.data.code == KeyCode.MA_QUICK_RECORD &&
+                            dictateState is DictateController.UiState.Recording
                         if (imageVector != null) {
                             SnyggBox(
                                 elementName = "$elementName-icon",
@@ -612,12 +618,24 @@ fun QuickActionButton(
                                 } else {
                                     Modifier
                                 }
-                                SnyggIcon(
-                                    imageVector = imageVector,
-                                    // Fades in underneath the lock as it fades out, so the two read as
-                                    // one icon turning into the other.
-                                    modifier = iconModifier.alpha(1f - lockFlash),
-                                )
+                                if (maRecordingNow) {
+                                    // Red only while recording. SnyggIcon takes its colour from the
+                                    // theme and has no tint of its own, so the one case that must
+                                    // ignore the theme uses a plain Icon instead.
+                                    Icon(
+                                        imageVector = imageVector,
+                                        contentDescription = null,
+                                        tint = Color(0xFFE5534B),
+                                        modifier = iconModifier.alpha(1f - lockFlash),
+                                    )
+                                } else {
+                                    SnyggIcon(
+                                        imageVector = imageVector,
+                                        // Fades in underneath the lock as it fades out, so the two
+                                        // read as one icon turning into the other.
+                                        modifier = iconModifier.alpha(1f - lockFlash),
+                                    )
+                                }
                             }
                         } else if (label != null) {
                             SnyggText(

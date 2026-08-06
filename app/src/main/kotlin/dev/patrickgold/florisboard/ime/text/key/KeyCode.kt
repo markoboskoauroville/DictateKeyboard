@@ -112,6 +112,9 @@ object KeyCode {
     // keyboard does and what Android's text views already understand.
     const val MA_WORD_LEFT =                -230
     const val MA_WORD_RIGHT =               -231
+    // Marko: record without leaving the typing keyboard. The Smartbar already draws a full recording
+    // bar in this view, so there is somewhere for it to happen; nothing was starting it.
+    const val MA_QUICK_RECORD =             -232
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222
