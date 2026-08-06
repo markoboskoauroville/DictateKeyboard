@@ -16,6 +16,9 @@
 
 package dev.patrickgold.florisboard.app.settings.dictate
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +36,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,6 +76,13 @@ fun DictateMacroEditorScreen() = FlorisScreen {
 
     content {
         val scope = rememberCoroutineScope()
+        val macroContext = LocalContext.current
+        val clipboard = remember(macroContext) {
+            macroContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        }
+        // Which token was copied last, so the confirmation names it rather than saying "copied" and
+        // leaving the user to wonder which of twenty rows they actually hit.
+        var copied by remember { mutableStateOf("") }
         val raw by prefs.dictate.maMacroBar.collectAsState()
         val activeIndex by prefs.dictate.maMacroPreset.collectAsState()
 
@@ -240,12 +252,27 @@ fun DictateMacroEditorScreen() = FlorisScreen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
+                // Tap a token to copy it. Typing {Ctrl+Shift+Z} by hand into a small field, with the
+                // braces on a symbol layer, is a slow way to make a typo; the reference is right
+                // here, so it may as well hand the text over.
                 MaMacroSyntax.HELP_TOKENS.forEach { (token, meaning) ->
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                // Only the first token on a row that lists several, which is the one
+                                // the row is named after and the one most likely wanted.
+                                val single = token.trim().split(Regex("\\s+")).first()
+                                clipboard.setPrimaryClip(ClipData.newPlainText("macro", single))
+                                copied = single
+                            }
+                            .padding(vertical = 4.dp),
+                    ) {
                         Text(
                             text = token,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.width(148.dp),
                         )
                         Text(
@@ -255,8 +282,16 @@ fun DictateMacroEditorScreen() = FlorisScreen {
                         )
                     }
                 }
+                if (copied.isNotEmpty()) {
+                    Text(
+                        text = "$copied copied. Paste it into a Types box above.",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
                 Text(
-                    text = "A key only does something if the app you are typing into listens for " +
+                    text = "Tap any key above to copy it. A key only does something if the app you are typing into listens for " +
                         "it. Ctrl+A, Ctrl+C, Ctrl+V and Ctrl+Z work in most text fields; an exotic " +
                         "key may be delivered correctly and simply ignored.",
                     style = MaterialTheme.typography.labelSmall,

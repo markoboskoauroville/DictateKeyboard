@@ -36,6 +36,9 @@ import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Spellcheck
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Restore
@@ -126,10 +129,40 @@ fun HomeScreen() = FlorisScreen {
             summary = "Import, test and manage every key",
             onClick = { navController.navigate(Routes.Settings.DictateKeys) },
         )
+        // Dictate as a menu is gone. It was a lobby: a screen whose only job was to hold five other
+        // screens, so everything worth reaching sat one tap further away than it needed to. Its
+        // children are here now, and the two that only duplicated the key manager, provider roles
+        // and model choice, are not, because that is where those already live.
+        Preference(
+            icon = Icons.Default.RecordVoiceOver,
+            title = "Little man",
+            summary = "Speak an instruction; the AI rewrites what is in the field",
+            onClick = { navController.navigate(Routes.Settings.DictatePrompts()) },
+        )
         Preference(
             icon = Icons.Default.Mic,
-            title = stringRes(R.string.dictate__title),
-            onClick = { navController.navigate(Routes.Settings.Dictate) },
+            title = stringRes(R.string.dictate__recording_group),
+            onClick = { navController.navigate(Routes.Settings.DictateRecording) },
+        )
+        Preference(
+            icon = Icons.Outlined.Keyboard,
+            title = stringRes(R.string.dictate__output_group),
+            onClick = { navController.navigate(Routes.Settings.DictateOutput) },
+        )
+        Preference(
+            icon = Icons.Default.AutoAwesome,
+            title = stringRes(R.string.dictate__rewording_title),
+            onClick = { navController.navigate(Routes.Settings.DictateRewording) },
+        )
+        Preference(
+            icon = Icons.Default.Spellcheck,
+            title = stringRes(R.string.dictate__mappings_title),
+            onClick = { navController.navigate(Routes.Settings.DictateMappings) },
+        )
+        Preference(
+            icon = Icons.Default.Translate,
+            title = stringRes(R.string.dictate__languages_title),
+            onClick = { navController.navigate(Routes.Settings.DictateLanguages) },
         )
         // The transcription archive already existed, three levels down under Dictate, which is why it
         // read as missing. Every finished dictation is logged and can be re-inserted or re-transcribed

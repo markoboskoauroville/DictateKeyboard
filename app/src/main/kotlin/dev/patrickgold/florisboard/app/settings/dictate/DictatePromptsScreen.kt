@@ -113,7 +113,9 @@ fun DictatePromptsScreen(
     // editor should open automatically once the list has loaded (-1 = none, the normal entry).
     editPromptId: Int = -1,
 ) = FlorisScreen {
-    title = stringRes(R.string.dictate__prompts_title)
+    // "Little man", after the button it fills. The prompts here are what its row offers, so the
+    // screen is named for the thing rather than for the abstraction.
+    title = "Little man"
     previewFieldVisible = true
     scrollable = false
 

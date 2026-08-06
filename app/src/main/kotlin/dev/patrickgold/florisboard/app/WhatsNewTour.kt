@@ -325,7 +325,7 @@ private val WhatsNewPages52: List<WhatsNewPage> = listOf(
         title = R.string.apptour52__voiceinput_title,
         body = R.string.apptour52__voiceinput_body,
         cta = R.string.apptour52__cta_try,
-        route = Routes.Settings.Dictate,
+        route = Routes.Settings.DictateRecording,
         highlight = true,
     ),
     WhatsNewPage(
