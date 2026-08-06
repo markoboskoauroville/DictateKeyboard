@@ -74,11 +74,18 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
     // the three clipboard actions.
     val editing: List<Pair<String, Int>> = listOf(
         "\u21e4" to KeyCode.MOVE_START_OF_LINE,
+        // Double arrows jump a whole word, single arrows a character. Reading left to right the row
+        // goes coarse, fine, fine, coarse, so the pair a thumb wants next to each other are.
+        "\u00ab" to KeyCode.MA_WORD_LEFT,
         "\u2190" to KeyCode.ARROW_LEFT,
         "\u2192" to KeyCode.ARROW_RIGHT,
+        "\u00bb" to KeyCode.MA_WORD_RIGHT,
         "\u21e5" to KeyCode.MOVE_END_OF_LINE,
         "\u2191" to KeyCode.ARROW_UP,
         "\u2193" to KeyCode.ARROW_DOWN,
+        // Selection lock. Not a new mechanism: CLIPBOARD_SELECT already toggles the state that makes
+        // every arrow carry shift, so locking it turns the whole row into a selection tool.
+        "\u21e7" to KeyCode.CLIPBOARD_SELECT,
         "\u25ad" to KeyCode.MA_SELECT_WORD,
         "\u2b1a" to KeyCode.CLIPBOARD_SELECT_ALL,
         "\u2704" to KeyCode.CLIPBOARD_CUT,
@@ -111,13 +118,14 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
                 // Arrows repeat when held; the clipboard and selection keys do not, since firing
                 // those twice is never what was meant.
                 repeats = code == KeyCode.ARROW_LEFT || code == KeyCode.ARROW_RIGHT ||
-                    code == KeyCode.ARROW_UP || code == KeyCode.ARROW_DOWN,
+                    code == KeyCode.ARROW_UP || code == KeyCode.ARROW_DOWN ||
+                    code == KeyCode.MA_WORD_LEFT || code == KeyCode.MA_WORD_RIGHT,
                 onFire = {
                     keyboardManager.inputEventDispatcher.sendDownUp(TextKeyData(code = code))
                 },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             ) { fg ->
-                Text(text = glyph, color = fg, fontSize = 15.sp, fontWeight = FontWeight.Normal)
+                Text(text = glyph, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Normal)
             }
         }
     }

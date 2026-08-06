@@ -23,6 +23,7 @@ import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
@@ -443,6 +444,24 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         if (end > start) {
             editorInstance.setSelection(start, end)
         }
+    }
+
+    /**
+     * Moves the caret one word, extending the selection when selection lock is on.
+     *
+     * Sent as ctrl+arrow, the same event a hardware keyboard produces, so the receiving text view
+     * decides where a word ends by its own rules rather than by ours. Shift rides along whenever the
+     * selection lock is held, which is what makes lock-then-arrow a selection tool rather than just
+     * a faster way to move.
+     */
+    private fun handleWordMove(left: Boolean) = editorInstance.apply {
+        // meta() and sendDownUpKeyEvent() belong to the editor instance, same as in handleArrow.
+        val shift = activeState.isManualSelectionMode ||
+            inputEventDispatcher.isPressed(KeyCode.SHIFT)
+        sendDownUpKeyEvent(
+            if (left) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT,
+            meta(ctrl = true, shift = shift),
+        )
     }
 
     private fun revertPreviouslyAcceptedCandidate() {
@@ -921,6 +940,8 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             KeyCode.CLIPBOARD_PASTE -> editorInstance.performClipboardPaste()
             KeyCode.CLIPBOARD_SELECT -> handleClipboardSelect()
             KeyCode.MA_SELECT_WORD -> handleSelectWord()
+            KeyCode.MA_WORD_LEFT -> handleWordMove(left = true)
+            KeyCode.MA_WORD_RIGHT -> handleWordMove(left = false)
             KeyCode.CLIPBOARD_SELECT_ALL -> {
                 // Toggle (issue #152): select all when nothing is selected, otherwise clear the selection.
                 if (editorInstance.activeContent.selection.isSelectionMode) {
@@ -976,7 +997,20 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             }
             // MA TWIST: the microphone is a view switcher now, not a record button. Recording
             // happens on the transcribe screen, where there is room to show what is happening.
-            KeyCode.IME_UI_MODE_DICTATE -> activeState.imeUiMode = ImeUiMode.TRANSCRIBE
+            KeyCode.IME_UI_MODE_DICTATE -> {
+                // Switch and start recording in one press. Reaching for the microphone from the
+                // typing keyboard has exactly one meaning, and making it two taps, one to arrive and
+                // one to begin, was a step that earned nothing. The view stays put afterwards, so
+                // the transcript lands where it was asked for.
+                //
+                // Only from a standing start: if something is already recording or transcribing,
+                // this just changes view, because interrupting work in progress is never the intent.
+                val wasIdle = DictateController.state.value is DictateController.UiState.Idle
+                activeState.imeUiMode = ImeUiMode.TRANSCRIBE
+                if (wasIdle) {
+                    DictateController.onMicClick(appContext)
+                }
+            }
             KeyCode.DICTATE_LIVE_PROMPT -> dev.patrickgold.florisboard.dictate.DictateController.startLivePrompt(appContext)
             KeyCode.DICTATE_PROMPTS -> {
                 dev.patrickgold.florisboard.dictate.DictateController.refreshPrompts(appContext)

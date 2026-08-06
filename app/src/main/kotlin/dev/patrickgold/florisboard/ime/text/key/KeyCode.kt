@@ -108,6 +108,10 @@ object KeyCode {
     // Marko: select the word under the cursor. Nothing upstream does this; CLIPBOARD_SELECT is a
     // manual selection-mode toggle, which is a different thing entirely.
     const val MA_SELECT_WORD =              -229
+    // Marko: move the caret a whole word at a time. Sent as ctrl+arrow, which is what a hardware
+    // keyboard does and what Android's text views already understand.
+    const val MA_WORD_LEFT =                -230
+    const val MA_WORD_RIGHT =               -231
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222
