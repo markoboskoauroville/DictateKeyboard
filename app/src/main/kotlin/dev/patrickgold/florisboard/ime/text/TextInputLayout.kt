@@ -132,7 +132,13 @@ fun TextInputLayout(
             // Arrow strip along the very bottom, below the letters, exactly where the reference
             // keyboard puts it.
             val maCursorRowEnabled by prefs.dictate.maCursorRow.collectAsState()
-            if (maCursorRowEnabled) {
+            val maExtraRowOn by prefs.dictate.maExtraRow.collectAsState()
+            val maExtraRowMode by prefs.dictate.maExtraRowMode.collectAsState()
+            // The bottom strip stands down while the extra row is in editing mode. Two rows of
+            // arrows on one keyboard is one row of arrows wasted, and the taller keyboard costs more
+            // than the second set of keys is worth.
+            val maEditingRowShown = maExtraRowOn && maExtraRowMode == "editing"
+            if (maCursorRowEnabled && !maEditingRowShown) {
                 MaCursorRow()
             }
         }

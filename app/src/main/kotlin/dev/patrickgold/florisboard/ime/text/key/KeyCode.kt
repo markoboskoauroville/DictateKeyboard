@@ -105,6 +105,9 @@ object KeyCode {
     // for while typing here.
     const val MA_TOGGLE_EXTRA_ROW =         -219
     const val MA_CYCLE_EXTRA_ROW =          -220
+    // Marko: select the word under the cursor. Nothing upstream does this; CLIPBOARD_SELECT is a
+    // manual selection-mode toggle, which is a different thing entirely.
+    const val MA_SELECT_WORD =              -229
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222

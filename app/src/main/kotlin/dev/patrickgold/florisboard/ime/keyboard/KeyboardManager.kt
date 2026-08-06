@@ -421,6 +421,30 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         }
     }
 
+    /**
+     * Selects the word the cursor is sitting in.
+     *
+     * Walks out from the cursor to the nearest boundary on each side, treating letters, digits and
+     * the apostrophe as word characters so "don't" and "1080p" come out whole. With a selection
+     * already active it does nothing, because widening someone's deliberate selection to a word
+     * boundary would be a surprise rather than a help.
+     */
+    private fun handleSelectWord() {
+        val content = editorInstance.activeContent
+        val selection = content.selection
+        if (selection.isSelectionMode) return
+        val text = content.text
+        val cursor = selection.start.coerceIn(0, text.length)
+        fun isWord(c: Char) = c.isLetterOrDigit() || c == '\''
+        var start = cursor
+        while (start > 0 && isWord(text[start - 1])) start--
+        var end = cursor
+        while (end < text.length && isWord(text[end])) end++
+        if (end > start) {
+            editorInstance.setSelection(start, end)
+        }
+    }
+
     private fun revertPreviouslyAcceptedCandidate() {
         editorInstance.phantomSpace.candidateForRevert?.let { candidateForRevert ->
             candidateForRevert.sourceProvider?.let { sourceProvider ->
@@ -896,6 +920,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             KeyCode.CLIPBOARD_COPY -> editorInstance.performClipboardCopy()
             KeyCode.CLIPBOARD_PASTE -> editorInstance.performClipboardPaste()
             KeyCode.CLIPBOARD_SELECT -> handleClipboardSelect()
+            KeyCode.MA_SELECT_WORD -> handleSelectWord()
             KeyCode.CLIPBOARD_SELECT_ALL -> {
                 // Toggle (issue #152): select all when nothing is selected, otherwise clear the selection.
                 if (editorInstance.activeContent.selection.isSelectionMode) {
@@ -922,8 +947,9 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 prefs.dictate.maExtraRow.set(!prefs.dictate.maExtraRow.get())
             }
             KeyCode.MA_CYCLE_EXTRA_ROW -> scope.launch {
-                val next = if (prefs.dictate.maExtraRowMode.get() == "digits") "diacritics" else "digits"
-                prefs.dictate.maExtraRowMode.set(next)
+                val order = listOf("digits", "diacritics", "symbols", "editing")
+                val at = order.indexOf(prefs.dictate.maExtraRowMode.get()).coerceAtLeast(0)
+                prefs.dictate.maExtraRowMode.set(order[(at + 1) % order.size])
                 prefs.dictate.maExtraRow.set(true)
             }
             KeyCode.COMPACT_LAYOUT_TO_LEFT -> windowController.actions.compactLayoutToLeft()

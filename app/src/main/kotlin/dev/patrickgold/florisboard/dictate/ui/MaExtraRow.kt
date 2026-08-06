@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
+import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyData
 import dev.patrickgold.florisboard.keyboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -55,13 +56,35 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
     val mode by prefs.dictate.maExtraRowMode.collectAsState()
     if (!enabled) return
 
-    // Both uppercase and lowercase forms are reachable: the shift state of the keyboard decides,
-    // exactly as it would for a letter typed normally, so nothing here needs its own shift handling.
-    val keys = if (mode == "diacritics") {
-        listOf("č", "ć", "ž", "š", "đ", "Č", "Ć", "Ž", "Š", "Đ")
-    } else {
-        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
+    // Four modes, one row. Digits and diacritics are characters; symbols are characters too;
+    // editing is key codes, which is why the row dispatches two different ways below.
+    //
+    // Both cases of every Croatian letter are present, so shift never has to be involved mid-word.
+    val chars: List<String> = when (mode) {
+        "diacritics" -> listOf("č", "ć", "ž", "š", "đ", "Č", "Ć", "Ž", "Š", "Đ")
+        // Brackets in pairs and in the order a hand reaches for them, then the symbols that are
+        // genuinely awkward to find: tilde, pipe, backtick and backslash all live two layers deep.
+        "symbols" -> listOf("(", ")", "[", "]", "{", "}", "<", ">", "~", "|", "`", "\\")
+        "editing" -> emptyList()
+        else -> listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
     }
+
+    // Editing mode: moving and selecting, which is the row's whole point. Home and end sit on the
+    // outside where a thumb lands, the four arrows in the middle, then select word, select all and
+    // the three clipboard actions.
+    val editing: List<Pair<String, Int>> = listOf(
+        "\u21e4" to KeyCode.MOVE_START_OF_LINE,
+        "\u2190" to KeyCode.ARROW_LEFT,
+        "\u2192" to KeyCode.ARROW_RIGHT,
+        "\u21e5" to KeyCode.MOVE_END_OF_LINE,
+        "\u2191" to KeyCode.ARROW_UP,
+        "\u2193" to KeyCode.ARROW_DOWN,
+        "\u25ad" to KeyCode.MA_SELECT_WORD,
+        "\u2b1a" to KeyCode.CLIPBOARD_SELECT_ALL,
+        "\u2704" to KeyCode.CLIPBOARD_CUT,
+        "\u29c9" to KeyCode.CLIPBOARD_COPY,
+        "\u2913" to KeyCode.CLIPBOARD_PASTE,
+    )
 
     Row(
         modifier = modifier
@@ -69,7 +92,7 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
             .height(FlorisImeSizing.smartbarHeight),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        keys.forEach { ch ->
+        chars.forEach { ch ->
             MaFlatKey(
                 onFire = {
                     // Sent as the character's own code point, so autocapitalisation, the composing
@@ -80,12 +103,21 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
                 },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             ) { fg ->
-                Text(
-                    text = ch,
-                    color = fg,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Normal,
-                )
+                Text(text = ch, color = fg, fontSize = 17.sp, fontWeight = FontWeight.Normal)
+            }
+        }
+        editing.forEach { (glyph, code) ->
+            MaFlatKey(
+                // Arrows repeat when held; the clipboard and selection keys do not, since firing
+                // those twice is never what was meant.
+                repeats = code == KeyCode.ARROW_LEFT || code == KeyCode.ARROW_RIGHT ||
+                    code == KeyCode.ARROW_UP || code == KeyCode.ARROW_DOWN,
+                onFire = {
+                    keyboardManager.inputEventDispatcher.sendDownUp(TextKeyData(code = code))
+                },
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            ) { fg ->
+                Text(text = glyph, color = fg, fontSize = 15.sp, fontWeight = FontWeight.Normal)
             }
         }
     }
