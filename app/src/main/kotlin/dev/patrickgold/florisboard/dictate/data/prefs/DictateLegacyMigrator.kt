@@ -406,11 +406,20 @@ object DictateLegacyMigrator {
             val at = entries.indexOf("NUMBERS")
             if (at >= 0) entries.toMutableList().apply { add(at, "HISTORY") } else entries + "HISTORY"
         }
-        prefs.dictate.legacyActionRow.set(withHistory.joinToString(","))
+        // Reordered into its two groups, keeping only the entries the user actually has, so anyone
+        // who removed a key does not get it back and anyone who added one keeps it at the end.
+        val preferred = listOf("UNDO", "REDO", "SELECT_ALL", "CUT", "COPY", "PASTE", "HISTORY", "NUMBERS")
+        val grouped = preferred.filter { it in withHistory } + withHistory.filterNot { it in preferred }
+        prefs.dictate.legacyActionRow.set(grouped.joinToString(","))
         // Audio retention on, once, for the same reason as the row edits: a changed default cannot
         // reach a preference an existing install has already written, and without the audio the
         // archive cannot re-transcribe anything.
         prefs.dictate.historyAudioRetention.set(true)
+        // The transcribe view becomes the main one. Only set when nothing is pinned, so an explicit
+        // pin is never overwritten by a change of default.
+        if (prefs.dictate.maPinnedView.get().isBlank()) {
+            prefs.dictate.maPinnedView.set("TRANSCRIBE")
+        }
         prefs.dictate.maRowV2Applied.set(true)
     }
 

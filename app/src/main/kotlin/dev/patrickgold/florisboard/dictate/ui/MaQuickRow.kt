@@ -26,8 +26,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -94,7 +92,16 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
     ) {
         // Top-left of the transcribe view: the pin that fixes which view opens first.
         MaPinButton(mode = ImeUiMode.TRANSCRIBE)
-        selection.forEach { lang ->
+        // Auto goes last, and says so in words. A globe means "language" in the abstract, not "work
+        // it out for me", and sitting first it read as the current choice rather than the fallback.
+        // The concrete languages come first because they are the deliberate act; auto is what you
+        // pick when you cannot be bothered to choose, which is exactly where the eye should land
+        // last.
+        val ordered = remember(selection) {
+            selection.filterNot { it.code == DictateLanguages.DETECT } +
+                selection.filter { it.code == DictateLanguages.DETECT }
+        }
+        ordered.forEach { lang ->
             val isAuto = lang.code == DictateLanguages.DETECT
             MaQuickKey(
                 selected = lang.code == activeCode,
@@ -102,11 +109,11 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             ) { fg ->
                 if (isAuto) {
-                    Icon(
-                        imageVector = Icons.Default.Language,
-                        contentDescription = "Detect language",
-                        tint = fg,
-                        modifier = Modifier.size(20.dp),
+                    Text(
+                        text = "AUTO",
+                        color = fg,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp,
                     )
                 } else {
                     Text(

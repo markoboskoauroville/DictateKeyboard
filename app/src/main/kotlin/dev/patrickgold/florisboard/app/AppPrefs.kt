@@ -767,7 +767,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             // one of the things the fork does not need. History takes its place, since past
             // dictations are worth reaching from the view where dictating happens rather than from
             // a settings screen two levels away.
-            default = "SELECT_ALL,UNDO,REDO,CUT,COPY,PASTE,HISTORY,NUMBERS",
+            // Grouped by what the keys actually do rather than by history. Undo and redo are the two
+            // "take that back" keys and sit together on the left; select all belongs with cut, copy
+            // and paste because selecting is the first move of all three, and separating it from
+            // them was the reason the row read as a jumble.
+            default = "UNDO,REDO,SELECT_ALL,CUT,COPY,PASTE,HISTORY,NUMBERS",
         )
         // Sticky panel: when on, whichever of the two main views was last used comes back the next
         // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
@@ -793,7 +797,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v4_applied",
+            key = "dictate__ma_row_v5_applied",
             default = false,
         )
         val maSunriseApplied = boolean(
@@ -826,9 +830,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_last_send_format",
             default = "",
         )
+        // The transcribe view is the main one now and the typing keyboard accompanies it, so that is
+        // where a fresh install opens. Still just a default: the pin overrides it, and unpinning
+        // returns to whichever view was last used.
         val maPinnedView = string(
             key = "dictate__ma_pinned_view",
-            default = "",
+            default = "TRANSCRIBE",
         )
         // Third pin state, the green one: hold the keyboard open. An app asking for it to close is
         // refused; only the system's own down-arrow puts it away. See FlorisImeService.onFinishInput

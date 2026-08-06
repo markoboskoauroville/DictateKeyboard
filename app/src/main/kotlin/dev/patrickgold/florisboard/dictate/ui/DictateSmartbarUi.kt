@@ -878,58 +878,24 @@ private const val MA_SPINNER_TICK_MS = 90L
 @Composable
 private fun MaRecordingScope(paused: Boolean, frozen: Boolean, elapsedMs: Long) {
     val still = paused || frozen
-    val history = remember { mutableStateListOf<Float>() }
-    LaunchedEffect(still) {
-        while (!still) {
-            history.add(DictateController.audioLevel.value)
-            if (history.size > MA_SCOPE_POINTS) history.removeAt(0)
-            delay(MA_SCOPE_TICK_MS)
-        }
-    }
-    var frame by remember { mutableIntStateOf(0) }
-    LaunchedEffect(still) {
-        while (!still) {
-            frame++
-            delay(MA_SPINNER_TICK_MS)
-        }
-    }
+    // The rolling sample history and the braille spinner that used to live here are gone with the
+    // waveform they drove. The shared meter keeps its own state, so duplicating that work would only
+    // give the two views two ways to disagree.
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .height(FlorisImeSizing.smartbarHeight)
             .width(158.dp),
     ) {
-        Canvas(modifier = Modifier.matchParentSize()) {
-            val points = history.size
-            if (points < 2) return@Canvas
-            val midY = size.height / 2f
-            val step = size.width / (points - 1)
-            val path = Path()
-            for (i in 0 until points) {
-                val amp = history[i].coerceIn(0f, 1f) * (size.height * 0.40f)
-                val y = if (i % 2 == 0) midY - amp else midY + amp
-                val x = step * i
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-            drawPath(
-                path = path,
-                color = MaCyan.copy(alpha = if (still) 0.18f else 0.45f),
-                style = Stroke(width = 2.5f),
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = MA_BRAILLE[frame % MA_BRAILLE.length].toString(),
-                color = if (still) MaMuted else MaViolet,
-                fontSize = 17.sp,
-            )
-            Spacer(modifier = Modifier.width(9.dp))
-            Text(
-                text = formatElapsed(elapsedMs),
-                color = MaInk,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+        // The same meter the transcribe view draws, from the shared module. These two had drifted
+        // into different visuals for the identical act, so starting a recording from the keyboard
+        // looked like a different feature from starting one from the transcribe view. One module now.
+        MaScopeCanvas(active = !still, tint = MaInk)
+        Text(
+            text = formatElapsed(elapsedMs),
+            color = MaInk.copy(alpha = if (still) 0.45f else 0.75f),
+            fontSize = 11.sp,
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
+        )
     }
 }
