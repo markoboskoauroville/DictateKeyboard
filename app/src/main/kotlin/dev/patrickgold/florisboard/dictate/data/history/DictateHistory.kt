@@ -82,7 +82,7 @@ data class DictateHistoryEntry(
      * rather than depending on someone remembering what the status line said at the time.
      */
     val sendMs: Long = 0L,
-    /** Upload container used for this entry ("wav", "m4a", "opus"), or "" when not recorded. */
+    /** Upload container used for this entry ("aac" or "wav"), or "" when not recorded. */
     val sendFormat: String = "",
     /** Absolute path of the retained WAV in the private history dir, or null when no audio is kept. */
     val audioPath: String?,

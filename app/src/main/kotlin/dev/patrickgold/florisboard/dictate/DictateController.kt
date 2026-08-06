@@ -88,6 +88,7 @@ import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import dev.patrickgold.florisboard.dictate.audio.MaEncoder
+import dev.patrickgold.florisboard.dictate.audio.MaResample
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.dictate.provider.maWithKeyFallback
 
@@ -1326,30 +1327,37 @@ object DictateController {
                 // and formats together (cloud chat models only, never the on-device engine).
                 val chatAudio = account.transcriptionViaChat &&
                     preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE
-                // The upload format is a setting now, not a rule. What is known: Opus out of this
-                // app was slow, the raw WAV was instant, and the same audio encoded to Opus by
-                // FFmpeg on the same phone was instant too. That combination rules out Opus as a
-                // format and the service's handling of it, and leaves the file Android's own
-                // encoder and muxer produce. Rather than keep guessing, every send is timed and the
-                // format is chosen from the transcribe view, so the answer arrives as numbers.
+                // One pipeline, three steps, each deleting what it replaces:
                 //
-                // The on-device engine is never encoded: it is handed the audio locally and would
-                // only have to decode it again.
+                //   1. the recording, captured at whatever rate this phone offers, typically 48 kHz
+                //   2. a 16 kHz mono WAV, low-pass filtered first so nothing folds back into the
+                //      speech band. Recognisers want 16 kHz and something has to do the reduction;
+                //      doing it here with a real filter is better than letting the microphone
+                //      driver decimate on the way in
+                //   3. AAC, which is what is sent and what the archive keeps
+                //
+                // The intermediate files go as soon as they are consumed, so the two large ones
+                // never sit on disk together and a long dictation costs one small file at rest.
+                //
+                // The on-device engine is skipped: it is handed the audio locally and decodes it
+                // itself, so encoding would only give it something to undo.
                 val maRawBytes = uploadFile.length()
-                val maFormat = if (preset.transcriptionApi == TranscriptionApi.LOCAL_ONDEVICE) {
-                    MaEncoder.Format.WAV
-                } else {
-                    MaEncoder.Format.of(prefs.dictate.maUploadFormat.get())
-                }
                 var maEncoded = false
-                MaEncoder.encode(uploadFile, maFormat)?.let { smaller ->
-                    if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
-                    uploadFile = smaller
-                    maEncoded = true
+                if (preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE) {
+                    val resampled = MaResample.toTargetRate(uploadFile)
+                    if (resampled != null) {
+                        if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
+                        uploadFile = resampled
+                    }
+                    MaEncoder.encode(uploadFile)?.let { aac ->
+                        if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
+                        uploadFile = aac
+                        maEncoded = true
+                    }
                 }
-                // Timed from here: the clock covers encoding, upload, the service's own queue and
-                // the answer coming back, because that whole span is what "slow" actually means to
-                // someone waiting for their words to appear.
+                val maFormatTag = if (maEncoded) MaEncoder.TAG else "wav"
+                // Timed across encoding, upload, the service's queue and the answer, because that
+                // whole span is what "slow" means to someone waiting for their words to appear.
                 val maSendStartedAt = System.currentTimeMillis()
                 val request = TranscriptionRequest(
                     audioFile = uploadFile,
@@ -1382,7 +1390,7 @@ object DictateController {
                         val maRawKb = maRawBytes / 1024L
                         val maSentKb = uploadFile.length() / 1024L
                         val maSize = if (maEncoded && maRawKb > 0) {
-                            "$maRawKb kB wav to $maSentKb kB ${maFormat.tag}"
+                            "$maRawKb kB to $maSentKb kB $maFormatTag"
                         } else {
                             "$maSentKb kB wav"
                         }
@@ -1429,8 +1437,8 @@ object DictateController {
                 // shown, so a comparison run over an evening survives being forgotten.
                 val maSendMs = System.currentTimeMillis() - maSendStartedAt
                 prefs.dictate.maLastSendMs.set(maSendMs)
-                prefs.dictate.maLastSendFormat.set(maFormat.tag)
-                _maStatus.value = "%.1fs \u00b7 %s".format(maSendMs / 1000.0, maFormat.label)
+                prefs.dictate.maLastSendFormat.set(maFormatTag)
+                _maStatus.value = "%.1fs \u00b7 %s".format(maSendMs / 1000.0, maFormatTag.uppercase())
                 // Prompt-echo guard (issue #77): on silent/unclear audio, Whisper-style models echo the
                 // transcription style prompt back verbatim (the old default was infamously returned as
                 // "This sentence has capitalization and punctuation."). If the result is just that prompt

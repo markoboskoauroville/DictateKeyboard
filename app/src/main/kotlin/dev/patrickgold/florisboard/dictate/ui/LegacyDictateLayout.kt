@@ -114,7 +114,6 @@ import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
-import dev.patrickgold.florisboard.dictate.audio.MaEncoder
 import dev.patrickgold.florisboard.dictate.DictateRecordingAnimation
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.editorInstance
@@ -790,36 +789,15 @@ private fun LegacyBottomRow(
         // and become muscle memory, and space keeps enough width to still be hit comfortably.
         val context = LocalContext.current
 
-        // TEMPORARY, for the upload-format experiment. These three take the keyboard switcher's
-        // place so the format can be changed between one dictation and the next without leaving the
-        // view, which is the only way to compare them fairly. The switcher comes back when the
-        // question is settled; the keys are only borrowed.
-        val chosenFormat by prefs.dictate.maUploadFormat.collectAsState()
-        val formatScope = rememberCoroutineScope()
+        // The keyboard switcher, back where it belongs. The format keys that borrowed this space
+        // are gone: the pipeline is settled, so there is nothing left to choose between.
+        val others = remember { MaKeyboards.list(context).take(MaKeyboards.MAX_SHOWN) }
 
         LegacySpaceKey(
             keyboardManager = keyboardManager,
-            modifier = Modifier.weight(0.7f).fillMaxHeight(),
+            modifier = Modifier.weight(if (others.isEmpty()) 1f else 0.9f).fillMaxHeight(),
         )
 
-        MaEncoder.Format.entries.forEach { fmt ->
-            val active = chosenFormat == fmt.tag
-            ThemedKey(
-                code = if (active) KeyCode.ENTER else KeyCode.NOOP,
-                modifier = Modifier.weight(0.55f).fillMaxHeight(),
-                onClick = { formatScope.launch { prefs.dictate.maUploadFormat.set(fmt.tag) } },
-            ) { fg ->
-                Text(
-                    text = fmt.label,
-                    color = fg,
-                    fontSize = 11.sp,
-                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                    maxLines = 1,
-                )
-            }
-        }
-
-        val others = emptyList<MaKeyboards.Entry>()
         others.forEachIndexed { index, entry ->
             ThemedKey(
                 code = KeyCode.NOOP,

@@ -44,6 +44,20 @@ class RecordingController(private val context: Context) {
     @Volatile private var recording = false
     @Volatile private var paused = false
     @Volatile private var pcmBytes = 0L
+
+    /** The rate this recording is actually running at, chosen by [bestRate] when it started. */
+    @Volatile
+    var activeSampleRate: Int = SAMPLE_RATE
+        private set
+
+    /** First rate the hardware accepts, with its minimum buffer. Ends at 16 kHz, which always works. */
+    private fun bestRate(): Pair<Int, Int> {
+        for (rate in PREFERRED_RATES) {
+            val min = AudioRecord.getMinBufferSize(rate, CHANNEL, ENCODING)
+            if (min > 0) return rate to min
+        }
+        error("AudioRecord unavailable on this device")
+    }
     /** Peak |sample| (0..32767) seen since the last [maxAmplitude] call; drives the waveform. */
     @Volatile private var peak = 0
 
@@ -73,10 +87,14 @@ class RecordingController(private val context: Context) {
         pcmSink: ((pcm16: ByteArray, len: Int) -> Unit)? = null,
     ) {
         if (recording) return
-        val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
-        require(minBuf > 0) { "AudioRecord unavailable on this device" }
+        // Capture at whatever this phone actually offers, best first, rather than asking for 16 kHz
+        // and letting AudioRecord's own resampler do the reduction. That resampler is a plain
+        // decimator on many devices and discards detail the recogniser could have used. Taking the
+        // full rate and reducing it afterwards, with a real filter, keeps it.
+        val (rate, minBuf) = bestRate()
+        activeSampleRate = rate
         val bufferSize = minBuf * 2
-        val rec = AudioRecord(audioSource, SAMPLE_RATE, CHANNEL, ENCODING, bufferSize)
+        val rec = AudioRecord(audioSource, rate, CHANNEL, ENCODING, bufferSize)
         if (rec.state != AudioRecord.STATE_INITIALIZED) {
             runCatching { rec.release() }
             error("AudioRecord failed to initialize")
@@ -227,7 +245,7 @@ class RecordingController(private val context: Context) {
     }
 
     private fun wavHeader(dataLen: Long): ByteArray {
-        val byteRate = SAMPLE_RATE * CHANNELS * BITS_PER_SAMPLE / 8
+        val byteRate = activeSampleRate * CHANNELS * BITS_PER_SAMPLE / 8
         return ByteBuffer.allocate(WAV_HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN).apply {
             put("RIFF".toByteArray(Charsets.US_ASCII))
             putInt((36 + dataLen).toInt())
@@ -236,7 +254,7 @@ class RecordingController(private val context: Context) {
             putInt(16)                                  // PCM subchunk size
             putShort(1)                                 // audio format = PCM
             putShort(CHANNELS.toShort())
-            putInt(SAMPLE_RATE)
+            putInt(activeSampleRate)
             putInt(byteRate)
             putShort((CHANNELS * BITS_PER_SAMPLE / 8).toShort()) // block align
             putShort(BITS_PER_SAMPLE.toShort())
@@ -247,6 +265,9 @@ class RecordingController(private val context: Context) {
 
     companion object {
         private const val AUDIO_FILE_NAME = "dictate_audio.wav"
+        /** Tried best first; the last entry is the rate the recogniser wants and always exists. */
+        private val PREFERRED_RATES = intArrayOf(48_000, 44_100, 32_000, 16_000)
+
         private const val SAMPLE_RATE = 16_000
         private const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
