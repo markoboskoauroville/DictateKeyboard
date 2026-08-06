@@ -700,6 +700,12 @@ private fun historyRowMeta(entry: DictateHistoryEntry): String {
     if (entry.model.isNotBlank()) parts.add(entry.model)
     formatHistoryDuration(entry.durationSecs)?.let { parts.add(it) }
     formatHistorySize(entry.audioBytes)?.let { parts.add(it) }
+    // How long this one took, and in which upload format. Two entries side by side then answer the
+    // format question directly, which a status line that has already scrolled away cannot.
+    if (entry.sendMs > 0L) {
+        val secs = "%.1fs".format(entry.sendMs / 1000.0)
+        parts.add(if (entry.sendFormat.isNotBlank()) "$secs ${entry.sendFormat}" else secs)
+    }
     return parts.joinToString(" · ")
 }
 

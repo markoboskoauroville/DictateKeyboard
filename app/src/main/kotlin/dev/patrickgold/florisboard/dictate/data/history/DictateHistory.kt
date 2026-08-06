@@ -74,6 +74,16 @@ data class DictateHistoryEntry(
     val language: String,
     /** Recorded audio length in seconds (0 when unknown). */
     val durationSecs: Long,
+    /**
+     * How long the transcription itself took, in millis, from starting to encode to the words
+     * coming back. Zero for entries written before this was measured.
+     *
+     * Kept alongside [sendFormat] so a comparison between upload formats can be read back later
+     * rather than depending on someone remembering what the status line said at the time.
+     */
+    val sendMs: Long = 0L,
+    /** Upload container used for this entry ("wav", "m4a", "opus"), or "" when not recorded. */
+    val sendFormat: String = "",
     /** Absolute path of the retained WAV in the private history dir, or null when no audio is kept. */
     val audioPath: String?,
     /** Size of the retained WAV in bytes (0 when no audio). */
@@ -140,7 +150,7 @@ internal val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-@Database(entities = [DictateHistoryEntry::class], version = 3, exportSchema = true)
+@Database(entities = [DictateHistoryEntry::class], version = 4, exportSchema = true)
 abstract class DictateHistoryDatabase : RoomDatabase() {
     abstract fun dao(): DictateHistoryDao
 
@@ -209,6 +219,9 @@ object DictateHistoryStore {
         // Keep the audio regardless of the audio-retention pref (used for failed entries, whose audio is
         // the only recovery path).
         forceAudio: Boolean = false,
+        // How long the transcription took and in which upload format, for the format comparison.
+        sendMs: Long = 0L,
+        sendFormat: String = "",
         nowMs: Long = System.currentTimeMillis(),
     ): Long? {
         if (text.isBlank()) return null
@@ -223,6 +236,8 @@ object DictateHistoryStore {
                 model = model,
                 language = language,
                 durationSecs = durationSecs.coerceAtLeast(0L),
+                sendMs = sendMs.coerceAtLeast(0L),
+                sendFormat = sendFormat,
                 audioPath = null,
                 audioBytes = 0L,
                 source = source,

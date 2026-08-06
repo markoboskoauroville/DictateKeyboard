@@ -813,6 +813,23 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // The pinned view, set by the pin in each view's top-left corner. "TEXT" or "TRANSCRIBE"
         // means always open there; empty means nothing is pinned and the last-used view wins, which
         // is the behaviour that existed before the pin and is still a reasonable default.
+        // Which container the audio is uploaded in. A setting rather than a decision, because the
+        // evidence so far is a measurement nobody has taken properly yet: Opus was slow, WAV was
+        // instant, and FFmpeg's Opus on the same phone was instant too. See MaEncoder.
+        val maUploadFormat = string(
+            key = "dictate__ma_upload_format",
+            default = "wav",
+        )
+        // Seconds the last transcription took, and the format it used, shown under the meter and
+        // stored with the history entry so the comparison survives being forgotten.
+        val maLastSendMs = long(
+            key = "dictate__ma_last_send_ms",
+            default = 0L,
+        )
+        val maLastSendFormat = string(
+            key = "dictate__ma_last_send_format",
+            default = "",
+        )
         val maPinnedView = string(
             key = "dictate__ma_pinned_view",
             default = "",

@@ -85,6 +85,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -113,6 +114,7 @@ import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
+import dev.patrickgold.florisboard.dictate.audio.MaEncoder
 import dev.patrickgold.florisboard.dictate.DictateRecordingAnimation
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.editorInstance
@@ -131,6 +133,7 @@ import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withTimeoutOrNull
 import org.florisboard.lib.compose.stringRes
@@ -785,13 +788,37 @@ private fun LegacyBottomRow(
         // installed on this phone take the space it was wasting, numbered so the positions stay put
         // and become muscle memory, and space keeps enough width to still be hit comfortably.
         val context = LocalContext.current
-        val others = remember { MaKeyboards.list(context).take(MaKeyboards.MAX_SHOWN) }
+
+        // TEMPORARY, for the upload-format experiment. These three take the keyboard switcher's
+        // place so the format can be changed between one dictation and the next without leaving the
+        // view, which is the only way to compare them fairly. The switcher comes back when the
+        // question is settled; the keys are only borrowed.
+        val chosenFormat by prefs.dictate.maUploadFormat.collectAsState()
+        val formatScope = rememberCoroutineScope()
 
         LegacySpaceKey(
             keyboardManager = keyboardManager,
-            modifier = Modifier.weight(if (others.isEmpty()) 1f else 0.9f).fillMaxHeight(),
+            modifier = Modifier.weight(0.7f).fillMaxHeight(),
         )
 
+        MaEncoder.Format.entries.forEach { fmt ->
+            val active = chosenFormat == fmt.tag
+            ThemedKey(
+                code = if (active) KeyCode.ENTER else KeyCode.NOOP,
+                modifier = Modifier.weight(0.55f).fillMaxHeight(),
+                onClick = { formatScope.launch { prefs.dictate.maUploadFormat.set(fmt.tag) } },
+            ) { fg ->
+                Text(
+                    text = fmt.label,
+                    color = fg,
+                    fontSize = 11.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1,
+                )
+            }
+        }
+
+        val others = emptyList<MaKeyboards.Entry>()
         others.forEachIndexed { index, entry ->
             ThemedKey(
                 code = KeyCode.NOOP,
