@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.Brightness2
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.runtime.Composable
@@ -35,6 +37,8 @@ import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.app.Routes
 import dev.patrickgold.florisboard.app.enumDisplayEntriesOf
 import dev.patrickgold.florisboard.app.ext.AddonManagementReferenceBox
+import dev.patrickgold.florisboard.app.ext.ExtensionImportScreenType
+import dev.patrickgold.florisboard.lib.util.launchUrl
 import dev.patrickgold.florisboard.app.ext.ExtensionListScreenType
 import dev.patrickgold.florisboard.ime.theme.ThemeManager
 import dev.patrickgold.florisboard.ime.theme.ThemeMode
@@ -125,6 +129,32 @@ fun ThemeScreen() = FlorisScreen {
                     it
                 }
             }
+        )
+
+        // Themes from outside the app. The importer and the extension manager both already existed;
+        // they simply had no way in once Addons and Extensions left the settings home. These two rows
+        // are that way in, put where someone looking for a theme would actually look.
+        //
+        // A .flex file is an ordinary zip holding extension.json and a folder of Snygg stylesheets,
+        // which is exactly the shape of the themes that ship with this app, so anything from the
+        // FlorisBoard addon site loads without translation.
+        Preference(
+            icon = Icons.Default.Download,
+            modifier = Modifier.settingsSearchAnchor("ma__theme_browse"),
+            title = "Find more themes",
+            summary = "Opens the FlorisBoard addon site. Download a .flex file, then import it below.",
+            onClick = { context.launchUrl("https://beta.addons.florisboard.org/") },
+        )
+        Preference(
+            icon = Icons.Default.FolderOpen,
+            modifier = Modifier.settingsSearchAnchor("ma__theme_import"),
+            title = "Import a theme file",
+            summary = "Pick a downloaded .flex file. It is added to the list below and can be deleted from there.",
+            onClick = {
+                navController.navigate(
+                    Routes.Ext.Import(ExtensionImportScreenType.EXT_THEME, null)
+                )
+            },
         )
 
         AddonManagementReferenceBox(type = ExtensionListScreenType.EXT_THEME)

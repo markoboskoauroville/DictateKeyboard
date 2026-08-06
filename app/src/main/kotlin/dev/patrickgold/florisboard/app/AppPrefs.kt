@@ -761,8 +761,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val legacyActionRow = string(
             key = "dictate__legacy_action_row",
             // Emoji is not in the default row: this is a dictation keyboard and the emoji panel is
-            // one of the things the fork does not need. Still available to anyone who adds it back.
-            default = "SELECT_ALL,UNDO,REDO,CUT,COPY,PASTE,NUMBERS",
+            // one of the things the fork does not need. History takes its place, since past
+            // dictations are worth reaching from the view where dictating happens rather than from
+            // a settings screen two levels away.
+            default = "SELECT_ALL,UNDO,REDO,CUT,COPY,PASTE,HISTORY,NUMBERS",
         )
         // Sticky panel: when on, whichever of the two main views was last used comes back the next
         // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
@@ -788,7 +790,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v2_applied",
+            key = "dictate__ma_row_v3_applied",
             default = false,
         )
         val maSunriseApplied = boolean(

@@ -396,13 +396,17 @@ object DictateLegacyMigrator {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.maRowV2Applied.get()) return
         val row = prefs.dictate.legacyActionRow.get()
-        if (row.contains("EMOJI")) {
-            val trimmed = row.split(',')
-                .map { it.trim() }
-                .filter { it.isNotEmpty() && it != "EMOJI" }
-                .joinToString(",")
-            prefs.dictate.legacyActionRow.set(trimmed)
+        val entries = row.split(',').map { it.trim() }.filter { it.isNotEmpty() && it != "EMOJI" }
+        // History goes in where emoji was, unless it is already somewhere in the row: a changed
+        // default never reaches an install that has written its own, and the whole point of this
+        // pass is to carry these two edits across to the phone that already exists.
+        val withHistory = if (entries.contains("HISTORY")) {
+            entries
+        } else {
+            val at = entries.indexOf("NUMBERS")
+            if (at >= 0) entries.toMutableList().apply { add(at, "HISTORY") } else entries + "HISTORY"
         }
+        prefs.dictate.legacyActionRow.set(withHistory.joinToString(","))
         prefs.dictate.maRowV2Applied.set(true)
     }
 
