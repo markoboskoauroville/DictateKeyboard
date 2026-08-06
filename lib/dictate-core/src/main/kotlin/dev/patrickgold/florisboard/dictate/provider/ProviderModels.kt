@@ -96,6 +96,15 @@ data class TranscriptionRequest(
     val language: String? = null,
     /** Optional style/punctuation prompt to bias recognition. */
     val prompt: String? = null,
+    /**
+     * When [language] is auto-detect, the only languages detection may choose between.
+     *
+     * Unconstrained detection is not what "auto" means to someone who speaks exactly two languages:
+     * a Croatian sentence with an English brand name in it can be read as Spanish, and the whole
+     * transcript then comes back wrong. Empty means no constraint, for providers that cannot take a
+     * shortlist and for users who really do want any language.
+     */
+    val languageCandidates: List<String> = emptyList(),
 )
 
 data class TranscriptionResult(

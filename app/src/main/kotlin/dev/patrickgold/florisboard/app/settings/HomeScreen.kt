@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Spellcheck
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Restore
@@ -113,6 +114,12 @@ fun HomeScreen() = FlorisScreen {
         //
         // Removed rather than hidden: Emojis & GIFs, Addons & Extensions, and Other. They belong to
         // the general-purpose keyboard this was forked from, not to a voice-typing tool.
+        Preference(
+            icon = Icons.Default.Edit,
+            title = "Try the keyboard",
+            summary = "A blank page to dictate into",
+            onClick = { navController.navigate(Routes.Settings.TryIt) },
+        )
         Preference(
             icon = Icons.Default.Key,
             title = "API keys",

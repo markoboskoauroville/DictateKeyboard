@@ -365,7 +365,9 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
             }
             StepButton(label = stringRes(R.string.setup__finish_up__finish_btn)) {
                 scope.launch { this@steps.prefs.internal.isImeSetUp.set(true) }
-                navController.navigate(Routes.Settings.Home) {
+                // Into the test field, not the settings list. Finishing setup is the moment somebody
+                // wants to know whether it works, and a page of options answers a different question.
+                navController.navigate(Routes.Settings.TryIt) {
                     popUpTo(Routes.Setup.Screen) {
                         inclusive = true
                     }

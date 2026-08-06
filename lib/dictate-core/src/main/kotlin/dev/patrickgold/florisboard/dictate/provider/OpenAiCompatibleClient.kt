@@ -548,6 +548,11 @@ class OpenAiCompatibleClient(
             speechModels = request.model.takeIf { it.isNotBlank() }?.let { listOf(it) },
             languageCode = lang,
             languageDetection = if (lang == null) true else null,
+            languageDetectionOptions = if (lang == null && request.languageCandidates.isNotEmpty()) {
+                AssemblyLangOptionsDto(request.languageCandidates)
+            } else {
+                null
+            },
         )
         val createRequest = Request.Builder()
             .url(base + "v2/transcript")
@@ -1150,6 +1155,15 @@ class OpenAiCompatibleClient(
         @SerialName("speech_models") val speechModels: List<String>? = null,
         @SerialName("language_code") val languageCode: String? = null,
         @SerialName("language_detection") val languageDetection: Boolean? = null,
+        // Restricts detection to a shortlist. AssemblyAI ignores fields it does not know, so sending
+        // this on a model that lacks the feature costs nothing and changes nothing.
+        @SerialName("language_detection_options")
+        val languageDetectionOptions: AssemblyLangOptionsDto? = null,
+    )
+
+    @Serializable
+    private data class AssemblyLangOptionsDto(
+        @SerialName("expected_languages") val expectedLanguages: List<String>,
     )
 
     @Serializable

@@ -50,6 +50,7 @@ import dev.patrickgold.florisboard.app.ext.ExtensionListScreen
 import dev.patrickgold.florisboard.app.ext.ExtensionListScreenType
 import dev.patrickgold.florisboard.app.ext.ExtensionViewScreen
 import dev.patrickgold.florisboard.app.settings.HomeScreen
+import dev.patrickgold.florisboard.app.settings.TryItScreen
 import dev.patrickgold.florisboard.app.settings.search.SettingsSearchScreen
 import dev.patrickgold.florisboard.app.settings.about.AboutScreen
 import dev.patrickgold.florisboard.app.settings.about.DataAttributionsScreen
@@ -136,6 +137,10 @@ object Routes {
         @Serializable
         @Deeplink("settings/dictate/languages")
         object DictateLanguages
+
+        @Serializable
+        @Deeplink("settings/tryit")
+        object TryIt
 
         @Serializable
         @Deeplink("settings/dictate/keys")
@@ -365,6 +370,7 @@ object Routes {
 
             composableWithDeepLink(Settings.Dictate::class) { DictateScreen() }
             composableWithDeepLink(Settings.DictateLanguages::class) { DictateLanguagesScreen() }
+            composableWithDeepLink(Settings.TryIt::class) { TryItScreen() }
             composableWithDeepLink(Settings.DictateKeys::class) { DictateKeysScreen() }
             composableWithDeepLink(Settings.DictateRecovered::class) { DictateRecoveredScreen() }
             composableWithDeepLink(Settings.DictateMacros::class) { DictateMacroEditorScreen() }

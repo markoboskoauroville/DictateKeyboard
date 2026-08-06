@@ -1372,6 +1372,14 @@ object DictateController {
                     // chat-audio path the language goes into the instruction (readable name) instead.
                     language = if (chatAudio) null else prefs.dictate.activeInputLanguage.get()
                         .takeIf { it != DictateLanguages.DETECT },
+                    // AUTO means "one of mine", not "any language on earth". The shortlist is
+                    // whatever is enabled in settings, so detection chooses between Croatian and
+                    // English rather than reading a Croatian sentence with an English brand name in
+                    // it as Spanish and returning the whole transcript wrong.
+                    languageCandidates = DictateLanguages
+                        .parseSelection(prefs.dictate.inputLanguages.get())
+                        .map { it.code }
+                        .filter { it != DictateLanguages.DETECT },
                     // Non-chat: style/punctuation prompt biases recognition (roadmap 2.4 / 4.11).
                     // Chat-audio: the full instruction (language + style + all auto-formatting) in one go.
                     prompt = if (chatAudio) buildChatAudioInstruction(appContext) else transcriptionStylePrompt(),
