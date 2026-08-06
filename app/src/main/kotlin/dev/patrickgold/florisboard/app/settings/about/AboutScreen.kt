@@ -75,11 +75,15 @@ fun AboutScreen() = FlorisScreen {
 
     // Account suffix (a) marks which machine last built this, matching the convention across the
     // rest of Marko's apps. The build number is what the GitHub release is named after.
-    // The build number is now the CI run number, passed in at build time, so this is the number
-    // printed on the release that was actually downloaded. It used to be a hand-bumped version code
-    // that had drifted to 127 while releases were named build 57, meaning About confidently reported
-    // a build nobody had ever installed.
-    val appVersion = "${BuildConfig.VERSION_NAME} (a), build ${BuildConfig.VERSION_CODE}"
+    // The version code carries a fixed +1000 offset so it can never fall below a version already
+    // installed, which is what made build 62 refuse to install at all: it declared 62 against an
+    // installed 127 and Android rejected the downgrade. Subtracting the same offset here means About
+    // still prints the number the release is actually named after.
+    //
+    // Older builds predate the offset and carry a bare hand-bumped code, so anything below the
+    // offset is shown as it stands rather than turned into a negative number.
+    val buildNumber = BuildConfig.VERSION_CODE.let { if (it > BUILD_NUMBER_OFFSET) it - BUILD_NUMBER_OFFSET else it }
+    val appVersion = "${BuildConfig.VERSION_NAME} (a), build $buildNumber"
 
     content {
         Column(
@@ -182,3 +186,10 @@ fun AboutScreen() = FlorisScreen {
         )
     }
 }
+
+/**
+ * Added to every version code by CI so the number always climbs, whatever the run number is, and
+ * subtracted again for display. Never lower this: doing so would make a future build look older than
+ * one already on the phone, and Android would refuse to install it.
+ */
+private const val BUILD_NUMBER_OFFSET = 1000

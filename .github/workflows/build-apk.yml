@@ -47,11 +47,14 @@ jobs:
           keytool -list -keystore voicetype.jks -storepass "$KS_PW" | grep -i 'SHA-256' || true
 
       - name: Build release APK
-        # The build number the release is named after is passed into the build itself, so About can
-        # report the number that is actually on the APK someone downloaded. Previously the app
-        # carried a hand-bumped version code that had drifted far from the run number, and reported
-        # a build nobody had ever installed.
-        run: ./gradlew :app:assembleRelease -x lintVitalRelease --no-daemon -PprojectVersionCode=${{ github.run_number }}
+        # The version code must both match the release number shown in About and never go backwards,
+        # or Android refuses the install as a downgrade. Build 62 shipped versionCode 62 against an
+        # installed 127 and would not install at all.
+        #
+        # Adding a fixed offset satisfies both: the code stays ahead of every version already out
+        # there, and About subtracts the same offset so it still prints the number the release is
+        # named after. The offset is permanent and must never be lowered.
+        run: ./gradlew :app:assembleRelease -x lintVitalRelease --no-daemon -PprojectVersionCode=$((1000 + ${{ github.run_number }}))
 
       - name: Publish APK
         env:
