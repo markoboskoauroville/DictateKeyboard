@@ -95,6 +95,8 @@ fun QuickAction.computeDisplayName(evaluator: ComputingEvaluator): String {
             KeyCode.DICTATE_LIVE_PROMPT -> R.string.quick_action__dictate_live_prompt
             KeyCode.DICTATE_PROMPTS -> R.string.quick_action__dictate_prompts
             KeyCode.DICTATE_REINSERT -> R.string.quick_action__dictate_reinsert
+            KeyCode.MA_TOGGLE_EXTRA_ROW -> R.string.quick_action__ma_extra_row
+            KeyCode.MA_CYCLE_EXTRA_ROW -> R.string.quick_action__ma_extra_row_mode
             KeyCode.LANGUAGE_SWITCH -> R.string.quick_action__language_switch
             KeyCode.SYSTEM_PREV_INPUT_METHOD -> R.string.quick_action__system_prev_input_method
             KeyCode.SYSTEM_INPUT_METHOD_PICKER -> R.string.quick_action__system_input_method_picker
@@ -140,6 +142,8 @@ fun QuickAction.computeTooltip(evaluator: ComputingEvaluator): String {
             KeyCode.DICTATE_LIVE_PROMPT -> R.string.quick_action__dictate_live_prompt__tooltip
             KeyCode.DICTATE_PROMPTS -> R.string.quick_action__dictate_prompts__tooltip
             KeyCode.DICTATE_REINSERT -> R.string.quick_action__dictate_reinsert__tooltip
+            KeyCode.MA_TOGGLE_EXTRA_ROW -> R.string.quick_action__ma_extra_row__tooltip
+            KeyCode.MA_CYCLE_EXTRA_ROW -> R.string.quick_action__ma_extra_row_mode__tooltip
             KeyCode.LANGUAGE_SWITCH -> R.string.quick_action__language_switch__tooltip
             KeyCode.SYSTEM_PREV_INPUT_METHOD -> R.string.quick_action__system_prev_input_method__tooltip
             KeyCode.SYSTEM_INPUT_METHOD_PICKER -> R.string.quick_action__system_input_method_picker__tooltip

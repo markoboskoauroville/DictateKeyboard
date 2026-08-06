@@ -35,6 +35,7 @@ import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
 import dev.patrickgold.florisboard.dictate.ui.MaMacroBar
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
+import dev.patrickgold.florisboard.dictate.ui.MaExtraRow
 import dev.patrickgold.florisboard.dictate.ui.MaPinButton
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
 import dev.patrickgold.florisboard.ime.ImeUiMode
@@ -104,6 +105,11 @@ fun TextInputLayout(
         // needs no toggle of its own: emptying it is how it is turned off.
         if (!state.isActionsOverflowVisible) {
             MaMacroBar()
+        }
+        // The extra row sits directly above the keys, where a number row belongs, and renders
+        // nothing at all when switched off.
+        if (!state.isActionsOverflowVisible) {
+            MaExtraRow()
         }
         if (state.isActionsOverflowVisible) {
             QuickActionsOverflowPanel()

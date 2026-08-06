@@ -220,7 +220,7 @@ private fun MaLabel(text: String, tint: Color, bold: Boolean = false, size: Int 
  * active, Sunrise included, rather than being a hardcoded white strip that fights every theme.
  */
 @Composable
-private fun MaFlatKey(
+internal fun MaFlatKey(
     onFire: () -> Unit,
     modifier: Modifier,
     repeats: Boolean = false,

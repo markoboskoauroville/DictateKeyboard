@@ -915,6 +915,17 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             }
             KeyCode.TOGGLE_FLOATING_WINDOW -> windowController.actions.toggleFloatingWindow()
             KeyCode.TOGGLE_COMPACT_LAYOUT -> windowController.actions.toggleCompactLayout()
+            // Extra row: show/hide, and swap digits for Croatian diacritics. Switching contents also
+            // turns the row on, because asking for diacritics while the row is hidden can only mean
+            // "show me diacritics".
+            KeyCode.MA_TOGGLE_EXTRA_ROW -> scope.launch {
+                prefs.dictate.maExtraRow.set(!prefs.dictate.maExtraRow.get())
+            }
+            KeyCode.MA_CYCLE_EXTRA_ROW -> scope.launch {
+                val next = if (prefs.dictate.maExtraRowMode.get() == "digits") "diacritics" else "digits"
+                prefs.dictate.maExtraRowMode.set(next)
+                prefs.dictate.maExtraRow.set(true)
+            }
             KeyCode.COMPACT_LAYOUT_TO_LEFT -> windowController.actions.compactLayoutToLeft()
             KeyCode.COMPACT_LAYOUT_TO_RIGHT -> windowController.actions.compactLayoutToRight()
             KeyCode.TOGGLE_RESIZE_MODE -> windowController.editor.toggleEnabled()

@@ -42,6 +42,8 @@ import androidx.compose.material.icons.filled.KeyboardAlt
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Numbers
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoFixHigh
@@ -317,6 +319,13 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
         KeyCode.DICTATE_REINSERT -> {
             // Re-inserts the last successful dictation; a history glyph signals "bring the last one back".
             Icons.Default.History
+        }
+        KeyCode.MA_TOGGLE_EXTRA_ROW -> {
+            // A row of digits is what it shows most of the time, so a numeric glyph reads truest.
+            Icons.Default.Numbers
+        }
+        KeyCode.MA_CYCLE_EXTRA_ROW -> {
+            Icons.Default.Translate
         }
         KeyCode.LANGUAGE_SWITCH -> {
             Icons.Default.Language

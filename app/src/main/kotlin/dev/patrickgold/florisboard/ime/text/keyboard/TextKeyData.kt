@@ -138,6 +138,8 @@ data class TextKeyData(
                 DICTATE_LIVE_PROMPT,
                 DICTATE_PROMPTS,
                 DICTATE_REINSERT,
+                MA_TOGGLE_EXTRA_ROW,
+                MA_CYCLE_EXTRA_ROW,
                 SYSTEM_INPUT_METHOD_PICKER,
                 SYSTEM_PREV_INPUT_METHOD,
                 SYSTEM_NEXT_INPUT_METHOD,
@@ -456,6 +458,19 @@ data class TextKeyData(
             type = KeyType.SYSTEM_GUI,
             code = KeyCode.DICTATE_REINSERT,
             label = "dictate_reinsert",
+        )
+
+        /** Predefined key data for [KeyCode.MA_TOGGLE_EXTRA_ROW] (show or hide the extra row) */
+        val MA_TOGGLE_EXTRA_ROW = TextKeyData(
+            type = KeyType.SYSTEM_GUI,
+            code = KeyCode.MA_TOGGLE_EXTRA_ROW,
+            label = "ma_toggle_extra_row",
+        )
+        /** Predefined key data for [KeyCode.MA_CYCLE_EXTRA_ROW] (digits or Croatian diacritics) */
+        val MA_CYCLE_EXTRA_ROW = TextKeyData(
+            type = KeyType.SYSTEM_GUI,
+            code = KeyCode.MA_CYCLE_EXTRA_ROW,
+            label = "ma_cycle_extra_row",
         )
 
         /** Predefined key data for [KeyCode.SYSTEM_INPUT_METHOD_PICKER] */

@@ -1980,4 +1980,8 @@
     <string name="about__releases__summary" comment="Preference summary">Every signed APK, newest first. Each one installs over the last.</string>
     <string name="about__floris__title" comment="Preference title crediting FlorisBoard">FlorisBoard</string>
     <string name="about__floris__summary" comment="Preference summary crediting FlorisBoard">The keyboard engine underneath everything, by Patrick Goldinger and contributors.</string>
+    <string name="quick_action__ma_extra_row" comment="Quick action: show or hide the extra row">Extra row</string>
+    <string name="quick_action__ma_extra_row__tooltip">Show or hide the row above the keyboard</string>
+    <string name="quick_action__ma_extra_row_mode" comment="Quick action: swap the extra row contents">Row: 123 / čćžšđ</string>
+    <string name="quick_action__ma_extra_row_mode__tooltip">Swap the extra row between digits and Croatian letters</string>
 </resources>

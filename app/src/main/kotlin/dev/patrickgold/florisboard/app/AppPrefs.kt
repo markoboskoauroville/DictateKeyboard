@@ -784,6 +784,18 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // Dedicated cursor row above the keyboard: line start, four arrows, line end, all repeating
         // when held. Off by default so the stock keyboard is unchanged; switched on in Settings under
         // Gestures. See MaCursorRow.
+        // The extra row above the keyboard. Off by default; the two Smartbar actions turn it on and
+        // swap its contents. Croatian diacritics are the other thing constantly reached for on this
+        // phone, and hunting them through long-press popups mid-sentence is slower than a row.
+        val maExtraRow = boolean(
+            key = "dictate__ma_extra_row",
+            default = false,
+        )
+        /** "digits" or "diacritics". */
+        val maExtraRowMode = string(
+            key = "dictate__ma_extra_row_mode",
+            default = "digits",
+        )
         val maCursorRow = boolean(
             key = "dictate__ma_cursor_row",
             // On: the bars are the point, not an option to go looking for.

@@ -80,30 +80,18 @@ data class QuickActionArrangement(
                 QuickAction.InsertKey(TextKeyData.CLIPBOARD_COPY),
                 QuickAction.InsertKey(TextKeyData.CLIPBOARD_PASTE),
                 QuickAction.InsertKey(TextKeyData.SETTINGS),
-                QuickAction.InsertKey(TextKeyData.TOGGLE_FLOATING_WINDOW),
                 QuickAction.InsertKey(TextKeyData.TOGGLE_RESIZE_MODE),
                 QuickAction.InsertKey(TextKeyData.IME_UI_MODE_CLIPBOARD),
-                QuickAction.InsertKey(TextKeyData.IME_UI_MODE_MEDIA),
-                // GIF search panel (KLIPY). Present in the action list so users can drag it into the bar
-                // for one-tap GIF access; it does nothing until a free KLIPY API key is added in settings.
-                QuickAction.InsertKey(TextKeyData.IME_UI_MODE_GIF),
                 QuickAction.InsertKey(TextKeyData.TOGGLE_COMPACT_LAYOUT),
-                QuickAction.InsertKey(TextKeyData.TOGGLE_INCOGNITO_MODE),
-                QuickAction.InsertKey(TextKeyData.ARROW_UP),
-                QuickAction.InsertKey(TextKeyData.ARROW_DOWN),
-                QuickAction.InsertKey(TextKeyData.ARROW_LEFT),
-                QuickAction.InsertKey(TextKeyData.ARROW_RIGHT),
                 QuickAction.InsertKey(TextKeyData.CLIPBOARD_CLEAR_PRIMARY_CLIP),
                 QuickAction.InsertKey(TextKeyData.LANGUAGE_SWITCH),
-                // IME-switch actions (issue #122): one-tap return to the previously used keyboard, plus the
-                // system keyboard picker. Useful when pairing Dictate with another IME (e.g. a Japanese
-                // Kana–Kanji keyboard). Visible in the Smartbar by default; users can hide them in the editor.
-                QuickAction.InsertKey(TextKeyData.SYSTEM_PREV_INPUT_METHOD),
-                QuickAction.InsertKey(TextKeyData.SYSTEM_INPUT_METHOD_PICKER),
-                QuickAction.InsertKey(TextKeyData.FORWARD_DELETE),
-                QuickAction.InsertKey(TextKeyData.IME_HIDE_UI),
-                // Re-insert / re-send the last transcription safety net (issue #111). Placed at the end
-                // so it is present in the action list without taking a prominent spot at the top of the bar.
+                // The extra row above the keyboard: one action shows or hides it, the other swaps
+                // digits for Croatian diacritics. These replace a dozen actions that were removed as
+                // unused here: floating window, emoji, GIF, incognito, the four arrows (the cursor
+                // strip along the bottom does that job), both IME switchers and the keyboard picker
+                // (the numbered switcher keys do that), forward delete and hide keyboard.
+                QuickAction.InsertKey(TextKeyData.MA_TOGGLE_EXTRA_ROW),
+                QuickAction.InsertKey(TextKeyData.MA_CYCLE_EXTRA_ROW),
                 QuickAction.InsertKey(TextKeyData.DICTATE_REINSERT),
             ),
             hiddenActions = listOf(

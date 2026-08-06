@@ -100,6 +100,11 @@ object KeyCode {
     const val DICTATE_REINSERT =            -217
     // Opens the GIF search panel (KLIPY).
     const val IME_UI_MODE_GIF =             -218
+    // Marko: the extra row above the keyboard. One action turns it on and off, the other swaps what
+    // it holds between digits and Croatian diacritics, which is the pair of things actually reached
+    // for while typing here.
+    const val MA_TOGGLE_EXTRA_ROW =         -219
+    const val MA_CYCLE_EXTRA_ROW =          -220
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222
