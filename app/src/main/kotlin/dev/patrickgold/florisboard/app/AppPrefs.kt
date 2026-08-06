@@ -833,6 +833,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // The transcribe view is the main one now and the typing keyboard accompanies it, so that is
         // where a fresh install opens. Still just a default: the pin overrides it, and unpinning
         // returns to whichever view was last used.
+        // Instructions spoken to the little man, newest first, so they can be re-run by tapping
+        // instead of said again. See MaLivePrompts.
+        val maLivePromptHistory = string(
+            key = "dictate__ma_live_prompt_history",
+            default = "",
+        )
         val maPinnedView = string(
             key = "dictate__ma_pinned_view",
             default = "TRANSCRIBE",

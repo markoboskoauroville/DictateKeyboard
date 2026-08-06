@@ -35,6 +35,15 @@ import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
+import dev.patrickgold.florisboard.dictate.MaLivePrompts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -120,16 +129,39 @@ fun DictatePromptRow(
     // always-on row gives the prompt buttons a more comfortable hit area than the compact Smartbar.
     val rowChipPadding = PaddingValues(horizontal = 2.dp, vertical = 5.dp)
 
+    // Long press on the little man: the instructions already spoken, so a sentence sent yesterday
+    // does not have to be said again today. Tapping one runs it against whatever is in the field now.
+    var recallOpen by remember { mutableStateOf(false) }
     val liveChip: @Composable () -> Unit = {
-        DictateLivePromptChip(
-            onClick = { DictateController.startLivePrompt(context) },
-            modifier = Modifier.padding(horizontal = 1.5.dp),
-            tapPadding = rowChipPadding,
-            // Compact row: show only the voice icon to leave more width for the saved-prompt chips.
-            iconOnly = true,
-            // Accent-highlight it while its recording runs (tap again to stop — startLivePrompt toggles).
-            highlighted = livePromptActive,
-        )
+        Box {
+            DictateLivePromptChip(
+                onClick = { DictateController.startLivePrompt(context) },
+                onLongPress = { if (MaLivePrompts.list().isNotEmpty()) recallOpen = true },
+                modifier = Modifier.padding(horizontal = 1.5.dp),
+                tapPadding = rowChipPadding,
+                // Compact row: show only the voice icon to leave more width for the saved-prompt chips.
+                iconOnly = true,
+                // Accent-highlight it while its recording runs (tap again to stop — startLivePrompt toggles).
+                highlighted = livePromptActive,
+            )
+            DropdownMenu(expanded = recallOpen, onDismissRequest = { recallOpen = false }) {
+                MaLivePrompts.list().forEach { instruction ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = instruction,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        onClick = {
+                            recallOpen = false
+                            DictateController.applyRememberedPrompt(context, instruction)
+                        },
+                    )
+                }
+            }
+        }
     }
     val promptChip: @Composable (PromptModel) -> Unit = { prompt ->
         DictatePromptChip(
@@ -278,6 +310,9 @@ internal fun DictatePromptChip(
 internal fun DictateLivePromptChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // Long press recalls a previously spoken instruction instead of speaking it again. Null keeps
+    // the chip tap-only, for the call sites that have nowhere to show a list.
+    onLongPress: (() -> Unit)? = null,
     iconSize: Dp = 18.dp,
     tapPadding: PaddingValues = PaddingValues(0.dp),
     iconOnly: Boolean = false,
@@ -287,6 +322,7 @@ internal fun DictateLivePromptChip(
         icon = Icons.Default.RecordVoiceOver,
         text = stringRes(R.string.quick_action__dictate_live_prompt),
         onClick = onClick,
+        onLongClick = onLongPress,
         modifier = modifier,
         iconSize = iconSize,
         tapPadding = tapPadding,

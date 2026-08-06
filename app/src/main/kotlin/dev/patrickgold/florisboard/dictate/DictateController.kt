@@ -1578,6 +1578,9 @@ object DictateController {
             // instead of rewriting anything. Selecting the field first makes the commit a
             // replacement, which is what "rewrite this" plainly means.
             livePromptReplacesField = selected == null && whole != null
+            // Kept for the long-press list: the same few instructions get spoken constantly, and
+            // saying one aloud costs a recording, an upload and a wait every time.
+            MaLivePrompts.remember(rawText)
             requestReword(rawText, subject)
         } else {
             // Normal dictation: auto-formatting + auto-apply prompts, then the prompts the user queued by
@@ -2867,6 +2870,36 @@ object DictateController {
      *  - a free prompt generates from the instruction alone and inserts at the cursor.
      * No-op unless idle (or recovering from a transient error).
      */
+    /**
+     * Runs an instruction that was spoken before, against whatever is in the field now.
+     *
+     * The recalled path skips the microphone entirely and joins the live-prompt flow at the point
+     * where the words already exist, so a re-run behaves exactly like speaking the same sentence
+     * again: selection first if there is one, otherwise the whole field, and the result replaces
+     * rather than appends.
+     */
+    fun applyRememberedPrompt(context: Context, instruction: String) {
+        if (_state.value !is UiState.Idle && _state.value !is UiState.Error) return
+        val appContext = context.applicationContext
+        maAppContext = appContext
+        scope.launch {
+            runCatching {
+                finalizeAndCommit(
+                    appContext = appContext,
+                    rawText = instruction,
+                    recordedSeconds = 0L,
+                    live = true,
+                    alreadyFormatted = false,
+                )
+            }.onFailure {
+                _state.value = UiState.Error(
+                    message = appContext.getString(R.string.dictate__error_unknown),
+                    action = ErrorAction.NONE,
+                )
+            }
+        }
+    }
+
     fun applyPrompt(
         context: Context,
         prompt: PromptModel,
