@@ -70,83 +70,11 @@ object LocalModelCatalog {
         "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6",
     )
 
-    /** ~99 MB. Fastest, lowest accuracy — good for low-end devices / quick notes. */
-    val WHISPER_TINY = LocalModelSpec(
-        id = "whisper-tiny",
-        displayName = "Whisper Tiny",
-        description = "Multilingual · ~99 MB",
-        files = listOf(
-            LocalModelFile("$REL/tiny-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 12_937_772, "d24fb083ae3b1041fc24e97971d60e280c9342201fbb67b0ab428a8b4a51a434"),
-            LocalModelFile("$REL/tiny-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 89_855_401, "d2fece8dd42771f1df975c6c0445770d0c292bf7547c2cae04a6c0cc57540925"),
-            LocalModelFile("$REL/tiny-tokens.txt", LocalTranscriptionProvider.TOKENS, 816_730, "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126"),
-            VAD_FILE,
-        ),
-    )
 
-    /** ~153 MB. The recommended default — noticeably better accuracy, still usable on mid-range. */
-    val WHISPER_BASE = LocalModelSpec(
-        id = "whisper-base",
-        displayName = "Whisper Base",
-        description = "Multilingual · ~153 MB",
-        files = listOf(
-            LocalModelFile("$REL/base-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 29_120_534, "0b8fb1304b6109976038efff5ace81720e00386f3ff6b54ee8c75291ca0a1e11"),
-            LocalModelFile("$REL/base-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 130_672_026, "9759d217388a01b3a4c7c15533201067b48ae819c4daafc8624e64b9409dc02d"),
-            LocalModelFile("$REL/base-tokens.txt", LocalTranscriptionProvider.TOKENS, 816_730, "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126"),
-            VAD_FILE,
-        ),
-    )
 
-    /** ~358 MB. Most accurate, but large and slower on mid-range — Base is recommended for most users. */
-    val WHISPER_SMALL = LocalModelSpec(
-        id = "whisper-small",
-        displayName = "Whisper Small",
-        description = "Multilingual · ~358 MB",
-        files = listOf(
-            LocalModelFile("$REL/small-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 112_442_483, "4cbe7b22fa9026b843b60a68640c747de05bafb1a11b57edc0e66c232d9f33a9"),
-            LocalModelFile("$REL/small-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 262_226_114, "acad50b5c782696e91b55914cc5ab4f756f1532f76e22aa6fc615f39fb69a8ee"),
-            LocalModelFile("$REL/small-tokens.txt", LocalTranscriptionProvider.TOKENS, 816_730, "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126"),
-            VAD_FILE,
-        ),
-    )
 
-    /** ~99 MB. English-only — faster/leaner than the multilingual tiny when you only need English. */
-    val WHISPER_TINY_EN = LocalModelSpec(
-        id = "whisper-tiny.en",
-        displayName = "Whisper Tiny (English)",
-        description = "English · ~99 MB",
-        files = listOf(
-            LocalModelFile("$REL/tiny.en-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 12_937_772, "0ce578b827c94a961aacb8fa14b02f096504b337e5c94be37c36238cbe3e8bc6"),
-            LocalModelFile("$REL/tiny.en-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 89_853_865, "06c0e6ff6348d427e51839219d1c886c18cfdf411e629e33f5e1679bff9c1527"),
-            LocalModelFile("$REL/tiny.en-tokens.txt", LocalTranscriptionProvider.TOKENS, 835_554, "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930"),
-            VAD_FILE,
-        ),
-    )
 
-    /** ~153 MB. English-only — the recommended English model: good accuracy without the multilingual cost. */
-    val WHISPER_BASE_EN = LocalModelSpec(
-        id = "whisper-base.en",
-        displayName = "Whisper Base (English)",
-        description = "English · ~153 MB",
-        files = listOf(
-            LocalModelFile("$REL/base.en-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 29_120_534, "ef6b936f4c9b1d90a3b68634b60c4ed8576b26172b33c2535ec0e933c9edb823"),
-            LocalModelFile("$REL/base.en-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 130_669_978, "f7162ad6db2dbef16cfaeaa7f945b9d7dd9c1b8d472f6aca82f2273d185e4d41"),
-            LocalModelFile("$REL/base.en-tokens.txt", LocalTranscriptionProvider.TOKENS, 835_554, "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930"),
-            VAD_FILE,
-        ),
-    )
 
-    /** ~358 MB. English-only, most accurate English model — large and slower on mid-range. */
-    val WHISPER_SMALL_EN = LocalModelSpec(
-        id = "whisper-small.en",
-        displayName = "Whisper Small (English)",
-        description = "English · ~358 MB",
-        files = listOf(
-            LocalModelFile("$REL/small.en-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 112_442_483, "8bdac288f369aa94ee2194059238c465ed82ea9d47ee8fa4a8c0a891873e462f"),
-            LocalModelFile("$REL/small.en-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 262_223_042, "710ccf890e10f3faa15f51ec346081a2723c9f3adb6e4da81c6573a5a6f877fb"),
-            LocalModelFile("$REL/small.en-tokens.txt", LocalTranscriptionProvider.TOKENS, 835_554, "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930"),
-            VAD_FILE,
-        ),
-    )
 
     /**
      * ~670 MB. NVIDIA Parakeet TDT 0.6B v3 (issue #154) — a NeMo *transducer* (encoder/decoder/joiner),
@@ -348,15 +276,13 @@ object LocalModelCatalog {
 
     /**
      * All catalog models in display order: Parakeet first (best overall), then the German-specialized
-     * Parakeet, then Whisper multilingual and the English-only variants — and finally the streaming
+     * Parakeet, and then the streaming
      * models, which the picker renders under their own "Live" heading. Keep the streaming entries last:
      * [LocalModelSection] relies on this order to know where that heading goes.
      */
     val all: List<LocalModelSpec> = listOf(
         PARAKEET_TDT_V3,
         PARAKEET_PRIMELINE_DE,
-        WHISPER_TINY, WHISPER_BASE, WHISPER_SMALL,
-        WHISPER_TINY_EN, WHISPER_BASE_EN, WHISPER_SMALL_EN,
         KROKO_EN, KROKO_DE, KROKO_ES, KROKO_FR,
         KROKO_IT, KROKO_NL, KROKO_PT, KROKO_SV, KROKO_TR, KROKO_HE,
     )

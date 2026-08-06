@@ -116,6 +116,9 @@ private data class KeyStatus(val health: KeyHealth, val detail: String = "")
 /** Shared with the setup wizard so both places import the same way. */
 private val MA_PROVIDERS = MaKeyImport.PROVIDERS
 
+/** The on-device provider's id, whose "keys" are downloaded models rather than a secret. */
+private const val LOCAL_PROVIDER_ID = "local"
+
 /**
  * The key manager. One picker, one list, one place.
  *
@@ -474,6 +477,37 @@ fun DictateKeysScreen() = FlorisScreen {
                 )
             }
         }
+
+        // On-device, offline. It used to live behind a dialog on the AI providers screen, which is
+        // gone, and deleting that screen left this with nowhere to be reached from at all. It
+        // belongs here anyway: this is the page about where transcription comes from, and a local
+        // model is exactly that, just one that needs no key.
+        val localAccount = accounts.accounts[LOCAL_PROVIDER_ID]
+        Text(
+            text = "ON-DEVICE (OFFLINE)",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 2.dp),
+        )
+        Text(
+            text = "Runs on this phone, so no audio leaves it and no key is involved. Download a " +
+                "Parakeet model to use it.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+        LocalModelSection(
+            activeModelId = localAccount?.transcriptionModel.orEmpty(),
+            activeStreamingModelId = localAccount?.realtimeModel.orEmpty(),
+            onActiveModelChange = { id ->
+                val existing = localAccount ?: ProviderAccount(providerId = LOCAL_PROVIDER_ID)
+                save(accounts.put(existing.copy(transcriptionModel = id)))
+            },
+            onActiveStreamingModelChange = { id ->
+                val existing = localAccount ?: ProviderAccount(providerId = LOCAL_PROVIDER_ID)
+                save(accounts.put(existing.copy(realtimeModel = id)))
+            },
+        )
 
         Text(
             text = "Keys are also mirrored to ${MaVault.DISPLAY_PATH}, which an uninstall does not " +
