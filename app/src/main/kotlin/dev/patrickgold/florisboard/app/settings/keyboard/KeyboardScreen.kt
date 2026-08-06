@@ -47,12 +47,9 @@ fun KeyboardScreen() = FlorisScreen {
     val navController = LocalNavController.current
 
     content {
-        SwitchPreference(
-            prefs.keyboard.numberRow,
-            modifier = Modifier.settingsSearchAnchor("pref__keyboard__number_row__label"),
-            title = stringRes(R.string.pref__keyboard__number_row__label),
-            summary = stringRes(R.string.pref__keyboard__number_row__summary),
-        )
+        // The number row toggle is gone from here. That row is now the multi-purpose row, switched
+        // on and cycled from the Smartbar, where it can be changed mid-sentence rather than by
+        // leaving for settings. Two places to turn one row on would only ever disagree.
         ListPreference(
             listPref = prefs.keyboard.hintedNumberRowMode,
             switchPref = prefs.keyboard.hintedNumberRowEnabled,

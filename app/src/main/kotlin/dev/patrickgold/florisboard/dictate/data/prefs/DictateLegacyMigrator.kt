@@ -416,6 +416,9 @@ object DictateLegacyMigrator {
         // reach a preference an existing install has already written, and without the audio the
         // archive cannot re-transcribe anything.
         prefs.dictate.historyAudioRetention.set(true)
+        // The built-in numeric row is retired; the multi-purpose row occupies that slot now. Turning
+        // the old preference off keeps the hinted-digits setting, which is gated on it, available.
+        prefs.keyboard.numberRow.set(false)
         // The fork's starter prompts give way to Marko's own, once, and only on an install where
         // nobody has edited them. Someone's own prompts are not ours to overwrite.
         runCatching {

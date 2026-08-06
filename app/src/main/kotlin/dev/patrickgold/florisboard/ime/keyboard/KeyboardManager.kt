@@ -154,6 +154,13 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                     keyboardCache.clear(KeyboardMode.CHARACTERS)
                 }
             }
+            // Same rebuild when the multi-purpose row appears or disappears, since it decides
+            // whether the built-in numeric row is part of the layout at all.
+            prefs.dictate.maExtraRow.asFlow().collectLatestIn(scope) {
+                updateActiveEvaluators {
+                    keyboardCache.clear(KeyboardMode.CHARACTERS)
+                }
+            }
             prefs.keyboard.hintedNumberRowEnabled.asFlow().collectLatestIn(scope) {
                 updateActiveEvaluators()
             }

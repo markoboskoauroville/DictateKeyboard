@@ -335,9 +335,13 @@ class LayoutManager(context: Context) {
 
         when (keyboardMode) {
             KeyboardMode.CHARACTERS -> {
-                if (prefs.keyboard.numberRow.get()) {
-                    extension = LTN(LayoutType.NUMERIC_ROW, subtype.layoutMap.numericRow)
-                }
+                // No built-in numeric row here any more. That slot belongs to the multi-purpose row,
+                // which holds digits, Croatian letters, symbols or editing keys one at a time and is
+                // switched from the Smartbar. Its digits mode is what the old numeric row was.
+                //
+                // Removed rather than left as a second way to fill the same slot: two independent
+                // switches over one row can only ever end up disagreeing, and that is exactly what
+                // put two rows of digits on screen at once.
                 main = LTN(LayoutType.CHARACTERS, subtype.layoutMap.characters)
                 modifier = LTN(LayoutType.CHARACTERS_MOD, extCoreLayout("default"))
             }
