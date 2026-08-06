@@ -37,11 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
@@ -207,6 +209,7 @@ fun DictateHistoryLayout(
         }
         pendingDelete?.let { target ->
             MaDeleteChooser(
+                accent = accent,
                 onAudioOnly = {
                     scope.launch(Dispatchers.IO) { DictateHistoryStore.deleteAudioOnly(context, target) }
                     pendingDelete = null
@@ -229,6 +232,7 @@ fun DictateHistoryLayout(
  */
 @Composable
 private fun MaDeleteChooser(
+    accent: Color,
     onAudioOnly: () -> Unit,
     onEverything: () -> Unit,
     onCancel: () -> Unit,
@@ -241,18 +245,21 @@ private fun MaDeleteChooser(
         MaHistoryAction(
             label = "Audio only",
             enabled = true,
+            tint = MaDestructive,
             onClick = onAudioOnly,
             modifier = Modifier.weight(1f),
         )
         MaHistoryAction(
             label = "Delete both",
             enabled = true,
+            tint = MaDestructive,
             onClick = onEverything,
             modifier = Modifier.weight(1f),
         )
         MaHistoryAction(
             label = "Cancel",
             enabled = true,
+            tint = accent,
             onClick = onCancel,
             modifier = Modifier.weight(0.8f),
         )
@@ -334,23 +341,31 @@ private fun HistoryPanelRow(
             .padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Full words, never clipped. The labels were being cut to "Inse" and "Dele" because the row
+        // shared its width with a long transcript; giving the actions their own line and equal
+        // shares means each one has room to say what it does.
         MaHistoryAction(
             label = "Insert",
             enabled = !entry.failed,
+            tint = accent,
             onClick = onInsert,
             modifier = Modifier.weight(1f),
         )
         if (entry.audioPath != null) {
             MaHistoryAction(
-                label = "Transcribe again",
+                label = "Transcribe",
                 enabled = true,
+                tint = accent,
                 onClick = onRetranscribe,
-                modifier = Modifier.weight(1.4f),
+                modifier = Modifier.weight(1f),
             )
         }
         MaHistoryAction(
-            label = if (entry.audioPath != null) "Delete\u2026" else "Delete",
+            label = "Delete",
             enabled = true,
+            // Destructive actions read red in every scheme, which is the one colour convention worth
+            // keeping: it is the only action here that cannot be undone.
+            tint = MaDestructive,
             onClick = onDeleteRequested,
             modifier = Modifier.weight(1f),
         )
@@ -363,6 +378,7 @@ private fun HistoryPanelRow(
 private fun MaHistoryAction(
     label: String,
     enabled: Boolean,
+    tint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -372,13 +388,18 @@ private fun MaHistoryAction(
         enabled = enabled,
         modifier = modifier.padding(horizontal = 2.dp),
     ) {
-        SnyggText(
-            elementName = FlorisImeUi.KeyHint.elementName,
+        Text(
             text = label,
+            color = if (enabled) tint else tint.copy(alpha = 0.4f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
         )
     }
 }
+
+/** Red for the one action that cannot be taken back, in any colour scheme. */
+private val MaDestructive = Color(0xFFE5534B)
 
 /** Collapses newlines so the transcript flows as prose; the two-line ellipsis is handled by SnyggText. */
 private fun historyPreview(text: String): String = text.replace('\n', ' ').trim()

@@ -388,6 +388,12 @@ object DictateController {
     /** When true, the next finished recording is fed to the rewording model instead of committed. */
     private var livePromptArmed = false
 
+    /** Field text before a live prompt rewrote it, kept so the archive can offer the original back. */
+    private var livePromptOriginal = ""
+
+    /** True when the live-prompt answer should replace the whole field rather than insert at the cursor. */
+    private var livePromptReplacesField = false
+
     /** Output destination of the in-flight dictation; see [OutputTarget]. Reset to IME when idle. */
     private var outputTarget = OutputTarget.IME
 
@@ -1551,8 +1557,19 @@ object DictateController {
             // selection was ever sent, so speaking an instruction with nothing highlighted handed
             // the model an instruction about nothing, and it said so.
             val outSink = sink(appContext)
-            val subject = outSink.selectedText().takeIf { it.isNotBlank() }
-                ?: outSink.fullText().takeIf { it.isNotBlank() }
+            val selected = outSink.selectedText().takeIf { it.isNotBlank() }
+            val whole = outSink.fullText().takeIf { it.isNotBlank() }
+            val subject = selected ?: whole
+            // Remembered for the history entry: asking the model to rewrite something should not be
+            // the moment the original becomes unrecoverable, so the pre-prompt text is stored as the
+            // entry's "original" and can be re-inserted from the archive.
+            livePromptOriginal = subject.orEmpty()
+            // Whether the answer replaces the field or lands at the cursor. A selection is already
+            // replaced by commitText; a whole-field subject is not, and that was the bug: asking for
+            // the letters to be rewritten as numbers appended a second copy underneath the first
+            // instead of rewriting anything. Selecting the field first makes the commit a
+            // replacement, which is what "rewrite this" plainly means.
+            livePromptReplacesField = selected == null && whole != null
             requestReword(rawText, subject)
         } else {
             // Normal dictation: auto-formatting + auto-apply prompts, then the prompts the user queued by
@@ -1571,7 +1588,14 @@ object DictateController {
         // original wording stays recoverable without re-running (and paying for) the transcription. Only
         // the prompt chain counts: the deterministic steps below (paragraph splitting, custom mappings)
         // would otherwise store a near-identical copy differing in little more than line breaks.
-        val originalForHistory = if (finalText != rawText) rawText else ""
+        // For a live prompt the interesting "original" is the text that was rewritten, not the
+        // spoken instruction: a rewrite that cannot be undone is a rewrite nobody dares run twice.
+        // The archive keeps it so the previous version can be re-inserted.
+        val originalForHistory = when {
+            live && livePromptOriginal.isNotBlank() -> livePromptOriginal
+            finalText != rawText -> rawText
+            else -> ""
+        }
         val paragraphed = if (isPureTranscript && splitWords > 0) {
             TranscriptParagraphs.split(finalText, splitWords)
         } else {
@@ -2139,6 +2163,13 @@ object DictateController {
         // Empty result (e.g. silence): nothing to insert — a no-op is a success, not a failed write.
         if (text.isEmpty()) return true
         val sink = sink(context)
+        // A live prompt that worked on the whole field replaces it. commitText already replaces a
+        // selection, so selecting everything first turns the insert into the rewrite that was asked
+        // for. Reset immediately: this is true for exactly one commit.
+        if (livePromptReplacesField) {
+            livePromptReplacesField = false
+            sink.selectAll()
+        }
         var committed: Boolean
         // System voice input (#67) returns the whole result at once — no typewriter animation, which only
         // makes sense when we're the one typing into a visible field.
