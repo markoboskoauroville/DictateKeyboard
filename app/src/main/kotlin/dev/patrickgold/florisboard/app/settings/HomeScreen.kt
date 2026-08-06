@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Restore
