@@ -607,7 +607,7 @@ private fun LegacyRecordRow(
                 icon = Icons.Default.Delete,
                 contentDescription = stringRes(R.string.dictate__action_cancel),
                 modifier = sideKey,
-                tint = Color(0xFFE53935),
+                tint = Color(0xFF9B3B33),
                 // Hard discard: ends the recording outright and throws the audio away, rather than
                 // dropping only the current long-form segment and carrying on. One red button that
                 // always means the same thing beats two that mean nearly the same thing, which is
@@ -785,19 +785,9 @@ private fun LegacyBottomRow(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // This slot switches to the previous input method, as it did before. It briefly held a
-        // numbers key and that was a trap: VIEW_NUMERIC changes the real keyboard layout, and the
-        // transcribe view has no ABC key to change it back, so pressing it here and then switching
-        // to the typing view left a numeric pad with no way out of it. The number row belongs to
-        // the typing view, where the key that toggles it can also be seen.
-        ThemedIconKey(
-            code = KeyCode.SYSTEM_PREV_INPUT_METHOD,
-            icon = Icons.Default.KeyboardHide,
-            contentDescription = stringRes(R.string.dictate__legacy_switch_keyboard),
-            modifier = sideKey,
-            onLongClick = { keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER) },
-            onClick = { keyboardManager.tapKey(KeyCode.SYSTEM_PREV_INPUT_METHOD) },
-        )
+        // Nothing here. This slot switched input method, which the system's own globe in the
+        // navigation bar already does; duplicating a system control inside the keyboard spends a key
+        // to save nobody anything. The space bar takes the width.
 
         // The space bar was the width of the whole row for a key that, in a dictation layout, is
         // pressed rarely: the words arrive with their spaces already in them. The keyboards
@@ -1353,7 +1343,7 @@ private fun MaSegmentsBadge(count: Int, tint: Color, modifier: Modifier = Modifi
 private val MaRecordFill = Color(0xFF11151C)
 
 /** The red edge that means recording. The one place red is used, so it always means one thing. */
-private val MaRecordRing = Color(0xFFE5534B)
+private val MaRecordRing = Color(0xFF9B3B33)
 
 /** Warm gold for everything printed on the record key. */
 private val MaRecordInk = Color(0xFFE8B15C)

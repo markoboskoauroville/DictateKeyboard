@@ -231,7 +231,7 @@ private fun maToDb(level: Float): Float {
 private fun maNorm(db: Float): Float = ((db - FLOOR_DB) / (0f - FLOOR_DB)).coerceIn(0f, 1f)
 
 private fun maDbColour(db: Float, tint: Color): Color = when {
-    db > -3f -> Color(0xFFE5534B)
+    db > -3f -> Color(0xFF9B3B33)
     db > -12f -> Color(0xFFF0883E)
     else -> Color(0xFF56D364)
 }

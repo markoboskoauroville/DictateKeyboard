@@ -811,7 +811,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v9_applied",
+            key = "dictate__ma_row_v10_applied",
             default = false,
         )
         val maSunriseApplied = boolean(

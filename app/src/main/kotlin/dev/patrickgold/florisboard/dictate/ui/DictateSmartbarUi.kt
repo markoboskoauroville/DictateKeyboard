@@ -124,7 +124,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 
 /** Recording red, shared by the indicator dot and the armed slide-to-cancel bin (#235). */
-private val RecordingRed = Color(0xFFE53935)
+private val RecordingRed = Color(0xFF9B3B33)
 
 /**
  * Gboard-style in-Smartbar dictation indicator. Rendered in the Smartbar's center area (left of the
@@ -264,7 +264,8 @@ private fun RecordingContent(state: DictateController.UiState.Recording) {
             PushToTalkAffordance(cancelProgress)
             return@Row
         }
-        LanguageChip()
+        // No language chip while recording. The language is chosen before speaking, not during, and
+        // on this narrow bar it was sitting on top of the timer.
         if (segmented) {
             SnyggIconButton(
                 elementName = FlorisImeUi.SmartbarActionKey.elementName,
@@ -280,20 +281,11 @@ private fun RecordingContent(state: DictateController.UiState.Recording) {
                     tint = lerp(LocalContentColor.current, accent, nextFlash.value),
                 )
             }
-        } else {
-            SnyggIconButton(
-                elementName = FlorisImeUi.SmartbarActionKey.elementName,
-                onClick = { DictateController.togglePause() },
-                modifier = Modifier.fillMaxHeight().aspectRatio(1f),
-            ) {
-                SnyggIcon(
-                    imageVector = if (state.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                    contentDescription = stringRes(
-                        if (state.paused) R.string.dictate__action_resume else R.string.dictate__action_pause,
-                    ),
-                )
-            }
         }
+        // Pause is gone too. Nothing downstream treats a paused recording differently, so it only
+        // ever produced a stopped clock and a question about what it had done. While recording there
+        // are two things worth reaching for, and this bar now holds exactly those: throw it away, or
+        // send it.
     }
 }
 
@@ -534,7 +526,7 @@ private fun RowScope.ErrorContent(state: DictateController.UiState.Error) {
     // Real errors are tinted a distinct red so they stand out; informational notices (e.g. "no speech
     // detected", issue #93) use the normal themed Smartbar foreground so they don't look like a failure.
     val rowStyle = rememberSnyggThemeQuery(FlorisImeUi.SmartbarSharedActionsRow.elementName)
-    val errorColor = if (state.neutral) rowStyle.foreground() else Color(0xFFE53935)
+    val errorColor = if (state.neutral) rowStyle.foreground() else Color(0xFF9B3B33)
 
     // Icon + message. Tappable when a raw provider detail is available, opening the detail popup below.
     Box(modifier = if (hasAction) Modifier.weight(1f) else Modifier) {
@@ -890,12 +882,8 @@ private fun MaRecordingScope(paused: Boolean, frozen: Boolean, elapsedMs: Long) 
         // The same meter the transcribe view draws, from the shared module. These two had drifted
         // into different visuals for the identical act, so starting a recording from the keyboard
         // looked like a different feature from starting one from the transcribe view. One module now.
+        // The meter draws its own timer, centred and bold, so this second one had to go: two clocks
+        // overlapping on a bar this narrow is what put 0:51 on top of 0:51 in the same place.
         MaScopeCanvas(active = !still, tint = MaInk)
-        Text(
-            text = formatElapsed(elapsedMs),
-            color = MaInk.copy(alpha = if (still) 0.45f else 0.75f),
-            fontSize = 11.sp,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
-        )
     }
 }

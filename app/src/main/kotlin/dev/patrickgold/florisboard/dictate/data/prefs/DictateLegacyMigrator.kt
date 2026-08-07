@@ -421,6 +421,34 @@ object DictateLegacyMigrator {
         // toggles are unflipped, and the microphone is the sticky action, so this is the one flag
         // that puts each on the side it is wanted.
         prefs.smartbar.flipToggles.set(false)
+        // Strip retired actions out of the SAVED arrangement, not just the default. This is the
+        // trap that keeps catching me: a changed default never reaches a preference that has already
+        // been written, so one-handed mode kept appearing in the panel long after it left the code.
+        val retired = setOf(
+            KeyCode.TOGGLE_ONE_HANDED_MODE_LEFT,
+            KeyCode.TOGGLE_ONE_HANDED_MODE_RIGHT,
+            KeyCode.LANGUAGE_SWITCH,
+            KeyCode.IME_UI_MODE_MEDIA,
+            KeyCode.IME_UI_MODE_GIF,
+            KeyCode.TOGGLE_INCOGNITO_MODE,
+            KeyCode.ARROW_UP,
+            KeyCode.ARROW_DOWN,
+            KeyCode.ARROW_LEFT,
+            KeyCode.ARROW_RIGHT,
+            KeyCode.FORWARD_DELETE,
+            KeyCode.TOGGLE_FLOATING_WINDOW,
+        )
+        fun keeps(a: QuickAction): Boolean =
+            (a as? QuickAction.InsertKey)?.data?.code !in retired
+        val arrangement = prefs.smartbar.actionArrangement.get()
+        val cleaned = arrangement.copy(
+            stickyAction = arrangement.stickyAction?.takeIf { keeps(it) },
+            dynamicActions = arrangement.dynamicActions.filter { keeps(it) },
+            hiddenActions = arrangement.hiddenActions.filter { keeps(it) },
+        )
+        if (cleaned != arrangement) {
+            prefs.smartbar.actionArrangement.set(cleaned)
+        }
         // NUMBERS leaves the action row and KEYBOARD takes its place, so the key that returns to
         // typing sits under the microphone that comes the other way. Numbers moved to the slot the
         // keyboard key vacated at the bottom left.

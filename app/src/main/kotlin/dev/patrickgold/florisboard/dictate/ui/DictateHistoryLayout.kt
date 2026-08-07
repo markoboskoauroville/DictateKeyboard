@@ -399,7 +399,7 @@ private fun MaHistoryAction(
 }
 
 /** Red for the one action that cannot be taken back, in any colour scheme. */
-private val MaDestructive = Color(0xFFE5534B)
+private val MaDestructive = Color(0xFF9B3B33)
 
 /** Collapses newlines so the transcript flows as prose; the two-line ellipsis is handled by SnyggText. */
 private fun historyPreview(text: String): String = text.replace('\n', ' ').trim()

@@ -84,7 +84,7 @@ import kotlinx.coroutines.withContext
 private enum class KeyHealth { UNTESTED, TESTING, WORKING, REJECTED, NO_QUOTA, OFFLINE }
 
 private val GREEN = Color(0xFF56D364)
-private val RED = Color(0xFFF85149)
+private val RED = Color(0xFF9B3B33)
 private val AMBER = Color(0xFFF0883E)
 private val YELLOW = Color(0xFFE3B341)
 private val GREY = Color(0xFF8B949E)

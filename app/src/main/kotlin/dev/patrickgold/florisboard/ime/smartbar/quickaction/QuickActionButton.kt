@@ -625,7 +625,7 @@ fun QuickActionButton(
                                     Icon(
                                         imageVector = imageVector,
                                         contentDescription = null,
-                                        tint = Color(0xFFE5534B),
+                                        tint = Color(0xFF9B3B33),
                                         modifier = iconModifier.alpha(1f - lockFlash),
                                     )
                                 } else {
