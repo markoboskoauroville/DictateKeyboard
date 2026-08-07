@@ -421,6 +421,11 @@ object DictateLegacyMigrator {
         // toggles are unflipped, and the microphone is the sticky action, so this is the one flag
         // that puts each on the side it is wanted.
         prefs.smartbar.flipToggles.set(false)
+        // Move an install that never chose a case rule onto the length-aware one. Anyone who picked
+        // lower or upper on purpose keeps it.
+        if (prefs.dictate.maTextCase.get() == "none") {
+            prefs.dictate.maTextCase.set("auto")
+        }
         // Strip retired actions out of the SAVED arrangement, not just the default. This is the
         // trap that keeps catching me: a changed default never reaches a preference that has already
         // been written, so one-handed mode kept appearing in the panel long after it left the code.

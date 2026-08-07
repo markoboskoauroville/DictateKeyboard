@@ -122,7 +122,34 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
                 }
             }
         }
-        MaModelKey(modifier = Modifier.weight(2.2f).fillMaxHeight())
+        // Case, forced on whatever comes back. Two buttons rather than one cycling through three
+        // states, so the current one is visible instead of having to be remembered, and pressing the
+        // active one turns it off again.
+        val textCase by prefs.dictate.maTextCase.collectAsState()
+        val caseScope = rememberCoroutineScope()
+        MaQuickKey(
+            selected = textCase == "lower",
+            onClick = {
+                caseScope.launch {
+                    prefs.dictate.maTextCase.set(if (textCase == "lower") "none" else "lower")
+                }
+            },
+            modifier = Modifier.weight(0.8f).fillMaxHeight(),
+        ) { fg ->
+            Text(text = "ab", color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        }
+        MaQuickKey(
+            selected = textCase == "upper",
+            onClick = {
+                caseScope.launch {
+                    prefs.dictate.maTextCase.set(if (textCase == "upper") "none" else "upper")
+                }
+            },
+            modifier = Modifier.weight(0.8f).fillMaxHeight(),
+        ) { fg ->
+            Text(text = "AB", color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        }
+        MaModelKey(modifier = Modifier.weight(1.8f).fillMaxHeight())
     }
 }
 

@@ -386,6 +386,12 @@ object DictateController {
     private var btRouter: BluetoothMicRouter? = null
 
     /** When true, the next finished recording is fed to the rewording model instead of committed. */
+    /**
+     * Up to this many words counts as a fragment rather than a sentence. Four covers the things
+     * actually dictated short: a search term, a name, a two-word answer.
+     */
+    private const val SHORT_WORDS = 4
+
     private var livePromptArmed = false
 
     /** Field text before a live prompt rewrote it, kept so the archive can offer the original back. */
@@ -1611,7 +1617,11 @@ object DictateController {
             finalText
         }
         // Deterministic find-and-replace dictionary (issue #129), applied right before insert.
-        val outputText = prefs.dictate.customMappings.get().apply(paragraphed)
+        val mapped = prefs.dictate.customMappings.get().apply(paragraphed)
+        // Case forced last, after every other transformation, so nothing downstream can put a capital
+        // back. Only for plain transcripts: a rewrite asked for in words is allowed to choose its own
+        // capitals, and flattening a prompt's answer would undo the very thing it was asked to do.
+        val outputText = if (isPureTranscript) maApplyCase(mapped) else mapped
         if (finalizeViaComposing) {
             // Realtime (#128): replace the live-streamed preview with the finished (reworded) result via the
             // minimal diff, then honor auto-enter — instead of committing on top of the preview.
@@ -2375,6 +2385,49 @@ object DictateController {
      * than relying on the normal teardown to get there.
      */
     /** Bytes of audio captured so far, or 0 when nothing is recording. For the size readout. */
+    /**
+     * Forces the case of a finished transcript and leaves exactly one trailing space.
+     *
+     * A recogniser returns sentence case ending in a full stop, because it assumes prose. Dictating
+     * into a search box, a filename or a command line makes that assumption wrong every time, and
+     * undoing it by hand costs more than the dictation saved.
+     *
+     * The trailing space is unconditional: the next dictation then starts a word rather than gluing
+     * itself onto the last one, which is the single most common annoyance when speaking in bursts.
+     */
+    /**
+     * Case and trailing punctuation, decided by how much was said.
+     *
+     * A few words are almost never a sentence. They are a search box, a filename, a name being typed
+     * into a field, a two-word reply, and a recogniser trained on prose hands all of those back
+     * capitalised with a full stop on the end, which then has to be deleted by hand every time.
+     * Several sentences are prose and should keep their capitals and their punctuation.
+     *
+     * So the rule is length. Up to [SHORT_WORDS] words with no sentence break inside counts as a
+     * fragment and comes back lowercase without the invented full stop; anything longer is left
+     * exactly as the recogniser wrote it.
+     *
+     * An explicit setting of "lower" or "upper" still wins outright, because someone who asked for
+     * every dictation in one case meant it whatever the length.
+     */
+    private fun maApplyCase(text: String): String {
+        val mode = prefs.dictate.maTextCase.get()
+        if (mode == "lower" || mode == "upper") {
+            val forced = if (mode == "lower") text.lowercase() else text.uppercase()
+            return forced.trimEnd().trimEnd('.', ',', '!', '?', ';', ':') + " "
+        }
+        if (mode != "none" && mode != "auto") return text
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return text
+        // A sentence break anywhere inside means prose, however few words there are: "No. Really."
+        // is two sentences and is not a fragment.
+        val inner = trimmed.dropLast(1)
+        if (inner.any { it == '.' || it == '!' || it == '?' || it == '\n' }) return text
+        val words = trimmed.split(Regex("\\s+")).size
+        if (words > SHORT_WORDS) return text
+        return trimmed.lowercase().trimEnd('.', ',', '!', '?', ';', ':') + " "
+    }
+
     fun currentRecordingBytes(): Long = recorder?.bytesWritten ?: 0L
 
     fun discardRecording(context: Context) {
