@@ -336,7 +336,6 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
         // are used elsewhere in this project, so all three are certain to resolve.
         KeyCode.MA_ROW_BRACKETS -> Icons.Default.Code
         KeyCode.MA_ROW_ARROWS -> Icons.Default.SwapHoriz
-        KeyCode.MA_ROW_EDIT -> Icons.Default.ContentCut
         KeyCode.LANGUAGE_SWITCH -> {
             Icons.Default.Language
         }

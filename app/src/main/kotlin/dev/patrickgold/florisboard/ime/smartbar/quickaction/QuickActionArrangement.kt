@@ -72,9 +72,11 @@ data class QuickActionArrangement(
                 // The three row sets first, left to right, because these are the ones reached for
                 // constantly. Language switch is gone: the space bar does that now. One-handed mode
                 // is gone entirely, unused here and dead weight in the panel.
+                // One-handed mode and the in-place record button are gone from this panel: the
+                // first is unused here, the second is reachable from the record row itself and was
+                // only taking a slot in a panel that has to be scanned quickly.
                 QuickAction.InsertKey(TextKeyData.MA_ROW_BRACKETS),
                 QuickAction.InsertKey(TextKeyData.MA_ROW_ARROWS),
-                QuickAction.InsertKey(TextKeyData.MA_ROW_EDIT),
                 // Default visible order requested by the user. The live prompt is no longer a Smartbar
                 // button – it lives as a chip inside the prompt panel/row – so only the panel opener
                 // (DICTATE_PROMPTS) remains here.
@@ -96,7 +98,6 @@ data class QuickActionArrangement(
                 // strip along the bottom does that job), both IME switchers and the keyboard picker
                 // (the numbered switcher keys do that), forward delete and hide keyboard.
                 QuickAction.InsertKey(TextKeyData.MA_TOGGLE_EXTRA_ROW),
-                QuickAction.InsertKey(TextKeyData.MA_QUICK_RECORD),
                 QuickAction.InsertKey(TextKeyData.DICTATE_REINSERT),
             ),
             hiddenActions = listOf(

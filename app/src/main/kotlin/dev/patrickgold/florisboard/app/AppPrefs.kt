@@ -771,7 +771,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             // "take that back" keys and sit together on the left; select all belongs with cut, copy
             // and paste because selecting is the first move of all three, and separating it from
             // them was the reason the row read as a jumble.
-            default = "UNDO,REDO,SELECT_ALL,CUT,COPY,PASTE,HISTORY,NUMBERS",
+            default = "UNDO,REDO,SELECT_ALL,CUT,COPY,PASTE,HISTORY,KEYBOARD",
         )
         // Sticky panel: when on, whichever of the two main views was last used comes back the next
         // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
@@ -811,7 +811,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v8_applied",
+            key = "dictate__ma_row_v9_applied",
             default = false,
         )
         val maSunriseApplied = boolean(

@@ -1004,7 +1004,12 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             // button is its own toggle and the row never needs a separate "off" trip.
             KeyCode.MA_ROW_BRACKETS -> maSelectRowSet("symbols")
             KeyCode.MA_ROW_ARROWS -> maSelectRowSet("arrows")
-            KeyCode.MA_ROW_EDIT -> maSelectRowSet("editing")
+            KeyCode.MA_ROW_NEXT_SET -> scope.launch {
+                val order = listOf("digits", "diacritics", "symbols", "arrows")
+                val at = order.indexOf(prefs.dictate.maExtraRowMode.get()).coerceAtLeast(0)
+                prefs.dictate.maExtraRowMode.set(order[(at + 1) % order.size])
+                prefs.dictate.maExtraRow.set(true)
+            }
             KeyCode.COMPACT_LAYOUT_TO_LEFT -> windowController.actions.compactLayoutToLeft()
             KeyCode.COMPACT_LAYOUT_TO_RIGHT -> windowController.actions.compactLayoutToRight()
             KeyCode.TOGGLE_RESIZE_MODE -> windowController.editor.toggleEnabled()

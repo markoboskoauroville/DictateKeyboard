@@ -99,7 +99,6 @@ fun QuickAction.computeDisplayName(evaluator: ComputingEvaluator): String {
             KeyCode.MA_TOGGLE_EXTRA_ROW -> R.string.quick_action__ma_extra_row
             KeyCode.MA_ROW_BRACKETS -> R.string.quick_action__ma_row_brackets
             KeyCode.MA_ROW_ARROWS -> R.string.quick_action__ma_row_arrows
-            KeyCode.MA_ROW_EDIT -> R.string.quick_action__ma_row_edit
             KeyCode.LANGUAGE_SWITCH -> R.string.quick_action__language_switch
             KeyCode.SYSTEM_PREV_INPUT_METHOD -> R.string.quick_action__system_prev_input_method
             KeyCode.SYSTEM_INPUT_METHOD_PICKER -> R.string.quick_action__system_input_method_picker
@@ -149,7 +148,6 @@ fun QuickAction.computeTooltip(evaluator: ComputingEvaluator): String {
             KeyCode.MA_TOGGLE_EXTRA_ROW -> R.string.quick_action__ma_extra_row__tooltip
             KeyCode.MA_ROW_BRACKETS -> R.string.quick_action__ma_row_brackets__tooltip
             KeyCode.MA_ROW_ARROWS -> R.string.quick_action__ma_row_arrows__tooltip
-            KeyCode.MA_ROW_EDIT -> R.string.quick_action__ma_row_edit__tooltip
             KeyCode.LANGUAGE_SWITCH -> R.string.quick_action__language_switch__tooltip
             KeyCode.SYSTEM_PREV_INPUT_METHOD -> R.string.quick_action__system_prev_input_method__tooltip
             KeyCode.SYSTEM_INPUT_METHOD_PICKER -> R.string.quick_action__system_input_method_picker__tooltip

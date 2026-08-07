@@ -118,7 +118,8 @@ object KeyCode {
     // three times to reach the third, and no way to see which is coming next.
     const val MA_ROW_BRACKETS =             -233
     const val MA_ROW_ARROWS =               -234
-    const val MA_ROW_EDIT =                 -235
+    // Long press on the last key of the top row moves to the next set.
+    const val MA_ROW_NEXT_SET =             -236
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222

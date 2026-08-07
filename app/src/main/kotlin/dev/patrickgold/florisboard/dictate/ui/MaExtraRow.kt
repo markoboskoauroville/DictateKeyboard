@@ -76,7 +76,6 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
         "diacritics" -> MaRowSets.CROATIAN
         "symbols" -> MaRowSets.BRACKETS
         "arrows" -> MaRowSets.ARROWS
-        "editing" -> MaRowSets.EDITING
         else -> MaRowSets.DIGITS
     }
 
@@ -92,6 +91,15 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
             MaRowKeyButton(
                 key = key,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
+                onLongPress = if (key.cyclesOnLongPress) {
+                    {
+                        keyboardManager.inputEventDispatcher.sendDownUp(
+                            TextKeyData(code = KeyCode.MA_ROW_NEXT_SET),
+                        )
+                    }
+                } else {
+                    null
+                },
                 onFire = {
                     if (key.code != null) {
                         keyboardManager.inputEventDispatcher.sendDownUp(TextKeyData(code = key.code))
@@ -108,7 +116,20 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
 }
 
 /** One key: what is printed on it, and either a character to type or an action to fire. */
-data class MaRowKey(val label: String, val code: Int? = null, val repeats: Boolean = false)
+data class MaRowKey(
+    val label: String,
+    val code: Int? = null,
+    val repeats: Boolean = false,
+    /**
+     * True when a long press moves to the next set.
+     *
+     * Sits on the last key of each set. On digits that is the zero, which is far too useful to give
+     * up to a tap, so the cycle is on its long press; on the other sets the last key is a tilde or
+     * an arrow and the same rule keeps it consistent. One place on the row, always, whatever it
+     * currently says.
+     */
+    val cyclesOnLongPress: Boolean = false,
+)
 
 /**
  * The four sets, ten keys each.
@@ -118,11 +139,14 @@ data class MaRowKey(val label: String, val code: Int? = null, val repeats: Boole
  * nine things nobody wants to reach the one they do.
  */
 object MaRowSets {
-    val DIGITS = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { MaRowKey(it) }
+    val DIGITS = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9").map { MaRowKey(it) } +
+        MaRowKey("0", cyclesOnLongPress = true)
 
-    val CROATIAN = listOf("č", "ć", "ž", "š", "đ", "Č", "Ć", "Ž", "Š", "Đ").map { MaRowKey(it) }
+    val CROATIAN = listOf("č", "ć", "ž", "š", "đ", "Č", "Ć", "Ž", "Š").map { MaRowKey(it) } +
+        MaRowKey("Đ", cyclesOnLongPress = true)
 
-    val BRACKETS = listOf("(", ")", "[", "]", "{", "}", "<", ">", "|", "~").map { MaRowKey(it) }
+    val BRACKETS = listOf("(", ")", "[", "]", "{", "}", "<", ">", "|").map { MaRowKey(it) } +
+        MaRowKey("~", cyclesOnLongPress = true)
 
     /** Movement, coarse and fine, in the order a hand reaches for them. */
     val ARROWS = listOf(
@@ -135,22 +159,9 @@ object MaRowSets {
         MaRowKey("\u2191", KeyCode.ARROW_UP, repeats = true),
         MaRowKey("\u2193", KeyCode.ARROW_DOWN, repeats = true),
         MaRowKey("\u21de", KeyCode.MOVE_START_OF_PAGE),
-        MaRowKey("\u21df", KeyCode.MOVE_END_OF_PAGE),
+        MaRowKey("\u21df", KeyCode.MOVE_END_OF_PAGE, cyclesOnLongPress = true),
     )
 
-    /** Selecting and moving text about. */
-    val EDITING = listOf(
-        MaRowKey("\u21e7", KeyCode.CLIPBOARD_SELECT),
-        MaRowKey("\u25ad", KeyCode.MA_SELECT_WORD),
-        MaRowKey("\u2b1a", KeyCode.CLIPBOARD_SELECT_ALL),
-        MaRowKey("\u2704", KeyCode.CLIPBOARD_CUT),
-        MaRowKey("\u29c9", KeyCode.CLIPBOARD_COPY),
-        MaRowKey("\u2913", KeyCode.CLIPBOARD_PASTE),
-        MaRowKey("\u21b6", KeyCode.UNDO),
-        MaRowKey("\u21b7", KeyCode.REDO),
-        MaRowKey("\u232b", KeyCode.DELETE_WORD, repeats = true),
-        MaRowKey("\u238b", KeyCode.ESCAPE),
-    )
 }
 
 /**
@@ -165,6 +176,7 @@ private fun MaRowKeyButton(
     key: MaRowKey,
     modifier: Modifier,
     onFire: () -> Unit,
+    onLongPress: (() -> Unit)? = null,
 ) {
     val style = rememberSnyggThemeQuery(
         FlorisImeUi.Key.elementName,
@@ -181,6 +193,23 @@ private fun MaRowKeyButton(
     val gesture = Modifier.pointerInput(key) {
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false)
+            if (onLongPress != null) {
+                // Hold to move to the next set. Waiting first means the character is only typed if
+                // the finger leaves before the threshold, which is what keeps zero usable as zero.
+                val early = withTimeoutOrNull(400L) {
+                    waitForUpOrCancellation()
+                    true
+                }
+                if (early == null) {
+                    onLongPress()
+                    feedback.keyPress()
+                    waitForUpOrCancellation()
+                } else {
+                    onFire()
+                    feedback.keyPress()
+                }
+                return@awaitEachGesture
+            }
             onFire()
             feedback.keyPress()
             if (key.repeats) {

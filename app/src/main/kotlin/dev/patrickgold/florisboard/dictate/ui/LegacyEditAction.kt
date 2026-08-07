@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Numbers
@@ -49,6 +50,9 @@ enum class LegacyEditAction {
     REINSERT,
     GIF,
     SWITCH,
+    // Back to the typing keyboard. Placed where the microphone sits in the other view, so one spot
+    // on the screen means "swap view" whichever view is showing and the thumb stops hunting.
+    KEYBOARD,
     BACKSPACE;
 
     val icon: ImageVector
@@ -66,6 +70,7 @@ enum class LegacyEditAction {
             REINSERT -> Icons.Default.Replay
             GIF -> Icons.Outlined.Gif
             SWITCH -> Icons.Default.KeyboardHide
+            KEYBOARD -> Icons.Default.Keyboard
             BACKSPACE -> Icons.Default.Backspace
         }
 
@@ -85,6 +90,7 @@ enum class LegacyEditAction {
             REINSERT -> R.string.dictate__legacy_action_reinsert
             GIF -> R.string.dictate__legacy_action_gif
             SWITCH -> R.string.dictate__legacy_action_switch
+            KEYBOARD -> R.string.dictate__legacy_action_keyboard
             // Reuses the existing backspace content-description string (already localised everywhere).
             BACKSPACE -> R.string.dictate__legacy_backspace
         }

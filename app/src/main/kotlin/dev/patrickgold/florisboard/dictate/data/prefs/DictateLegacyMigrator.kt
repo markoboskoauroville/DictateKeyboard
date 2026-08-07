@@ -421,6 +421,13 @@ object DictateLegacyMigrator {
         // toggles are unflipped, and the microphone is the sticky action, so this is the one flag
         // that puts each on the side it is wanted.
         prefs.smartbar.flipToggles.set(false)
+        // NUMBERS leaves the action row and KEYBOARD takes its place, so the key that returns to
+        // typing sits under the microphone that comes the other way. Numbers moved to the slot the
+        // keyboard key vacated at the bottom left.
+        val rowNow = prefs.dictate.legacyActionRow.get()
+        if (rowNow.contains("NUMBERS")) {
+            prefs.dictate.legacyActionRow.set(rowNow.replace("NUMBERS", "KEYBOARD"))
+        }
         // Move the space bar long press over, once, but only from the old default. Anyone who chose
         // their own action for it keeps it; a changed default cannot reach a preference that has
         // already been written, which is why this pass exists at all.

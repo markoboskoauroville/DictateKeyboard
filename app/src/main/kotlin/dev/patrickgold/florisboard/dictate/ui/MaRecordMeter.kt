@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -108,7 +109,7 @@ fun MaScopeCanvas(active: Boolean, tint: Color) {
         modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
         verticalArrangement = Arrangement.Bottom,
     ) {
-        MaReadings(sending = sending, smoothed = smoothed, tint = tint)
+        MaReadings(sending = sending, tint = tint)
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
@@ -157,7 +158,7 @@ fun MaScopeCanvas(active: Boolean, tint: Color) {
 
 /** The three readings, bold, on their own line clear of the meter. */
 @Composable
-private fun MaReadings(sending: Boolean, smoothed: Float, tint: Color) {
+private fun MaReadings(sending: Boolean, tint: Color) {
     val recording = DictateController.state.collectAsState().value
         as? DictateController.UiState.Recording
 
@@ -188,35 +189,31 @@ private fun MaReadings(sending: Boolean, smoothed: Float, tint: Color) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The dB number is gone. The bar underneath already says how loud, continuously and without
+        // being read, which is what a meter is for; a number saying the same thing was one reading
+        // too many on a strip this size and it was taking room from the one that matters.
+        Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = if (sending) "" else maDbText(smoothed),
-            color = tint.copy(alpha = 0.9f),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
+            // As large as the row allows. This is the number actually watched during a dictation,
+            // and it now has the space the level readout was using.
             text = "%d:%02d".format(elapsedMs / 60000, (elapsedMs / 1000) % 60),
             color = tint,
-            fontSize = 16.sp,
+            fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
         )
         Text(
             // Three characters, always: a digit, a dot, a digit, in megabytes. Fixed width so the
-            // line does not jitter as it climbs, and it starts moving within a second or two of
-            // speaking rather than sitting at zero long enough to look broken.
+            // line does not jitter as it climbs.
             text = if (sending) "" else "%.1f".format(bytes / 1_048_576.0),
-            color = tint.copy(alpha = 0.9f),
-            fontSize = 13.sp,
+            color = tint.copy(alpha = 0.75f),
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             textAlign = androidx.compose.ui.text.style.TextAlign.End,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(start = 6.dp),
         )
     }
 }
-
-private fun maDbText(db: Float): String =
-    if (db <= FLOOR_DB + 0.5f) "-\u221e" else "%.0f".format(db)
 
 /** Below this a speech signal is silence as far as this meter is concerned. */
 private const val FLOOR_DB = -54f

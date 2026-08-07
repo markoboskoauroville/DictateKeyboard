@@ -114,7 +114,6 @@ import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
-import dev.patrickgold.florisboard.dictate.DictateRecordingAnimation
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.ime.ImeUiMode
@@ -491,6 +490,13 @@ private fun LegacyActionKey(
         // A second "switch to last keyboard" button (#206) — the bottom-row one stays; placing this in the
         // top action row (e.g. the rightmost slot) makes it far easier to reach one-handed. Long-press opens
         // the system IME picker, exactly like the fixed bottom-row switch key.
+        LegacyEditAction.KEYBOARD -> ThemedIconKey(
+            code = KeyCode.IME_UI_MODE_TEXT,
+            icon = action.icon,
+            contentDescription = label,
+            modifier = modifier,
+            onClick = { keyboardManager.tapKey(KeyCode.IME_UI_MODE_TEXT) },
+        )
         LegacyEditAction.SWITCH -> ThemedIconKey(
             code = KeyCode.SYSTEM_PREV_INPUT_METHOD,
             icon = action.icon,
@@ -619,21 +625,11 @@ private fun LegacyRecordRow(
         // Its movement follows the same user choice as the Smartbar dot (issue #238): a steady pulse,
         // the live mic level, or nothing at all. Kept subtle either way — this key is the size of a
         // thumb, so the same factors that read well on a 12 dp dot would be jarring here.
-        val animation by prefs.dictate.recordingAnimation.collectAsState()
+        // The button does not move. It used to breathe, scaling with the pulse or the mic level, and
+        // a thumb-sized rectangle that swells and shrinks a few times a second right where the eye
+        // is resting is genuinely unpleasant to watch for the length of a dictation. The meter
+        // across it already shows the level, moving in the one place movement belongs.
         val isRecording = recording != null && !recording.paused
-        val level = if (animation == DictateRecordingAnimation.LEVEL && isRecording) {
-            DictateController.audioLevel.collectAsState().value
-        } else {
-            0f
-        }
-        val pulse by rememberInfiniteTransition(label = "legacyRecord").animateFloat(
-            initialValue = 1f,
-            targetValue = if (animation == DictateRecordingAnimation.PULSE && isRecording) 1.03f else 1f,
-            // Same beat as the Smartbar dot, deliberately not the same amplitude (see above).
-            animationSpec = infiniteRepeatable(tween(PULSE_DURATION_MS), RepeatMode.Reverse),
-            label = "recordPulse",
-        )
-        val recordScale = if (animation == DictateRecordingAnimation.LEVEL) 1f + 0.03f * level else pulse
         val interaction = remember { MutableInteractionSource() }
         val feedback = LocalInputFeedbackController.current
         Box(
@@ -641,7 +637,6 @@ private fun LegacyRecordRow(
                 .weight(1f)
                 .fillMaxHeight()
                 .padding(horizontal = KeyMarginH, vertical = KeyMarginV)
-                .scale(recordScale)
                 .clip(LegacyKeyShape)
                 .background(accent)
                 .then(
@@ -766,18 +761,16 @@ private fun LegacyBottomRow(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Numbers here now. The key that returns to typing moved to the action row's right-hand
+        // end, directly under the microphone that comes the other way, so one place on the screen
+        // means "swap view" in both directions. This slot took the numbers it displaced.
         ThemedIconKey(
-            // Voice Type: when this screen is a mode rather than the whole keyboard, the left key
-            // returns to typing. Long press still reaches the system keyboard picker either way.
-            code = if (onExitToKeyboard != null) KeyCode.IME_UI_MODE_TEXT else KeyCode.SYSTEM_PREV_INPUT_METHOD,
-            icon = if (onExitToKeyboard != null) Icons.Default.Keyboard else Icons.Default.KeyboardHide,
-            contentDescription = stringRes(R.string.dictate__legacy_switch_keyboard),
+            code = KeyCode.VIEW_NUMERIC,
+            icon = Icons.Default.Numbers,
+            contentDescription = stringRes(R.string.dictate__legacy_numbers),
             modifier = sideKey,
             onLongClick = { keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER) },
-            onClick = {
-                if (onExitToKeyboard != null) onExitToKeyboard()
-                else keyboardManager.tapKey(KeyCode.SYSTEM_PREV_INPUT_METHOD)
-            },
+            onClick = { keyboardManager.tapKey(KeyCode.VIEW_NUMERIC) },
         )
 
         // The space bar was the width of the whole row for a key that, in a dictation layout, is

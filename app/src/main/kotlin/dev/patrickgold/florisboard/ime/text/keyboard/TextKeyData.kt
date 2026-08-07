@@ -141,7 +141,6 @@ data class TextKeyData(
                 MA_QUICK_RECORD,
                 MA_ROW_BRACKETS,
                 MA_ROW_ARROWS,
-                MA_ROW_EDIT,
                 MA_TOGGLE_EXTRA_ROW,
                 SYSTEM_INPUT_METHOD_PICKER,
                 SYSTEM_PREV_INPUT_METHOD,
@@ -477,10 +476,6 @@ data class TextKeyData(
         /** Row set: cursor movement. */
         val MA_ROW_ARROWS = TextKeyData(
             type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_ARROWS, label = "ma_row_arrows",
-        )
-        /** Row set: selecting and editing. */
-        val MA_ROW_EDIT = TextKeyData(
-            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_EDIT, label = "ma_row_edit",
         )
 
         /** Predefined key data for [KeyCode.MA_TOGGLE_EXTRA_ROW] (show or hide the extra row) */
