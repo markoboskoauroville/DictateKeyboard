@@ -425,8 +425,12 @@ object DictateLegacyMigrator {
         // trap that keeps catching me: a changed default never reaches a preference that has already
         // been written, so one-handed mode kept appearing in the panel long after it left the code.
         val retired = setOf(
-            KeyCode.TOGGLE_ONE_HANDED_MODE_LEFT,
-            KeyCode.TOGGLE_ONE_HANDED_MODE_RIGHT,
+            // "One-handed mode" in the panel is TOGGLE_COMPACT_LAYOUT; the two names I first used
+            // do not exist. Its two nudge keys go with it, since they only steer a layout that can
+            // no longer be switched on.
+            KeyCode.TOGGLE_COMPACT_LAYOUT,
+            KeyCode.COMPACT_LAYOUT_TO_LEFT,
+            KeyCode.COMPACT_LAYOUT_TO_RIGHT,
             KeyCode.LANGUAGE_SWITCH,
             KeyCode.IME_UI_MODE_MEDIA,
             KeyCode.IME_UI_MODE_GIF,
