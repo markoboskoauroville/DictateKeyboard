@@ -63,3 +63,18 @@ jobs:
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
           cp "$APK" mantra-voice-type-build-${{ github.run_number }}.apk
           gh release create "build-${{ github.run_number }}" mantra-voice-type-build-${{ github.run_number }}.apk --title "Mantra Voice Type build ${{ github.run_number }}" --notes "Mantra Voice Type, by Mantra Productions. Installs over the previous build."
+
+      # Only the newest release may exist. An old APK left on the releases page is an old APK
+      # somebody downloads, and they then judge the app by a version that was already replaced.
+      # Runs only after the publish step succeeds, so a failed build never deletes a good release.
+      - name: Keep only the newest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          KEEP="build-${{ github.run_number }}"
+          gh release list --limit 200 --json tagName --jq '.[].tagName' | while read -r tag; do
+            if [ "$tag" != "$KEEP" ]; then
+              gh release delete "$tag" --yes --cleanup-tag || true
+              echo "removed $tag"
+            fi
+          done
