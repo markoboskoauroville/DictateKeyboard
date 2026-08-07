@@ -1986,4 +1986,10 @@
     <string name="quick_action__ma_extra_row_mode__tooltip">Cycle the extra row: digits, Croatian letters, symbols, editing keys</string>
     <string name="quick_action__ma_quick_record" comment="Quick action: record without leaving the keyboard">Record</string>
     <string name="quick_action__ma_quick_record__tooltip">Record here, without leaving the keyboard. Press again to send.</string>
+    <string name="quick_action__ma_row_brackets" comment="Top row set: brackets">Brackets</string>
+    <string name="quick_action__ma_row_brackets__tooltip">Top row becomes brackets and symbols</string>
+    <string name="quick_action__ma_row_arrows" comment="Top row set: arrows">Arrows</string>
+    <string name="quick_action__ma_row_arrows__tooltip">Top row becomes cursor movement</string>
+    <string name="quick_action__ma_row_edit" comment="Top row set: editing">Edit</string>
+    <string name="quick_action__ma_row_edit__tooltip">Top row becomes select, cut, copy and paste</string>
 </resources>

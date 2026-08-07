@@ -449,6 +449,20 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
      * already active it does nothing, because widening someone's deliberate selection to a word
      * boundary would be a surprise rather than a help.
      */
+    /** Shows [set] on the top row, or returns to digits when it is already showing. */
+    private fun maSelectRowSet(set: String) {
+        scope.launch {
+            val current = prefs.dictate.maExtraRowMode.get()
+            val showing = prefs.dictate.maExtraRow.get()
+            if (showing && current == set) {
+                prefs.dictate.maExtraRowMode.set("digits")
+            } else {
+                prefs.dictate.maExtraRowMode.set(set)
+                prefs.dictate.maExtraRow.set(true)
+            }
+        }
+    }
+
     private fun handleSelectWord() {
         val content = editorInstance.activeContent
         val selection = content.selection
@@ -986,12 +1000,11 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             KeyCode.MA_TOGGLE_EXTRA_ROW -> scope.launch {
                 prefs.dictate.maExtraRow.set(!prefs.dictate.maExtraRow.get())
             }
-            KeyCode.MA_CYCLE_EXTRA_ROW -> scope.launch {
-                val order = listOf("digits", "diacritics", "symbols", "editing")
-                val at = order.indexOf(prefs.dictate.maExtraRowMode.get()).coerceAtLeast(0)
-                prefs.dictate.maExtraRowMode.set(order[(at + 1) % order.size])
-                prefs.dictate.maExtraRow.set(true)
-            }
+            // One button per set. Pressing the set already showing goes back to digits, so each
+            // button is its own toggle and the row never needs a separate "off" trip.
+            KeyCode.MA_ROW_BRACKETS -> maSelectRowSet("symbols")
+            KeyCode.MA_ROW_ARROWS -> maSelectRowSet("arrows")
+            KeyCode.MA_ROW_EDIT -> maSelectRowSet("editing")
             KeyCode.COMPACT_LAYOUT_TO_LEFT -> windowController.actions.compactLayoutToLeft()
             KeyCode.COMPACT_LAYOUT_TO_RIGHT -> windowController.actions.compactLayoutToRight()
             KeyCode.TOGGLE_RESIZE_MODE -> windowController.editor.toggleEnabled()

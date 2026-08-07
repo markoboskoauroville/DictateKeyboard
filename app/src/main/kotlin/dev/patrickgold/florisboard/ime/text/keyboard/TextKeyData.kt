@@ -139,8 +139,10 @@ data class TextKeyData(
                 DICTATE_PROMPTS,
                 DICTATE_REINSERT,
                 MA_QUICK_RECORD,
+                MA_ROW_BRACKETS,
+                MA_ROW_ARROWS,
+                MA_ROW_EDIT,
                 MA_TOGGLE_EXTRA_ROW,
-                MA_CYCLE_EXTRA_ROW,
                 SYSTEM_INPUT_METHOD_PICKER,
                 SYSTEM_PREV_INPUT_METHOD,
                 SYSTEM_NEXT_INPUT_METHOD,
@@ -468,17 +470,24 @@ data class TextKeyData(
             label = "ma_quick_record",
         )
 
+        /** Row set: brackets and symbols. */
+        val MA_ROW_BRACKETS = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_BRACKETS, label = "ma_row_brackets",
+        )
+        /** Row set: cursor movement. */
+        val MA_ROW_ARROWS = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_ARROWS, label = "ma_row_arrows",
+        )
+        /** Row set: selecting and editing. */
+        val MA_ROW_EDIT = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_EDIT, label = "ma_row_edit",
+        )
+
         /** Predefined key data for [KeyCode.MA_TOGGLE_EXTRA_ROW] (show or hide the extra row) */
         val MA_TOGGLE_EXTRA_ROW = TextKeyData(
             type = KeyType.SYSTEM_GUI,
             code = KeyCode.MA_TOGGLE_EXTRA_ROW,
             label = "ma_toggle_extra_row",
-        )
-        /** Predefined key data for [KeyCode.MA_CYCLE_EXTRA_ROW] (digits or Croatian diacritics) */
-        val MA_CYCLE_EXTRA_ROW = TextKeyData(
-            type = KeyType.SYSTEM_GUI,
-            code = KeyCode.MA_CYCLE_EXTRA_ROW,
-            label = "ma_cycle_extra_row",
         )
 
         /** Predefined key data for [KeyCode.SYSTEM_INPUT_METHOD_PICKER] */

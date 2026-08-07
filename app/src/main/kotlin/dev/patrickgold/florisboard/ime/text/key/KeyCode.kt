@@ -104,7 +104,6 @@ object KeyCode {
     // it holds between digits and Croatian diacritics, which is the pair of things actually reached
     // for while typing here.
     const val MA_TOGGLE_EXTRA_ROW =         -219
-    const val MA_CYCLE_EXTRA_ROW =          -220
     // Marko: select the word under the cursor. Nothing upstream does this; CLIPBOARD_SELECT is a
     // manual selection-mode toggle, which is a different thing entirely.
     const val MA_SELECT_WORD =              -229
@@ -115,6 +114,11 @@ object KeyCode {
     // Marko: record without leaving the typing keyboard. The Smartbar already draws a full recording
     // bar in this view, so there is somewhere for it to happen; nothing was starting it.
     const val MA_QUICK_RECORD =             -232
+    // Marko: one button per row set, not one button cycling through them. Cycling means pressing
+    // three times to reach the third, and no way to see which is coming next.
+    const val MA_ROW_BRACKETS =             -233
+    const val MA_ROW_ARROWS =               -234
+    const val MA_ROW_EDIT =                 -235
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222

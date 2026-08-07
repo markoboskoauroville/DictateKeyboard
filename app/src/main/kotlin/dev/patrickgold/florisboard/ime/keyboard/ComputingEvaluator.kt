@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -331,9 +332,11 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
             // A row of digits is what it shows most of the time, so a numeric glyph reads truest.
             Icons.Default.Numbers
         }
-        KeyCode.MA_CYCLE_EXTRA_ROW -> {
-            Icons.Default.Translate
-        }
+        // Code for brackets, a horizontal swap for movement, scissors for editing. All three
+        // are used elsewhere in this project, so all three are certain to resolve.
+        KeyCode.MA_ROW_BRACKETS -> Icons.Default.Code
+        KeyCode.MA_ROW_ARROWS -> Icons.Default.SwapHoriz
+        KeyCode.MA_ROW_EDIT -> Icons.Default.ContentCut
         KeyCode.LANGUAGE_SWITCH -> {
             Icons.Default.Language
         }

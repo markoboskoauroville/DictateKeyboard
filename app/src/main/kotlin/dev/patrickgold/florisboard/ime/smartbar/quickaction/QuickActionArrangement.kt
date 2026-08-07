@@ -69,6 +69,12 @@ data class QuickActionArrangement(
             // Dictate's flagship action: the AI voice panel is always one tap away in the Smartbar.
             stickyAction = QuickAction.InsertKey(TextKeyData.IME_UI_MODE_DICTATE),
             dynamicActions = listOf(
+                // The three row sets first, left to right, because these are the ones reached for
+                // constantly. Language switch is gone: the space bar does that now. One-handed mode
+                // is gone entirely, unused here and dead weight in the panel.
+                QuickAction.InsertKey(TextKeyData.MA_ROW_BRACKETS),
+                QuickAction.InsertKey(TextKeyData.MA_ROW_ARROWS),
+                QuickAction.InsertKey(TextKeyData.MA_ROW_EDIT),
                 // Default visible order requested by the user. The live prompt is no longer a Smartbar
                 // button – it lives as a chip inside the prompt panel/row – so only the panel opener
                 // (DICTATE_PROMPTS) remains here.
@@ -84,14 +90,12 @@ data class QuickActionArrangement(
                 QuickAction.InsertKey(TextKeyData.IME_UI_MODE_CLIPBOARD),
                 QuickAction.InsertKey(TextKeyData.TOGGLE_COMPACT_LAYOUT),
                 QuickAction.InsertKey(TextKeyData.CLIPBOARD_CLEAR_PRIMARY_CLIP),
-                QuickAction.InsertKey(TextKeyData.LANGUAGE_SWITCH),
                 // The extra row above the keyboard: one action shows or hides it, the other swaps
                 // digits for Croatian diacritics. These replace a dozen actions that were removed as
                 // unused here: floating window, emoji, GIF, incognito, the four arrows (the cursor
                 // strip along the bottom does that job), both IME switchers and the keyboard picker
                 // (the numbered switcher keys do that), forward delete and hide keyboard.
                 QuickAction.InsertKey(TextKeyData.MA_TOGGLE_EXTRA_ROW),
-                QuickAction.InsertKey(TextKeyData.MA_CYCLE_EXTRA_ROW),
                 QuickAction.InsertKey(TextKeyData.MA_QUICK_RECORD),
                 QuickAction.InsertKey(TextKeyData.DICTATE_REINSERT),
             ),
