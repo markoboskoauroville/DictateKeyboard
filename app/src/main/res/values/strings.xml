@@ -1993,4 +1993,5 @@
     <string name="quick_action__ma_row_edit" comment="Top row set: editing">Edit</string>
     <string name="quick_action__ma_row_edit__tooltip">Top row becomes select, cut, copy and paste</string>
     <string name="dictate__legacy_action_keyboard" comment="Action row entry: back to the typing keyboard">Keyboard</string>
+    <string name="dictate__action_send" comment="Content description for the button that sends the recording for transcription">Send recording</string>
 </resources>

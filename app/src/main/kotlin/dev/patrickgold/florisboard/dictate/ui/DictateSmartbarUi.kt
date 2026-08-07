@@ -39,9 +39,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DataUsage
 import androidx.compose.material.icons.filled.Delete
@@ -282,10 +284,28 @@ private fun RecordingContent(state: DictateController.UiState.Recording) {
                 )
             }
         }
-        // Pause is gone too. Nothing downstream treats a paused recording differently, so it only
-        // ever produced a stopped clock and a question about what it had done. While recording there
-        // are two things worth reaching for, and this bar now holds exactly those: throw it away, or
-        // send it.
+        // Send lives here, on the bar itself. It used to be the sticky key at the far right, but
+        // that key became the view switch, which left the keyboard view able to discard a recording
+        // and not able to send one: the single most important thing you can do with a recording had
+        // no button at all. It sits opposite the bin, which is the other end of the same decision.
+        //
+        // Realtime is a stop rather than a send, because the words are already being typed and there
+        // is nothing left to submit; the glyph says which of the two it is.
+        SnyggIconButton(
+            elementName = FlorisImeUi.SmartbarActionKey.elementName,
+            onClick = { DictateController.onMicClick(context) },
+            modifier = Modifier.fillMaxHeight().aspectRatio(1f),
+        ) {
+            Icon(
+                imageVector = if (DictateController.isRealtimeRecording()) {
+                    Icons.Default.Stop
+                } else {
+                    Icons.AutoMirrored.Filled.Send
+                },
+                contentDescription = stringRes(R.string.dictate__action_send),
+                tint = LocalContentColor.current,
+            )
+        }
     }
 }
 

@@ -283,22 +283,11 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
             Icons.Outlined.Gif
         }
         KeyCode.IME_UI_MODE_DICTATE -> {
-            when (dev.patrickgold.florisboard.dictate.DictateController.state.value) {
-                // While recording: a "send" arrow for batch (tapping submits the recording), but a stop
-                // button for real-time (#128) — the text is already being typed live, so tapping just ends
-                // the stream (the last chunks + rewording still finish).
-                is dev.patrickgold.florisboard.dictate.DictateController.UiState.Recording ->
-                    if (dev.patrickgold.florisboard.dictate.DictateController.isRealtimeRecording()) {
-                        Icons.Default.Stop
-                    } else {
-                        Icons.AutoMirrored.Filled.Send
-                    }
-                // While transcribing or rewording, show a stop button: tapping aborts the in-flight
-                // request (e.g. an accidentally sent prompt, issue #192).
-                is dev.patrickgold.florisboard.dictate.DictateController.UiState.Transcribing,
-                is dev.patrickgold.florisboard.dictate.DictateController.UiState.Rewording -> Icons.Default.Stop
-                else -> Icons.Default.Mic
-            }
+            // Always a microphone, whatever is happening. This key switches to the transcribe view
+            // and does nothing else, so a send arrow or a stop square on it was a promise it could
+            // not keep: pressing what looked like "send" only changed screen. One key, one meaning,
+            // one glyph.
+            Icons.Default.Mic
         }
         KeyCode.DICTATE_LIVE_PROMPT -> {
             // Live prompt: record a spoken instruction, then hand it to the rewording model. Sparkle
