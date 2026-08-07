@@ -417,6 +417,10 @@ object DictateLegacyMigrator {
         // reach a preference an existing install has already written, and without the audio the
         // archive cannot re-transcribe anything.
         prefs.dictate.historyAudioRetention.set(true)
+        // Microphone to the right, expand arrow to the left. The sticky action renders last when
+        // toggles are unflipped, and the microphone is the sticky action, so this is the one flag
+        // that puts each on the side it is wanted.
+        prefs.smartbar.flipToggles.set(false)
         // Move the space bar long press over, once, but only from the old default. Anyone who chose
         // their own action for it keeps it; a changed default cannot reach a preference that has
         // already been written, which is why this pass exists at all.
@@ -437,10 +441,6 @@ object DictateLegacyMigrator {
             PromptsDatabaseHelper.getInstance(context).replaceStarterSetIfUntouched()
         }
         // The transcribe view becomes the main one. Only set when nothing is pinned, so an explicit
-        // pin is never overwritten by a change of default.
-        if (prefs.dictate.maPinnedView.get().isBlank()) {
-            prefs.dictate.maPinnedView.set("TRANSCRIBE")
-        }
         prefs.dictate.maRowV2Applied.set(true)
     }
 

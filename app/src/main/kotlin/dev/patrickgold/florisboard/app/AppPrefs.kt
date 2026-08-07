@@ -776,11 +776,6 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // Sticky panel: when on, whichever of the two main views was last used comes back the next
         // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
         // transcribe view far more than the keyboard, so being returned to the keyboard every time
-        // was a click tax on every single field. See FlorisImeService.onStartInputView.
-        val maStickyTranscribeView = boolean(
-            key = "dictate__ma_sticky_transcribe_view",
-            default = true,
-        )
         // Dedicated cursor row above the keyboard: line start, four arrows, line end, all repeating
         // when held. Off by default so the stock keyboard is unchanged; switched on in Settings under
         // Gestures. See MaCursorRow.
@@ -816,7 +811,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v7_applied",
+            key = "dictate__ma_row_v8_applied",
             default = false,
         )
         val maSunriseApplied = boolean(
@@ -858,19 +853,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_live_prompt_history",
             default = "",
         )
-        val maPinnedView = string(
-            key = "dictate__ma_pinned_view",
-            default = "TRANSCRIBE",
-        )
         // Third pin state, the green one: hold the keyboard open. An app asking for it to close is
         // refused; only the system's own down-arrow puts it away. See FlorisImeService.onFinishInput
-        // and onEvaluateInputViewShown.
-        val maHoldOpen = boolean(
-            key = "dictate__ma_hold_open",
-            default = false,
-        )
         // Which panel was showing when the keyboard was last closed. Written by FlorisImeService,
-        // read back on the next open when maStickyTranscribeView is on. Stored as the enum name so a
+        // read back on the next open. Stored as the enum name so a
         // future panel that no longer exists simply fails to resolve and falls back to the keyboard.
         val maLastImeUiMode = string(
             key = "dictate__ma_last_ime_ui_mode",

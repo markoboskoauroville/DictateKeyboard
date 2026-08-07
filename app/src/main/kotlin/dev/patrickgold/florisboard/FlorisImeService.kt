@@ -461,10 +461,6 @@ class FlorisImeService : LifecycleInputMethodService() {
 
     override fun onEvaluateInputViewShown(): Boolean {
         val config = resources.configuration
-        // Held open (green pin): answer yes regardless. The platform asks this every time something
-        // would take the keyboard away, so saying yes here is what keeps it on screen when an app
-        // that has just come to the front would rather it were not.
-        if (prefs.dictate.maHoldOpen.get()) return true
         return super.onEvaluateInputViewShown()
             || config.keyboard == Configuration.KEYBOARD_NOKEYS
             || prefs.physicalKeyboard.showOnScreenKeyboard.get()
@@ -538,12 +534,15 @@ class FlorisImeService : LifecycleInputMethodService() {
      * behaviour still applies: reopen whichever view was last used, unless that is switched off, in
      * which case the typing keyboard is the plain default.
      */
+    /**
+     * The view a fresh editor field opens in: whichever was last used, always.
+     *
+     * No pin and no setting. Both existed to answer the question this answers by itself, and a
+     * control that has to be found and pressed to stop losing a view is a worse answer than never
+     * losing it. Only the two main views are remembered; clipboard, emoji and history panels are
+     * transient and would be wrong to reopen on an unrelated field.
+     */
     private fun maRestoredUiMode(): ImeUiMode {
-        when (prefs.dictate.maPinnedView.get()) {
-            ImeUiMode.TRANSCRIBE.name -> return ImeUiMode.TRANSCRIBE
-            ImeUiMode.TEXT.name -> return ImeUiMode.TEXT
-        }
-        if (!prefs.dictate.maStickyTranscribeView.get()) return ImeUiMode.TEXT
         return if (prefs.dictate.maLastImeUiMode.get() == ImeUiMode.TRANSCRIBE.name) {
             ImeUiMode.TRANSCRIBE
         } else {

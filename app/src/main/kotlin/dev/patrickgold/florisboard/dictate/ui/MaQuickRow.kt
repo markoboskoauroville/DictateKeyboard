@@ -49,7 +49,6 @@ import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.dictate.provider.ProviderRegistry
-import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.input.InputShiftState
 import dev.patrickgold.florisboard.ime.keyboard.KeyboardMode
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
@@ -90,8 +89,6 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Top-left of the transcribe view: the pin that fixes which view opens first.
-        MaPinButton(mode = ImeUiMode.TRANSCRIBE)
         // Auto goes last, and says so in words. A globe means "language" in the abstract, not "work
         // it out for me", and sitting first it read as the current choice rather than the fallback.
         // The concrete languages come first because they are the deliberate act; auto is what you

@@ -36,7 +36,6 @@ import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
 import dev.patrickgold.florisboard.dictate.ui.MaMacroBar
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
 import dev.patrickgold.florisboard.dictate.ui.MaExtraRow
-import dev.patrickgold.florisboard.dictate.ui.MaPinButton
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
@@ -92,12 +91,10 @@ fun TextInputLayout(
         } else {
             // The pin sits at the very left of the top row, so it is the first thing in the corner
             // of the keyboard view. The Smartbar takes the rest of the width unchanged.
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                MaPinButton(mode = ImeUiMode.TEXT)
-                Box(modifier = Modifier.weight(1f)) {
-                    Smartbar()
-                }
-            }
+            // No pin. Remembering the last view unconditionally does the same job without a
+            // control to understand, and a pin that has to be found and pressed to keep a view is a
+            // worse answer than simply not losing it.
+            Smartbar()
         }
         // Macro bar (Marko): user-defined buttons directly under the Smartbar, in the same flat
         // style as the arrow strip at the bottom. Hidden while the overflow panel is open, which
