@@ -45,6 +45,7 @@ import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import dev.patrickgold.jetpref.datastore.ui.ExperimentalJetPrefDatastoreUi
 import dev.patrickgold.jetpref.datastore.ui.ListPreference
+import dev.patrickgold.jetpref.datastore.ui.listPrefEntries
 import dev.patrickgold.jetpref.datastore.ui.Preference
 import dev.patrickgold.jetpref.datastore.ui.PreferenceGroup
 import dev.patrickgold.jetpref.datastore.ui.SwitchPreference
@@ -105,6 +106,35 @@ fun TypingScreen() = FlorisScreen {
         }
 
         PreferenceGroup(title = stringRes(R.string.pref__correction__title)) {
+            // Under correction, because that is what it is: undoing a guess the recogniser makes
+            // about every dictation being prose.
+            ListPreference(
+                prefs.dictate.maTextCase,
+                title = "Dictation case",
+                summary = when (prefs.dictate.maTextCase.get()) {
+                    "lower" -> "Always lowercase"
+                    "upper" -> "ALWAYS UPPERCASE"
+                    "none" -> "Leave exactly as transcribed"
+                    else -> "One sentence lowercase, more than one left alone"
+                },
+                entries = listPrefEntries {
+                    entry(
+                        key = "auto",
+                        label = "Automatic",
+                        description = "A single sentence comes back lowercase without its full stop. " +
+                            "Two sentences or more keep their capitals and punctuation.",
+                        showDescriptionOnlyIfSelected = true,
+                    )
+                    entry(
+                        key = "none",
+                        label = "Leave as transcribed",
+                        description = "Never change what the recogniser wrote.",
+                        showDescriptionOnlyIfSelected = true,
+                    )
+                    entry(key = "lower", label = "Always lowercase")
+                    entry(key = "upper", label = "Always uppercase")
+                },
+            )
             SwitchPreference(
                 prefs.correction.autoCapitalization,
                 modifier = Modifier.settingsSearchAnchor("pref__correction__auto_capitalization__label"),

@@ -17,6 +17,7 @@
 package dev.patrickgold.florisboard.dictate.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -224,20 +225,29 @@ private fun MaQuickKey(
     modifier: Modifier,
     content: @Composable (Color) -> Unit,
 ) {
-    // The enter key's styling is what every theme uses for "this one is active", so a selected
-    // language borrows it rather than inventing a colour that no stylesheet knows about.
-    val code = if (selected) KeyCode.ENTER else KeyCode.NOOP
-    val style = rememberSnyggThemeQuery(FlorisImeUi.Key.elementName, maQuickAttributes(code))
+    // Selection is an outline, not a fill. Borrowing the enter key's styling made the chosen chip a
+    // block of solid accent, the brightest thing on a dark keyboard, for something that only needs
+    // to be distinguishable from two neighbours. A gold stroke does that without shouting, and the
+    // key underneath stays the same colour as every other key.
+    val style = rememberSnyggThemeQuery(FlorisImeUi.Key.elementName, maQuickAttributes(KeyCode.NOOP))
     val background = style.background(default = Color.White.copy(alpha = 0.08f))
-    val foreground = style.foreground(default = Color.White)
+    val foreground = if (selected) MaQuickGold else style.foreground(default = Color.White)
     Box(
         modifier = modifier
             .padding(horizontal = MaQuickMarginH, vertical = MaQuickMarginV)
             .clip(MaQuickKeyShape)
             .background(background)
+            .border(
+                width = if (selected) 1.5.dp else 0.dp,
+                color = if (selected) MaQuickGold else Color.Transparent,
+                shape = MaQuickKeyShape,
+            )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         content(foreground)
     }
 }
+
+/** The one gold used for "this is the chosen one", matching the record key's ink. */
+private val MaQuickGold = Color(0xFFE8B15C)

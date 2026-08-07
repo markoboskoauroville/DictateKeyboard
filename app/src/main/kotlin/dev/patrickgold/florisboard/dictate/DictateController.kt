@@ -386,12 +386,6 @@ object DictateController {
     private var btRouter: BluetoothMicRouter? = null
 
     /** When true, the next finished recording is fed to the rewording model instead of committed. */
-    /**
-     * Up to this many words counts as a fragment rather than a sentence. Four covers the things
-     * actually dictated short: a search term, a name, a two-word answer.
-     */
-    private const val SHORT_WORDS = 4
-
     private var livePromptArmed = false
 
     /** Field text before a live prompt rewrote it, kept so the archive can offer the original back. */
@@ -2398,14 +2392,14 @@ object DictateController {
     /**
      * Case and trailing punctuation, decided by how much was said.
      *
-     * A few words are almost never a sentence. They are a search box, a filename, a name being typed
-     * into a field, a two-word reply, and a recogniser trained on prose hands all of those back
-     * capitalised with a full stop on the end, which then has to be deleted by hand every time.
-     * Several sentences are prose and should keep their capitals and their punctuation.
+     * A single sentence is almost never prose. It is a search box, a filename, a name, a reply, an
+     * instruction, and a recogniser trained on prose hands all of those back capitalised with a full
+     * stop that then has to be deleted by hand. Two sentences or more is writing, and keeps what it
+     * was given.
      *
-     * So the rule is length. Up to [SHORT_WORDS] words with no sentence break inside counts as a
-     * fragment and comes back lowercase without the invented full stop; anything longer is left
-     * exactly as the recogniser wrote it.
+     * So the rule is sentence count, which the recogniser has already decided by where it put
+     * the full stops. One sentence comes back lowercase without the invented full stop; two or more
+     * are prose and are left exactly as written.
      *
      * An explicit setting of "lower" or "upper" still wins outright, because someone who asked for
      * every dictation in one case meant it whatever the length.
@@ -2419,12 +2413,14 @@ object DictateController {
         if (mode != "none" && mode != "auto") return text
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return text
-        // A sentence break anywhere inside means prose, however few words there are: "No. Really."
-        // is two sentences and is not a fragment.
+        // One sentence or several: that is the whole test, and it is one the recogniser answers for
+        // us. A sentence terminator anywhere but the very end means it decided there was more than
+        // one thought here, and prose keeps the capitals and punctuation it was given.
+        //
+        // Word count was the wrong measure. A single spoken instruction can run to a dozen words and
+        // is still one fragment dropped into a field; two words can be two sentences.
         val inner = trimmed.dropLast(1)
         if (inner.any { it == '.' || it == '!' || it == '?' || it == '\n' }) return text
-        val words = trimmed.split(Regex("\\s+")).size
-        if (words > SHORT_WORDS) return text
         return trimmed.lowercase().trimEnd('.', ',', '!', '?', ';', ':') + " "
     }
 
