@@ -669,17 +669,14 @@ private fun LegacyRecordRow(
             // Voice Type: the oscilloscope lives inside this button, behind its content, so the
             // bar keeps the shape and the surrounding editing keys the original author designed.
             MaScopeCanvas(active = isRecording, tint = onAccent)
-            // Nothing sits over the meter while recording. The red dot said "this is recording",
-            // which is exactly what a moving trace already says, and it said it by covering the
-            // thing that was saying it. Elapsed time is the one fact the meter cannot show, so it is
-            // all that stays: small, dim, and tucked into the bottom right corner rather than
-            // centred across the trace.
-            if (recording != null) {
-                MaRecordingClock(
-                    recording = recording,
-                    segmentsInFlight = segmentsInFlight,
+            // The clock lives in the meter's own readings row now, centred and bold. Keeping this
+            // second one would put two timers on one button, disagreeing by a frame or two.
+            // Long-form segments in flight still need saying, and nothing else reports them.
+            if (recording != null && segmentsInFlight > 0) {
+                MaSegmentsBadge(
+                    count = segmentsInFlight,
                     tint = onAccent,
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(end = 14.dp, top = 2.dp),
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1318,55 +1315,17 @@ private fun MaBrailleSpinner(color: Color, fontSize: androidx.compose.ui.unit.Te
 /** After this long on one request the spinner starts blinking, so a pause never reads as a crash. */
 private const val BLINK_AFTER_MS = 6_000L
 
-/**
- * The recording clock: elapsed seconds, and nothing else.
- *
- * It sits in the bottom-right corner of the record button, small and dimmed, so the level meter
- * behind it stays completely unobstructed. The meter already says a recording is running, better
- * than any indicator could, by moving. What it cannot say is how long, which is the only thing here.
- *
- * Long-form segment count still appears when segments are being transcribed in the background,
- * because that is a fact nothing else on screen reports.
- */
+/** How many long-form segments are transcribing in the background. Nothing else reports this. */
 @Composable
-private fun MaRecordingClock(
-    recording: DictateController.UiState.Recording,
-    segmentsInFlight: Int,
-    tint: Color,
-    modifier: Modifier = Modifier,
-) {
-    var elapsedMs by remember { mutableLongStateOf(recording.accumulatedMs) }
-    LaunchedEffect(recording.startedAtMs, recording.accumulatedMs, recording.paused) {
-        if (recording.paused) {
-            elapsedMs = recording.accumulatedMs
-        } else {
-            while (true) {
-                elapsedMs = recording.accumulatedMs +
-                    (SystemClock.elapsedRealtime() - recording.startedAtMs)
-                delay(200L)
-            }
-        }
-    }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (segmentsInFlight > 0) {
-            Icon(
-                imageVector = Icons.Default.Sync,
-                contentDescription = null,
-                tint = tint.copy(alpha = 0.7f),
-                modifier = Modifier.size(11.dp),
-            )
-            Spacer(modifier = Modifier.width(2.dp))
-            Text(
-                text = "$segmentsInFlight",
-                color = tint.copy(alpha = 0.7f),
-                fontSize = 10.sp,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-        }
-        Text(
-            text = formatElapsed(elapsedMs),
-            color = tint.copy(alpha = if (recording.paused) 0.45f else 0.75f),
-            fontSize = 11.sp,
+private fun MaSegmentsBadge(count: Int, tint: Color, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = Icons.Default.Sync,
+            contentDescription = null,
+            tint = tint.copy(alpha = 0.7f),
+            modifier = Modifier.size(11.dp),
         )
+        Spacer(modifier = Modifier.width(2.dp))
+        Text(text = "$count", color = tint.copy(alpha = 0.7f), fontSize = 10.sp)
     }
 }

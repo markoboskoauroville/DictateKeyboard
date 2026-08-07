@@ -45,6 +45,15 @@ class RecordingController(private val context: Context) {
     @Volatile private var paused = false
     @Volatile private var pcmBytes = 0L
 
+    /**
+     * Audio written so far, in bytes, for the size readout on the record button.
+     *
+     * The counter the writer already keeps, rather than asking the filesystem: it is exact, costs
+     * nothing to read, and does not go stale behind a buffer that has not been flushed yet.
+     */
+    val bytesWritten: Long
+        get() = pcmBytes
+
     /** The rate this recording is actually running at, chosen by [bestRate] when it started. */
     @Volatile
     var activeSampleRate: Int = SAMPLE_RATE

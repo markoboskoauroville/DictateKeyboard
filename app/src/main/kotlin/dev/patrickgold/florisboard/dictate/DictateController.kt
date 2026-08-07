@@ -2374,6 +2374,9 @@ object DictateController {
      * Also the way out when something is stuck, which is why it releases the microphone first rather
      * than relying on the normal teardown to get there.
      */
+    /** Bytes of audio captured so far, or 0 when nothing is recording. For the size readout. */
+    fun currentRecordingBytes(): Long = recorder?.bytesWritten ?: 0L
+
     fun discardRecording(context: Context) {
         maReleaseMic()
         runCatching { recorder?.stop() }

@@ -19,9 +19,12 @@ package dev.patrickgold.florisboard.dictate.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -30,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,36 +42,39 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.dictate.DictateController
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 
 /**
- * The recording meter, shared by both views.
+ * The record button's instrument panel: readings on top, meter along the bottom.
  *
- * Extracted so the transcribe view and the keyboard view show the same thing while recording. They
- * had drifted into two different visuals, a level bar in one and a waveform with a spinner in the
- * other, which made the same act look like two different features depending on where it was started.
- * One module, one appearance, one place to change it.
- */
-
-/**
- * A proper level meter across the record button, the kind a sound engineer expects.
+ * The previous version put the numbers in the middle of the bar, on top of the moving trace, where
+ * they were genuinely hard to read: dark text over a bar that is green in one place and pale in
+ * another has no reliable contrast anywhere. Nothing overlaps now. The readings live on their own
+ * line above, in bold, and the meter has the bottom of the box to itself.
  *
- * The earlier versions drew a waveform and then a row of bars, and neither answered the question a
- * meter exists to answer: how hot am I, in dB. This is a horizontal bar in dBFS with a peak hold,
- * the same instrument as the small meter in a video timeline.
+ * Three readings, each on the side where it belongs:
  *
- * Amplitude is converted with 20*log10, floored at [FLOOR_DB], because below that a speech signal
- * is silence for our purposes. The peak marker falls back slowly rather than snapping, so a
- * transient stays visible long enough to read. Green through amber to red, with the top of the
- * scale reserved for the region where a recogniser starts losing consonants to clipping.
+ *   left    level in dB, the thing that changes fastest and is glanced at rather than read
+ *   centre  elapsed time, the one number always wanted, so it gets the middle
+ *   right   size on disk in megabytes while recording, and transfer figures while sending
+ *
+ * While sending, the meter has no microphone to show, so it becomes a stereo-style bar spreading out
+ * from the centre: decoration rather than data, and honest about it, but it keeps the panel alive
+ * during the wait rather than freezing at whatever the last syllable happened to be.
  */
 @Composable
 fun MaScopeCanvas(active: Boolean, tint: Color) {
     if (!active) return
     val level by DictateController.audioLevel.collectAsState()
+    val state by DictateController.state.collectAsState()
+    val sending = state is DictateController.UiState.Transcribing ||
+        state is DictateController.UiState.Rewording
+
     val db = maToDb(level)
     val smoothed by animateFloatAsState(
         targetValue = db,
@@ -83,74 +90,147 @@ fun MaScopeCanvas(active: Boolean, tint: Color) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize()) {
+    // Sweeps 0..1 and back, driving the sending animation. Its own clock rather than the audio
+    // level, because there is no audio arriving once the file has gone.
+    var sweep by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(sending) {
+        if (!sending) return@LaunchedEffect
+        var rising = true
+        while (true) {
+            sweep = (sweep + if (rising) 0.06f else -0.06f).coerceIn(0f, 1f)
+            if (sweep >= 1f) rising = false
+            if (sweep <= 0f) rising = true
+            delay(40L)
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
+        verticalArrangement = Arrangement.Bottom,
+    ) {
+        MaReadings(sending = sending, smoothed = smoothed, tint = tint)
         Canvas(
             modifier = Modifier
-                .weight(1f)
-                .height(14.dp)
-                .padding(start = 14.dp, end = 8.dp),
+                .fillMaxWidth()
+                .height(10.dp)
+                .padding(bottom = 4.dp),
         ) {
             val h = size.height
             val full = size.width
-            // The scale, drawn faintly so the bar has something to sit against.
-            drawRect(
+            drawRoundRect(
                 color = tint.copy(alpha = 0.14f),
-                topLeft = Offset(0f, h * 0.25f),
-                size = Size(full, h * 0.5f),
+                topLeft = Offset(0f, h * 0.2f),
+                size = Size(full, h * 0.6f),
+                cornerRadius = CornerRadius(h * 0.3f, h * 0.3f),
             )
-            val filled = full * maNorm(smoothed)
-            drawRect(
-                color = maDbColour(smoothed, tint),
-                topLeft = Offset(0f, h * 0.25f),
-                size = Size(filled, h * 0.5f),
-            )
-            // Peak hold.
-            val peakX = (full * maNorm(peakDb)).coerceIn(0f, full - 2f)
-            drawRect(
-                color = maDbColour(peakDb, tint),
-                topLeft = Offset(peakX, h * 0.1f),
-                size = Size(2.5f, h * 0.8f),
-            )
-            // Marks at -18 and -6, the two that matter when speaking.
-            for (mark in intArrayOf(-18, -6)) {
-                val x = full * maNorm(mark.toFloat())
-                drawRect(
-                    color = tint.copy(alpha = 0.30f),
-                    topLeft = Offset(x, h * 0.15f),
-                    size = Size(1f, h * 0.7f),
+            if (sending) {
+                // Out from the middle, both ways at once, like a broadcast meter. It says "this is
+                // going somewhere" without pretending to measure anything.
+                val half = full / 2f
+                val reach = half * sweep
+                drawRoundRect(
+                    color = tint.copy(alpha = 0.85f),
+                    topLeft = Offset(half - reach, h * 0.2f),
+                    size = Size(reach * 2f, h * 0.6f),
+                    cornerRadius = CornerRadius(h * 0.3f, h * 0.3f),
+                )
+            } else {
+                val filled = full * maNorm(smoothed)
+                drawRoundRect(
+                    color = maDbColour(smoothed, tint),
+                    topLeft = Offset(0f, h * 0.2f),
+                    size = Size(filled, h * 0.6f),
+                    cornerRadius = CornerRadius(h * 0.3f, h * 0.3f),
+                )
+                // Peak hold, falling back slowly so a transient stays readable.
+                val peakX = (full * maNorm(peakDb)).coerceIn(0f, full - 2f)
+                drawRoundRect(
+                    color = maDbColour(peakDb, tint).copy(alpha = 0.9f),
+                    topLeft = Offset(peakX, h * 0.05f),
+                    size = Size(2f, h * 0.9f),
+                    cornerRadius = CornerRadius(1f, 1f),
                 )
             }
         }
     }
-        // dB back, but small and centred over the bar, out of the timer's way. Two readings that
-        // never collide: level in the middle, elapsed time at the far right. Inside the Box rather
-        // than the Row, because a Row can only align its children vertically.
+}
+
+/** The three readings, bold, on their own line clear of the meter. */
+@Composable
+private fun MaReadings(sending: Boolean, smoothed: Float, tint: Color) {
+    val recording = DictateController.state.collectAsState().value
+        as? DictateController.UiState.Recording
+
+    // Size on disk, sampled rather than computed: the recorder is writing the file, so asking the
+    // file how big it is now is both simplest and always true.
+    var bytes by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(sending) {
+        while (!sending) {
+            bytes = DictateController.currentRecordingBytes()
+            delay(400L)
+        }
+    }
+
+    var elapsedMs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(recording?.startedAtMs, recording?.accumulatedMs, recording?.paused) {
+        val r = recording ?: return@LaunchedEffect
+        while (true) {
+            elapsedMs = if (r.paused) {
+                r.accumulatedMs
+            } else {
+                r.accumulatedMs + (android.os.SystemClock.elapsedRealtime() - r.startedAtMs)
+            }
+            delay(200L)
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = if (smoothed <= FLOOR_DB + 0.5f) "-∞" else "%.0f".format(smoothed),
-            color = tint.copy(alpha = 0.75f),
-            fontSize = 10.sp,
+            text = if (sending) "" else maDbText(smoothed),
+            color = tint.copy(alpha = 0.9f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "%d:%02d".format(elapsedMs / 60000, (elapsedMs / 1000) % 60),
+            color = tint,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            // Three characters, always: a digit, a dot, a digit, in megabytes. Fixed width so the
+            // line does not jitter as it climbs, and it starts moving within a second or two of
+            // speaking rather than sitting at zero long enough to look broken.
+            text = if (sending) "" else "%.1f".format(bytes / 1_048_576.0),
+            color = tint.copy(alpha = 0.9f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            modifier = Modifier.weight(1f),
         )
     }
 }
 
+private fun maDbText(db: Float): String =
+    if (db <= FLOOR_DB + 0.5f) "-\u221e" else "%.0f".format(db)
+
 /** Below this a speech signal is silence as far as this meter is concerned. */
 private const val FLOOR_DB = -54f
 
-/** Amplitude 0..1 to dBFS, floored so log10(0) never reaches the UI. */
 private fun maToDb(level: Float): Float {
-    val v = level.coerceIn(0f, 1f)
+    val v = abs(level)
     if (v <= 0.0005f) return FLOOR_DB
     return (20.0 * kotlin.math.log10(v.toDouble())).toFloat().coerceIn(FLOOR_DB, 0f)
 }
 
-/** dBFS to a 0..1 position on the scale. */
 private fun maNorm(db: Float): Float = ((db - FLOOR_DB) / (0f - FLOOR_DB)).coerceIn(0f, 1f)
 
-/** Green while there is headroom, amber approaching, red where consonants start to clip. */
 private fun maDbColour(db: Float, tint: Color): Color = when {
-    db >= -3f -> Color(0xFFF85149)
-    db >= -9f -> Color(0xFFF0883E)
-    db >= -30f -> Color(0xFF56D364)
-    else -> tint.copy(alpha = 0.55f)
+    db > -3f -> Color(0xFFE5534B)
+    db > -12f -> Color(0xFFF0883E)
+    else -> Color(0xFF56D364)
 }
