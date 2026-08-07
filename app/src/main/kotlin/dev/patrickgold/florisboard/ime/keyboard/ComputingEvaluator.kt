@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -344,9 +345,21 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
             Icons.Default.Settings
         }
         KeyCode.SHIFT -> {
-            when (evaluator.state.inputShiftState != InputShiftState.UNSHIFTED) {
-                true -> Icons.Default.KeyboardCapslock
-                else -> Icons.Default.KeyboardArrowUp
+            // Three states, three glyphs, following the convention every physical keyboard uses.
+            // Before this, one-shot shift and caps lock drew the identical icon, so the key could not
+            // say whether the next letter would be capital or all of them would, which is exactly the
+            // confusion worth removing.
+            //
+            //   unshifted   a light chevron, resting
+            //   shifted     a solid arrow, armed for exactly one letter
+            //   caps lock   the arrow with a bar beneath it, the Mac symbol, meaning it stays
+            //
+            // Three different icon names rather than a filled and outlined pair of one name: both
+            // are extension properties called ArrowUpward, so importing both is a name clash.
+            when (evaluator.state.inputShiftState) {
+                InputShiftState.UNSHIFTED -> Icons.Default.KeyboardArrowUp
+                InputShiftState.CAPS_LOCK -> Icons.Default.KeyboardCapslock
+                else -> Icons.Default.ArrowUpward
             }
         }
         KeyCode.SPACE, KeyCode.CJK_SPACE -> {
