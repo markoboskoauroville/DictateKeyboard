@@ -158,10 +158,16 @@ fun MaMacroBar(modifier: Modifier = Modifier) {
     }
     if (presets.isEmpty()) return
     val preset = presets.getOrNull(activeIndex) ?: presets.first()
-    if (preset.rows.isEmpty()) return
+    // A row whose buttons are all blank still measured a full row high and drew nothing, which is
+    // the empty band between the suggestions and the keys. Blank rows are dropped, and a preset with
+    // nothing in it draws no bar at all rather than a strip of invisible keys.
+    val rows = preset.rows.filter { row ->
+        row.any { it.label.isNotBlank() || it.macro.isNotBlank() }
+    }
+    if (rows.isEmpty()) return
 
     Column(modifier = modifier.fillMaxWidth()) {
-        preset.rows.forEach { row ->
+        rows.forEach { row ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

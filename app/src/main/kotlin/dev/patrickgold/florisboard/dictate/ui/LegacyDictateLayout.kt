@@ -807,42 +807,14 @@ private fun LegacyBottomRow(
 
         // The keyboard switcher, back where it belongs. The format keys that borrowed this space
         // are gone: the pipeline is settled, so there is nothing left to choose between.
-        val others = remember { MaKeyboards.list(context).take(MaKeyboards.MAX_SHOWN) }
-
+        // The space bar has the row to itself. The numbered keys beside it switched to other
+        // keyboards, and this one no longer needs an escape hatch to a different keyboard; the
+        // system's own globe remains in the navigation bar for the rare case. Three keys returned to
+        // the space bar, which is the key hardest to miss and most often hit slightly off.
         LegacySpaceKey(
             keyboardManager = keyboardManager,
-            modifier = Modifier.weight(if (others.isEmpty()) 1f else 0.9f).fillMaxHeight(),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
         )
-
-        others.forEachIndexed { index, entry ->
-            ThemedKey(
-                code = KeyCode.NOOP,
-                modifier = Modifier.weight(0.5f).fillMaxHeight(),
-                onClick = {
-                    // Falling back to the picker matters: a tap that silently does nothing is worse
-                    // than one extra dialog, and the switch can fail on some devices.
-                    if (!MaKeyboards.switchTo(entry)) {
-                        keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER)
-                    }
-                },
-                onLongClick = { keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER) },
-            ) { fg ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "${index + 1}",
-                        color = fg,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = MaKeyboards.shortLabel(entry),
-                        color = fg.copy(alpha = 0.7f),
-                        fontSize = 8.sp,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
 
         // Enter: tap inserts a newline; long-press opens the character popup (#196). Carries the ENTER code
         // so the theme paints it with its usual accent (as on the keyboard).
