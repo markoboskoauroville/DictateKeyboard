@@ -54,6 +54,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -118,121 +123,141 @@ fun HomeScreen() = FlorisScreen {
         // without one and everything else is decoration until one is green. Then dictation, then the
         // things that shape what the keyboard looks like and does, then About.
         //
-        // Removed rather than hidden: Emojis & GIFs, Addons & Extensions, and Other. They belong to
-        // the general-purpose keyboard this was forked from, not to a voice-typing tool.
-        // Grouped by what a person is actually trying to do, rather than by which codebase a screen
-        // came from. Four groups: getting set up, the dictation itself, what is kept, and how the
-        // keyboard looks and behaves. Within each, the thing used most often is first.
+        // Two tabs, split by where a screen came from rather than by what it does.
         //
-        // "Little man" appeared twice before this: once from the prompts work and once from an
-        // earlier pass, which is exactly the kind of drift that comes from adding rows to the top of
-        // a list instead of maintaining the list.
-        PreferenceGroup(title = "Start here") {
-            Preference(
-                icon = Icons.Default.Edit,
-                title = "Try the keyboard",
-                summary = "A blank page to dictate into",
-                onClick = { navController.navigate(Routes.Settings.TryIt) },
+        // Mantra holds everything built for this app. FlorisBoard holds what survived from the
+        // keyboard underneath, which is the pile still worth going through: anything in there that
+        // is never opened is a candidate for deletion, and the split makes that visible at a glance
+        // instead of requiring the history of every screen to be remembered.
+        //
+        // Named FlorisBoard rather than Dictate because these particular screens are FlorisBoard's,
+        // by Patrick Goldinger. Dictate, the fork this came from, contributed the dictation screens,
+        // and those are on the Mantra side because they have been rebuilt almost entirely.
+        var tab by rememberSaveable { mutableStateOf(0) }
+        TabRow(selectedTabIndex = tab) {
+            Tab(
+                selected = tab == 0,
+                onClick = { tab = 0 },
+                text = { Text("Mantra") },
             )
-            Preference(
-                icon = Icons.Default.Key,
-                title = "API keys",
-                summary = "Import, test and manage every key",
-                onClick = { navController.navigate(Routes.Settings.DictateKeys) },
-            )
-        }
-
-        PreferenceGroup(title = "Dictation") {
-            Preference(
-                icon = Icons.Default.Mic,
-                title = stringRes(R.string.dictate__recording_group),
-                onClick = { navController.navigate(Routes.Settings.DictateRecording) },
-            )
-            Preference(
-                icon = Icons.Default.Translate,
-                title = stringRes(R.string.dictate__languages_title),
-                onClick = { navController.navigate(Routes.Settings.DictateLanguages) },
-            )
-            Preference(
-                icon = Icons.Default.RecordVoiceOver,
-                title = "Little man",
-                summary = "His buttons, their prompts, and what he remembers",
-                onClick = { navController.navigate(Routes.Settings.DictateLittleMan) },
-            )
-            Preference(
-                icon = Icons.Default.AutoAwesome,
-                title = stringRes(R.string.dictate__rewording_title),
-                onClick = { navController.navigate(Routes.Settings.DictateRewording) },
-            )
-            Preference(
-                icon = Icons.Default.Spellcheck,
-                title = stringRes(R.string.dictate__mappings_title),
-                onClick = { navController.navigate(Routes.Settings.DictateMappings) },
-            )
-            Preference(
-                icon = Icons.Default.Keyboard,
-                title = stringRes(R.string.dictate__output_group),
-                onClick = { navController.navigate(Routes.Settings.DictateOutput) },
+            Tab(
+                selected = tab == 1,
+                onClick = { tab = 1 },
+                text = { Text("FlorisBoard") },
             )
         }
 
-        PreferenceGroup(title = "Saved") {
-            Preference(
-                icon = Icons.Default.History,
-                title = stringRes(R.string.dictate__history_title),
-                summary = "Every transcription, with its audio",
-                onClick = { navController.navigate(Routes.Settings.DictateHistory) },
-            )
-            Preference(
-                icon = Icons.Default.History,
-                title = "Recovered recordings",
-                summary = "Audio saved when a recording was cut short",
-                onClick = { navController.navigate(Routes.Settings.DictateRecovered) },
-            )
-            Preference(
-                icon = Icons.AutoMirrored.Outlined.Assignment,
-                title = stringRes(R.string.settings__clipboard__title),
-                onClick = { navController.navigate(Routes.Settings.Clipboard) },
-            )
-        }
+        if (tab == 0) {
+            PreferenceGroup(title = "Start here") {
+                Preference(
+                    icon = Icons.Default.Edit,
+                    title = "Try the keyboard",
+                    summary = "A blank page to dictate into",
+                    onClick = { navController.navigate(Routes.Settings.TryIt) },
+                )
+                Preference(
+                    icon = Icons.Default.Key,
+                    title = "API keys",
+                    summary = "Import, test and manage every key",
+                    onClick = { navController.navigate(Routes.Settings.DictateKeys) },
+                )
+            }
 
-        PreferenceGroup(title = "Keyboard") {
-            Preference(
-                icon = Icons.Outlined.Palette,
-                title = stringRes(R.string.settings__theme__title),
-                onClick = { navController.navigate(Routes.Settings.Theme) },
-            )
-            Preference(
-                icon = Icons.Default.Bolt,
-                title = "Macro bar",
-                summary = "Buttons that type text or press keys",
-                onClick = { navController.navigate(Routes.Settings.DictateMacros) },
-            )
-            Preference(
-                icon = Icons.Outlined.Keyboard,
-                title = stringRes(R.string.settings__keyboard__title),
-                onClick = { navController.navigate(Routes.Settings.Keyboard) },
-            )
-            Preference(
-                icon = Icons.Default.SmartButton,
-                title = stringRes(R.string.settings__smartbar__title),
-                onClick = { navController.navigate(Routes.Settings.Smartbar) },
-            )
-            Preference(
-                icon = Icons.Default.Gesture,
-                title = stringRes(R.string.settings__gestures__title),
-                onClick = { navController.navigate(Routes.Settings.Gestures) },
-            )
-            Preference(
-                icon = Icons.Default.Language,
-                title = stringRes(R.string.settings__localization__title),
-                onClick = { navController.navigate(Routes.Settings.Localization) },
-            )
-            Preference(
-                icon = Icons.Default.Spellcheck,
-                title = stringRes(R.string.settings__typing__title),
-                onClick = { navController.navigate(Routes.Settings.Typing) },
-            )
+            PreferenceGroup(title = "Dictation") {
+                Preference(
+                    icon = Icons.Default.Mic,
+                    title = stringRes(R.string.dictate__recording_group),
+                    onClick = { navController.navigate(Routes.Settings.DictateRecording) },
+                )
+                Preference(
+                    icon = Icons.Default.Translate,
+                    title = stringRes(R.string.dictate__languages_title),
+                    onClick = { navController.navigate(Routes.Settings.DictateLanguages) },
+                )
+                Preference(
+                    icon = Icons.Default.RecordVoiceOver,
+                    title = "Little man",
+                    summary = "His buttons, their prompts, and what he remembers",
+                    onClick = { navController.navigate(Routes.Settings.DictateLittleMan) },
+                )
+                Preference(
+                    icon = Icons.Default.AutoAwesome,
+                    title = stringRes(R.string.dictate__rewording_title),
+                    onClick = { navController.navigate(Routes.Settings.DictateRewording) },
+                )
+                Preference(
+                    icon = Icons.Default.Spellcheck,
+                    title = stringRes(R.string.dictate__mappings_title),
+                    onClick = { navController.navigate(Routes.Settings.DictateMappings) },
+                )
+                Preference(
+                    icon = Icons.Default.Keyboard,
+                    title = stringRes(R.string.dictate__output_group),
+                    onClick = { navController.navigate(Routes.Settings.DictateOutput) },
+                )
+            }
+
+            PreferenceGroup(title = "Saved") {
+                Preference(
+                    icon = Icons.Default.History,
+                    title = stringRes(R.string.dictate__history_title),
+                    summary = "Every transcription, with its audio",
+                    onClick = { navController.navigate(Routes.Settings.DictateHistory) },
+                )
+                Preference(
+                    icon = Icons.Default.History,
+                    title = "Recovered recordings",
+                    summary = "Audio saved when a recording was cut short",
+                    onClick = { navController.navigate(Routes.Settings.DictateRecovered) },
+                )
+            }
+
+            PreferenceGroup(title = "Keyboard extras") {
+                Preference(
+                    icon = Icons.Default.Bolt,
+                    title = "Macro bar",
+                    summary = "Buttons that type text or press keys",
+                    onClick = { navController.navigate(Routes.Settings.DictateMacros) },
+                )
+            }
+        } else {
+            PreferenceGroup(title = "Inherited from FlorisBoard") {
+                Preference(
+                    icon = Icons.Outlined.Palette,
+                    title = stringRes(R.string.settings__theme__title),
+                    onClick = { navController.navigate(Routes.Settings.Theme) },
+                )
+                Preference(
+                    icon = Icons.Outlined.Keyboard,
+                    title = stringRes(R.string.settings__keyboard__title),
+                    onClick = { navController.navigate(Routes.Settings.Keyboard) },
+                )
+                Preference(
+                    icon = Icons.Default.SmartButton,
+                    title = stringRes(R.string.settings__smartbar__title),
+                    onClick = { navController.navigate(Routes.Settings.Smartbar) },
+                )
+                Preference(
+                    icon = Icons.Default.Gesture,
+                    title = stringRes(R.string.settings__gestures__title),
+                    onClick = { navController.navigate(Routes.Settings.Gestures) },
+                )
+                Preference(
+                    icon = Icons.Default.Spellcheck,
+                    title = stringRes(R.string.settings__typing__title),
+                    onClick = { navController.navigate(Routes.Settings.Typing) },
+                )
+                Preference(
+                    icon = Icons.AutoMirrored.Outlined.Assignment,
+                    title = stringRes(R.string.settings__clipboard__title),
+                    onClick = { navController.navigate(Routes.Settings.Clipboard) },
+                )
+                Preference(
+                    icon = Icons.Default.Language,
+                    title = stringRes(R.string.settings__localization__title),
+                    onClick = { navController.navigate(Routes.Settings.Localization) },
+                )
+            }
         }
 
         Preference(
