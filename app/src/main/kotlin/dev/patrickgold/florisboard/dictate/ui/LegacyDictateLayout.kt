@@ -288,7 +288,11 @@ fun LegacyDictateLayout(
                         promptRows >= 2 -> FlorisImeSizing.smartbarHeight * 2.4f
                         else -> FlorisImeSizing.smartbarHeight * 1.2f
                     }
-                    Box(
+                    // Hidden on request, except while something is happening: a recording in
+                    // progress reports itself here, and hiding the row would hide the timer and the
+                    // send button with it, which is not what "hide the little man" asks for.
+                    val maShowPrompts by prefs.dictate.maShowPrompts.collectAsState()
+                    if (maShowPrompts || showStatus) Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(stripHeight)
@@ -305,9 +309,15 @@ fun LegacyDictateLayout(
                 // Row 1b: the quick row. Language buttons, one per enabled language, and the current
                 // transcription model as a dropdown, so both can be checked and changed in the second
                 // before speaking rather than by leaving for the settings app.
-                MaQuickRow(
-                    modifier = Modifier.fillMaxWidth().height(EditRowHeight),
-                )
+                // Hideable from the Menu Macro panel, like every other section. Screen height is the
+                // scarcest thing on a keyboard and a row nobody uses costs exactly as much of it as
+                // one used constantly.
+                val maShowQuickRow by prefs.dictate.maShowQuickRow.collectAsState()
+                if (maShowQuickRow) {
+                    MaQuickRow(
+                        modifier = Modifier.fillMaxWidth().height(EditRowHeight),
+                    )
+                }
 
                 // Row 1c: the flat command bar, matching the keyboard view so both look the same.
                 MaMacroBar()

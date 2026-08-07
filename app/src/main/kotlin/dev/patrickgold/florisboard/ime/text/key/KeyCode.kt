@@ -120,6 +120,11 @@ object KeyCode {
     const val MA_ROW_ARROWS =               -234
     // Long press on the last key of the top row moves to the next set.
     const val MA_ROW_NEXT_SET =             -236
+    // Marko: the Menu Macro dashboard. Each of these shows or hides one section of the keyboard,
+    // from the same three-dots panel, so the layout can be trimmed without leaving the keyboard.
+    const val MA_TOGGLE_PROMPTS =           -237
+    const val MA_TOGGLE_QUICK_ROW =         -238
+    const val MA_TOGGLE_CURSOR_ROW =        -239
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222

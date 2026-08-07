@@ -800,6 +800,16 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_text_case",
             default = "auto",
         )
+        // Sections of the keyboard that can be hidden. Screen height is the scarcest thing here, and
+        // a row that is never used costs the same height as one used constantly.
+        val maShowPrompts = boolean(
+            key = "dictate__ma_show_prompts",
+            default = true,
+        )
+        val maShowQuickRow = boolean(
+            key = "dictate__ma_show_quick_row",
+            default = true,
+        )
         val maExtraRow = boolean(
             key = "dictate__ma_extra_row",
             default = false,

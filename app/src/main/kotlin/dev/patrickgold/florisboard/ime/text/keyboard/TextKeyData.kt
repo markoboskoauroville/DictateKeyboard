@@ -139,6 +139,9 @@ data class TextKeyData(
                 DICTATE_PROMPTS,
                 DICTATE_REINSERT,
                 MA_QUICK_RECORD,
+                MA_TOGGLE_PROMPTS,
+                MA_TOGGLE_QUICK_ROW,
+                MA_TOGGLE_CURSOR_ROW,
                 MA_ROW_BRACKETS,
                 MA_ROW_ARROWS,
                 MA_TOGGLE_EXTRA_ROW,
@@ -467,6 +470,19 @@ data class TextKeyData(
             type = KeyType.SYSTEM_GUI,
             code = KeyCode.MA_QUICK_RECORD,
             label = "ma_quick_record",
+        )
+
+        /** Menu Macro: show or hide the prompt strip, the little man's row. */
+        val MA_TOGGLE_PROMPTS = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_TOGGLE_PROMPTS, label = "ma_toggle_prompts",
+        )
+        /** Menu Macro: show or hide the language and case row. */
+        val MA_TOGGLE_QUICK_ROW = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_TOGGLE_QUICK_ROW, label = "ma_toggle_quick_row",
+        )
+        /** Menu Macro: show or hide the arrow strip along the bottom. */
+        val MA_TOGGLE_CURSOR_ROW = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_TOGGLE_CURSOR_ROW, label = "ma_toggle_cursor_row",
         )
 
         /** Row set: brackets and symbols. */

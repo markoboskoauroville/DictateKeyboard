@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Numbers
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -323,6 +324,9 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
         }
         // Code for brackets, a horizontal swap for movement, scissors for editing. All three
         // are used elsewhere in this project, so all three are certain to resolve.
+        KeyCode.MA_TOGGLE_PROMPTS -> Icons.Default.RecordVoiceOver
+        KeyCode.MA_TOGGLE_QUICK_ROW -> Icons.Default.Translate
+        KeyCode.MA_TOGGLE_CURSOR_ROW -> Icons.Default.SwapHoriz
         KeyCode.MA_ROW_BRACKETS -> Icons.Default.Code
         KeyCode.MA_ROW_ARROWS -> Icons.Default.SwapHoriz
         KeyCode.LANGUAGE_SWITCH -> {

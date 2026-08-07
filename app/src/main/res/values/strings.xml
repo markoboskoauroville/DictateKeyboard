@@ -1994,4 +1994,10 @@
     <string name="quick_action__ma_row_edit__tooltip">Top row becomes select, cut, copy and paste</string>
     <string name="dictate__legacy_action_keyboard" comment="Action row entry: back to the typing keyboard">Keyboard</string>
     <string name="dictate__action_send" comment="Content description for the button that sends the recording for transcription">Send recording</string>
+    <string name="quick_action__ma_toggle_prompts" comment="Show or hide the prompt row">Little man</string>
+    <string name="quick_action__ma_toggle_prompts__tooltip">Show or hide the little man and his prompt buttons</string>
+    <string name="quick_action__ma_toggle_quick_row" comment="Show or hide the language row">Language row</string>
+    <string name="quick_action__ma_toggle_quick_row__tooltip">Show or hide the language and case buttons</string>
+    <string name="quick_action__ma_toggle_cursor_row" comment="Show or hide the arrow strip">Arrow row</string>
+    <string name="quick_action__ma_toggle_cursor_row__tooltip">Show or hide the arrows along the bottom</string>
 </resources>

@@ -1010,6 +1010,18 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             // button is its own toggle and the row never needs a separate "off" trip.
             KeyCode.MA_ROW_BRACKETS -> maSelectRowSet("symbols")
             KeyCode.MA_ROW_ARROWS -> maSelectRowSet("arrows")
+            // Menu Macro: show or hide one section of the keyboard. Each is its own switch rather
+            // than a list behind a dialog, because the point is to see the effect immediately on the
+            // keyboard behind the panel.
+            KeyCode.MA_TOGGLE_PROMPTS -> scope.launch {
+                prefs.dictate.maShowPrompts.set(!prefs.dictate.maShowPrompts.get())
+            }
+            KeyCode.MA_TOGGLE_QUICK_ROW -> scope.launch {
+                prefs.dictate.maShowQuickRow.set(!prefs.dictate.maShowQuickRow.get())
+            }
+            KeyCode.MA_TOGGLE_CURSOR_ROW -> scope.launch {
+                prefs.dictate.maCursorRow.set(!prefs.dictate.maCursorRow.get())
+            }
             KeyCode.MA_ROW_NEXT_SET -> scope.launch {
                 val order = listOf("digits", "diacritics", "symbols", "arrows")
                 val at = order.indexOf(prefs.dictate.maExtraRowMode.get()).coerceAtLeast(0)

@@ -75,6 +75,12 @@ data class QuickActionArrangement(
                 // One-handed mode and the in-place record button are gone from this panel: the
                 // first is unused here, the second is reachable from the record row itself and was
                 // only taking a slot in a panel that has to be scanned quickly.
+                // The Menu Macro dashboard: what to show and what to hide, first in the panel,
+                // because trimming the keyboard is the reason this panel gets opened.
+                QuickAction.InsertKey(TextKeyData.MA_TOGGLE_PROMPTS),
+                QuickAction.InsertKey(TextKeyData.MA_TOGGLE_QUICK_ROW),
+                QuickAction.InsertKey(TextKeyData.MA_TOGGLE_CURSOR_ROW),
+                QuickAction.InsertKey(TextKeyData.SETTINGS),
                 QuickAction.InsertKey(TextKeyData.MA_ROW_BRACKETS),
                 QuickAction.InsertKey(TextKeyData.MA_ROW_ARROWS),
                 // Default visible order requested by the user. The live prompt is no longer a Smartbar
