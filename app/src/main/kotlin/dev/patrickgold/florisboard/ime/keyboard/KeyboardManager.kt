@@ -450,6 +450,12 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
      * boundary would be a surprise rather than a help.
      */
     /** Shows [set] on the top row, or returns to digits when it is already showing. */
+    /** Switches view and records it at once, so the two can never disagree. */
+    private fun maSetView(mode: ImeUiMode) {
+        activeState.imeUiMode = mode
+        scope.launch { prefs.dictate.maLastImeUiMode.set(mode.name) }
+    }
+
     private fun maSelectRowSet(set: String) {
         scope.launch {
             val current = prefs.dictate.maExtraRowMode.get()
@@ -1022,7 +1028,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             KeyCode.IME_HIDE_UI -> FlorisImeService.hideUi()
             KeyCode.IME_PREV_SUBTYPE -> subtypeManager.switchToPrevSubtype()
             KeyCode.IME_NEXT_SUBTYPE -> subtypeManager.switchToNextSubtype()
-            KeyCode.IME_UI_MODE_TEXT -> { closeEmojiSearch(returnToMedia = false); activeState.imeUiMode = ImeUiMode.TEXT }
+            KeyCode.IME_UI_MODE_TEXT -> { closeEmojiSearch(returnToMedia = false); maSetView(ImeUiMode.TEXT) }
             KeyCode.IME_UI_MODE_MEDIA -> { closeEmojiSearch(returnToMedia = false); activeState.imeUiMode = ImeUiMode.MEDIA }
             KeyCode.IME_UI_MODE_CLIPBOARD -> { closeEmojiSearch(returnToMedia = false); activeState.imeUiMode = ImeUiMode.CLIPBOARD }
             // Opens the KLIPY GIF search panel (its own ImeUiMode, like the media/history panels); resets
@@ -1037,7 +1043,11 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             // Switch view, and only that. Starting a recording as a side effect made one button mean
             // two things, and there was then no way to reach the transcribe view without also
             // committing to speak. Recording without leaving the keyboard is MA_QUICK_RECORD below.
-            KeyCode.IME_UI_MODE_DICTATE -> activeState.imeUiMode = ImeUiMode.TRANSCRIBE
+            // Remember the choice the moment it is made, not when the keyboard next hides. The
+            // restore runs on every focused field, so a view chosen and then followed by a tap in
+            // the text box was being reverted to whatever was stored at the last hide. That is why
+            // pressing the microphone appeared to land back on the keyboard.
+            KeyCode.IME_UI_MODE_DICTATE -> maSetView(ImeUiMode.TRANSCRIBE)
             // Record where you already are. The Smartbar draws the full recording bar in the typing
             // view, meter and timer and all, so the recording is perfectly visible without the
             // keyboard being replaced by another screen. Pressing it again stops and sends, the same

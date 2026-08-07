@@ -822,7 +822,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v11_applied",
+            key = "dictate__ma_row_v12_applied",
             default = false,
         )
         val maSunriseApplied = boolean(
@@ -1297,9 +1297,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__hinted_symbols_mode",
             default = KeyHintMode.SMART_PRIORITY,
         )
+        // Off. This is the smiley beside the space bar, and an emoji panel is one of the things a
+        // voice keyboard does not need; the key it was occupying is worth more than the panel.
         val utilityKeyEnabled = boolean(
             key = "keyboard__utility_key_enabled",
-            default = true,
+            default = false,
         )
         val utilityKeyAction = enum(
             key = "keyboard__utility_key_action",
@@ -1540,9 +1542,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             default = extCoreTheme("sunrise"),
             serializer = ExtensionComponentName.Serializer,
         )
+        // Gold, not amber. This preference, not the stylesheet, is what actually paints the enter
+        // key and the accent chips, which is why they stayed orange through several passes of
+        // editing the theme: the stylesheet was being overridden by a colour stored here.
         val accentColor = custom(
             key = "theme__accent_color",
-            default = Color(0xFFFFA23A), // Sunrise amber
+            default = Color(0xFFE8B15C),
             serializer = ColorPreferenceSerializer,
         )
         val sunriseTime = localTime(

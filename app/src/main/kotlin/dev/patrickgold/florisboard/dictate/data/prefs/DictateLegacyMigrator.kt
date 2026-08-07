@@ -421,6 +421,10 @@ object DictateLegacyMigrator {
         // toggles are unflipped, and the microphone is the sticky action, so this is the one flag
         // that puts each on the side it is wanted.
         prefs.smartbar.flipToggles.set(false)
+        // The smiley beside the space bar goes, on installs as well as fresh ones.
+        prefs.keyboard.utilityKeyEnabled.set(false)
+        // And the accent itself, which is the thing that was really keeping the enter key orange.
+        prefs.theme.accentColor.set(androidx.compose.ui.graphics.Color(0xFFE8B15C))
         // Move an install that never chose a case rule onto the length-aware one. Anyone who picked
         // lower or upper on purpose keeps it.
         if (prefs.dictate.maTextCase.get() == "none") {
