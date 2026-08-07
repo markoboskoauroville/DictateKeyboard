@@ -124,7 +124,8 @@ fun TypingScreen() = FlorisScreen {
                     entry(
                         key = "none",
                         label = "Leave as transcribed",
-                        description = "Never change what the recogniser wrote.",
+                        description = "The default. Nothing is changed on arrival; use the four case " +
+                            "buttons on the keyboard to reformat afterwards.",
                         showDescriptionOnlyIfSelected = true,
                     )
                     entry(

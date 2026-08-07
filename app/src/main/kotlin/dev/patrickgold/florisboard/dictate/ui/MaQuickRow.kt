@@ -125,14 +125,15 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
                 }
             }
         }
-        // Four cases, and each button does two jobs that are really one question asked twice: it
-        // decides how the next dictation is written, and rewrites whatever is in the field now.
-        // Pressing the active one returns to leaving text alone.
+        // Four case buttons, and they only ever act on text that already exists. They set nothing,
+        // remember nothing, and have no on state: press one and the words in the field are rewritten
+        // there and then.
         //
-        // The model chip that used to sit here is gone. It named a model that is chosen once and
-        // then never thought about, and it was taking the width of two buttons on the row that gets
-        // used constantly.
-        val textCase by prefs.dictate.maTextCase.collectAsState()
+        // This replaces them having also decided how the next dictation would be written. That made
+        // each button a mode as well as an action, so pressing one changed something invisible and
+        // the effect of the next dictation depended on a setting nobody could see. A transcript now
+        // arrives exactly as the service wrote it, and the case is a decision taken afterwards,
+        // looking at the result.
         val caseScope = rememberCoroutineScope()
         val context = LocalContext.current
         listOf(
@@ -142,15 +143,10 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
             MaCase.TITLE to "Ab Ab",
         ).forEach { (mode, label) ->
             MaQuickKey(
-                selected = textCase == mode,
-                onClick = {
-                    caseScope.launch {
-                        prefs.dictate.maTextCase.set(if (textCase == mode) MaCase.NONE else mode)
-                        // Recase what is already written, in the same press. Setting the rule for
-                        // future words and leaving the visible ones wrong would be half a feature.
-                        if (textCase != mode) DictateController.recaseField(context, mode)
-                    }
-                },
+                // Never highlighted: an action has no state to show, and a gold outline here would
+                // claim a mode that no longer exists.
+                selected = false,
+                onClick = { caseScope.launch { DictateController.recaseField(context, mode) } },
                 modifier = Modifier.weight(if (mode == MaCase.TITLE) 1.1f else 0.8f).fillMaxHeight(),
             ) { fg ->
                 Text(text = label, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)

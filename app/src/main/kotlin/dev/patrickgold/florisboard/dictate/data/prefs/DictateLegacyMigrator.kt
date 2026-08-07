@@ -427,8 +427,11 @@ object DictateLegacyMigrator {
         prefs.theme.accentColor.set(androidx.compose.ui.graphics.Color(0xFFE8B15C))
         // Move an install that never chose a case rule onto the length-aware one. Anyone who picked
         // lower or upper on purpose keeps it.
-        if (prefs.dictate.maTextCase.get() == "none") {
-            prefs.dictate.maTextCase.set("auto")
+        // Back to leaving transcripts alone. The automatic rule was briefly the default and is now
+        // opt-in, so an install carrying it from that window is moved back rather than left with a
+        // behaviour that was never chosen.
+        if (prefs.dictate.maTextCase.get() == "auto") {
+            prefs.dictate.maTextCase.set("none")
         }
         // Strip retired actions out of the SAVED arrangement, not just the default. This is the
         // trap that keeps catching me: a changed default never reaches a preference that has already

@@ -793,12 +793,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // sentence case with a full stop because it is guessing at prose; when the words are going
         // into a search box, a filename or a command line, that guess is wrong every time and has to
         // be undone by hand.
-        // "auto" decides by length: a fragment of four words or fewer comes back lowercase without
-        // the invented full stop, anything longer keeps the capitals and punctuation the recogniser
-        // wrote. "lower" and "upper" still force every dictation, for anyone who wants that.
+        // Nothing, by default: a transcript arrives exactly as the service wrote it, and case is a
+        // decision taken afterwards with the four buttons, looking at the result. The automatic and
+        // forced modes remain under Typing, Correction for anyone who would rather not decide each
+        // time, but they are no longer what happens unasked.
         val maTextCase = string(
             key = "dictate__ma_text_case",
-            default = "auto",
+            default = "none",
         )
         // Sections of the keyboard that can be hidden. Screen height is the scarcest thing here, and
         // a row that is never used costs the same height as one used constantly.
@@ -832,7 +833,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v12_applied",
+            key = "dictate__ma_row_v13_applied",
             default = false,
         )
         val maSunriseApplied = boolean(
