@@ -420,8 +420,13 @@ object DictateLegacyMigrator {
         // Move the space bar long press over, once, but only from the old default. Anyone who chose
         // their own action for it keeps it; a changed default cannot reach a preference that has
         // already been written, which is why this pass exists at all.
-        if (prefs.gestures.spaceBarLongPress.get() == SwipeAction.SHOW_INPUT_METHOD_PICKER) {
-            prefs.gestures.spaceBarLongPress.set(SwipeAction.MA_SWITCH_DICTATE_VIEW)
+        // Space bar long press lands on the layout picker. Moved from either of the two defaults it
+        // has had, and only from those: anyone who chose their own action for it keeps it.
+        val spaceLong = prefs.gestures.spaceBarLongPress.get()
+        if (spaceLong == SwipeAction.SHOW_INPUT_METHOD_PICKER ||
+            spaceLong == SwipeAction.MA_SWITCH_DICTATE_VIEW
+        ) {
+            prefs.gestures.spaceBarLongPress.set(SwipeAction.SHOW_SUBTYPE_PICKER)
         }
         // The built-in numeric row is retired; the multi-purpose row occupies that slot now. Turning
         // the old preference off keeps the hinted-digits setting, which is gated on it, available.

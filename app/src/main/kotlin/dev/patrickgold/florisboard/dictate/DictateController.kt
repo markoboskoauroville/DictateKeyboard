@@ -1404,15 +1404,17 @@ object DictateController {
                         val maSentKb = uploadFile.length() / 1024L
                         val maLen = "%d:%02d".format(recordedSeconds / 60, recordedSeconds % 60)
                         val maSize = "$maLen, $maSentKb kB $maFormatTag"
+                        // "K1_6" rather than "key 1 of 6". The status line is one narrow strip above a
+                        // keyboard and every word spent on wording is a word not spent on the numbers.
                         _maStatus.value = if (maKeys.size > 1) {
-                            "sending $maSize, key 1 of ${maKeys.size}"
+                            "sending $maSize, K1_${maKeys.size}"
                         } else {
                             "sending $maSize"
                         }
                         maWithKeyFallback(
                             maKeys,
                             onKeyRejected = { index, total, reason ->
-                                _maStatus.value = "key $index of $total $reason, trying key ${index + 1}"
+                                _maStatus.value = "K${index}_$total $reason, K${index + 1}"
                             },
                         ) { maKey ->
                             OpenAiCompatibleClient.from(

@@ -816,7 +816,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // build's predecessor, so reusing it would silently skip everything added after it. Each
         // batch of "change something a user may already have written" needs its own flag.
         val maRowV2Applied = boolean(
-            key = "dictate__ma_row_v6_applied",
+            key = "dictate__ma_row_v7_applied",
             default = false,
         )
         val maSunriseApplied = boolean(
@@ -1094,13 +1094,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "gestures__space_bar_swipe_right",
             default = SwipeAction.MOVE_CURSOR_RIGHT,
         )
-        // Long press on the space bar swaps between the typing keyboard and the transcribe view.
-        // The gesture was previously spent on the system input method picker, something reached for
-        // perhaps twice a year, while swapping views happens dozens of times an hour and the thumb
-        // is already resting there. Still changeable, like every other space bar gesture.
+        // Long press on the space bar picks the keyboard layout, from the ones enabled in settings.
+        // It briefly swapped the dictate view instead, which was my misreading: swapping view now
+        // belongs to the microphone key, and the space bar is where a layout is chosen on every
+        // other keyboard. Subtype picker rather than the system input method picker, so it offers
+        // Croatian and English rather than every keyboard installed on the phone.
         val spaceBarLongPress = enum(
             key = "gestures__space_bar_long_press",
-            default = SwipeAction.MA_SWITCH_DICTATE_VIEW,
+            default = SwipeAction.SHOW_SUBTYPE_PICKER,
         )
         val deleteKeySwipeLeft = enum(
             key = "gestures__delete_key_swipe_left",
