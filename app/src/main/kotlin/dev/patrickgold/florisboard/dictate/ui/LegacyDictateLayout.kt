@@ -649,9 +649,13 @@ private fun LegacyRecordRow(
                 // visual language in one line: colour is reserved for state, and a red edge means
                 // this thing is running.
                 .background(MaRecordFill)
+                // Red ring when idle, none while recording, and that way round on purpose. Idle, the
+                // ring is the invitation: this is the key that records. Recording, the ring was
+                // drawing a box around the meter and cutting across the very line it exists to show,
+                // so it goes: nothing to press for, nothing to fence in.
                 .border(
-                    width = if (isRecording) 2.dp else 1.dp,
-                    color = if (isRecording) MaRecordRing else accent.copy(alpha = 0.55f),
+                    width = if (isRecording) 0.dp else 2.dp,
+                    color = if (isRecording) Color.Transparent else MaRecordRing,
                     shape = LegacyKeyShape,
                 )
                 .then(
@@ -716,11 +720,16 @@ private fun LegacyRecordRow(
                         Icon(Icons.Default.Stop, contentDescription = null, tint = onAccent, modifier = Modifier.size(20.dp))
                     }
                     else -> {
-                        Icon(Icons.Default.Mic, contentDescription = null, tint = onAccent, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = stringRes(R.string.dictate__legacy_record), color = onAccent, fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Icon(Icons.Default.FolderOpen, contentDescription = null, tint = onAccent, modifier = Modifier.size(20.dp))
+                        // One microphone, centred, and nothing else. The word "Record" restated what
+                        // the icon and the red ring already say twice over, and the folder glyph
+                        // advertised a long press that a glyph cannot explain anyway. Long press
+                        // still picks a file; it just no longer needs a label to prove it exists.
+                        Icon(
+                            Icons.Default.Mic,
+                            contentDescription = stringRes(R.string.dictate__legacy_record),
+                            tint = onAccent,
+                            modifier = Modifier.size(26.dp),
+                        )
                     }
                 }
             }
