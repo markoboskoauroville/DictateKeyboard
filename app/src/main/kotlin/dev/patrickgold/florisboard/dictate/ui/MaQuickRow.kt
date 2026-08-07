@@ -40,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
+import dev.patrickgold.florisboard.dictate.MaCase
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.dictate.provider.ProviderRegistry
 import dev.patrickgold.florisboard.ime.input.InputShiftState
@@ -123,99 +125,40 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
                 }
             }
         }
-        // Case, forced on whatever comes back. Two buttons rather than one cycling through three
-        // states, so the current one is visible instead of having to be remembered, and pressing the
-        // active one turns it off again.
+        // Four cases, and each button does two jobs that are really one question asked twice: it
+        // decides how the next dictation is written, and rewrites whatever is in the field now.
+        // Pressing the active one returns to leaving text alone.
+        //
+        // The model chip that used to sit here is gone. It named a model that is chosen once and
+        // then never thought about, and it was taking the width of two buttons on the row that gets
+        // used constantly.
         val textCase by prefs.dictate.maTextCase.collectAsState()
         val caseScope = rememberCoroutineScope()
-        MaQuickKey(
-            selected = textCase == "lower",
-            onClick = {
-                caseScope.launch {
-                    prefs.dictate.maTextCase.set(if (textCase == "lower") "none" else "lower")
-                }
-            },
-            modifier = Modifier.weight(0.8f).fillMaxHeight(),
-        ) { fg ->
-            Text(text = "ab", color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-        }
-        MaQuickKey(
-            selected = textCase == "upper",
-            onClick = {
-                caseScope.launch {
-                    prefs.dictate.maTextCase.set(if (textCase == "upper") "none" else "upper")
-                }
-            },
-            modifier = Modifier.weight(0.8f).fillMaxHeight(),
-        ) { fg ->
-            Text(text = "AB", color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-        }
-        MaModelKey(modifier = Modifier.weight(1.8f).fillMaxHeight())
-    }
-}
-
-/**
- * The transcription model, shown as a button that opens the models already known for the active
- * provider. The list is whatever the last successful model fetch cached in the keyring, so nothing
- * here goes to the network: opening the keyboard must never wait on an HTTP call.
- */
-@Composable
-private fun MaModelKey(modifier: Modifier) {
-    val prefs by FlorisPreferenceStore
-    val accounts by prefs.dictate.providerAccounts.collectAsState()
-    val activeProviderId by prefs.dictate.transcriptionProviderId.collectAsState()
-    var menuOpen by remember { mutableStateOf(false) }
-
-    val account = accounts.accounts[activeProviderId]
-    val preset = remember(activeProviderId) { ProviderRegistry.byId(activeProviderId) }
-    val current = account?.transcriptionModel?.takeIf { it.isNotBlank() }
-        ?: preset?.defaultTranscriptionModel.orEmpty()
-
-    // Dedicated speech-to-text models first, then anything else the catalog reported, then whatever
-    // the provider preset curates. Duplicates dropped, order preserved.
-    val models = remember(account, preset) {
-        buildList {
-            account?.cachedTranscriptionModels?.let { addAll(it) }
-            account?.cachedAudioModels?.let { addAll(it) }
-            preset?.defaultTranscriptionModel?.let { if (it.isNotBlank()) add(it) }
-            if (current.isNotBlank()) add(current)
-        }.distinct()
-    }
-
-    val scope = rememberCoroutineScope()
-
-    Box(modifier = modifier) {
-        MaQuickKey(
-            selected = false,
-            onClick = { if (models.size > 1) menuOpen = true },
-            modifier = Modifier.fillMaxSize(),
-        ) { fg ->
-            Text(
-                text = if (current.isBlank()) "model" else current,
-                color = fg,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 6.dp),
-            )
-        }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            models.forEach { model ->
-                DropdownMenuItem(
-                    text = { Text(model) },
-                    onClick = {
-                        menuOpen = false
-                        val existing = accounts.accounts[activeProviderId]
-                        if (existing != null) {
-                            val updated = accounts.put(existing.copy(transcriptionModel = model))
-                            scope.launch { prefs.dictate.providerAccounts.set(updated) }
-                        }
-                    },
-                )
+        val context = LocalContext.current
+        listOf(
+            MaCase.LOWER to "ab",
+            MaCase.UPPER to "AB",
+            MaCase.SENTENCE to "Ab",
+            MaCase.TITLE to "Ab Ab",
+        ).forEach { (mode, label) ->
+            MaQuickKey(
+                selected = textCase == mode,
+                onClick = {
+                    caseScope.launch {
+                        prefs.dictate.maTextCase.set(if (textCase == mode) MaCase.NONE else mode)
+                        // Recase what is already written, in the same press. Setting the rule for
+                        // future words and leaving the visible ones wrong would be half a feature.
+                        if (textCase != mode) DictateController.recaseField(context, mode)
+                    }
+                },
+                modifier = Modifier.weight(if (mode == MaCase.TITLE) 1.1f else 0.8f).fillMaxHeight(),
+            ) { fg ->
+                Text(text = label, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
             }
         }
     }
 }
+
 
 /** One key of the quick row, themed like every other key so it follows the active stylesheet. */
 @Composable

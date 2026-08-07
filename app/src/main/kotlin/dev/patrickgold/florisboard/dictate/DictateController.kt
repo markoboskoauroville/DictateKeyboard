@@ -2406,11 +2406,21 @@ object DictateController {
      */
     private fun maApplyCase(text: String): String {
         val mode = prefs.dictate.maTextCase.get()
-        if (mode == "lower" || mode == "upper") {
-            val forced = if (mode == "lower") text.lowercase() else text.uppercase()
-            return forced.trimEnd().trimEnd('.', ',', '!', '?', ';', ':') + " "
+        // An explicit case wins outright, for text arriving as well as text already there, and the
+        // transformation is the one the buttons use so the two can never disagree.
+        if (mode == MaCase.LOWER || mode == MaCase.UPPER ||
+            mode == MaCase.SENTENCE || mode == MaCase.TITLE
+        ) {
+            val forced = MaCase.transform(text, mode)
+            // Only the flat cases drop the recogniser's full stop. Sentence and title case are about
+            // writing prose properly, and prose keeps its punctuation.
+            return if (mode == MaCase.LOWER || mode == MaCase.UPPER) {
+                forced.trimEnd().trimEnd('.', ',', '!', '?', ';', ':') + " "
+            } else {
+                forced
+            }
         }
-        if (mode != "none" && mode != "auto") return text
+        if (mode != MaCase.NONE && mode != MaCase.AUTO) return text
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return text
         // One sentence or several: that is the whole test, and it is one the recogniser answers for
@@ -2422,6 +2432,33 @@ object DictateController {
         val inner = trimmed.dropLast(1)
         if (inner.any { it == '.' || it == '!' || it == '?' || it == '\n' }) return text
         return trimmed.lowercase().trimEnd('.', ',', '!', '?', ';', ':') + " "
+    }
+
+    /**
+     * Rewrites the text already in the field into [mode].
+     *
+     * Works on the selection when there is one and the whole field otherwise, which is the same rule
+     * the live prompt follows, so the two behave alike. Selecting the field before committing turns
+     * the insert into a replacement rather than an append.
+     *
+     * Silent when there is nothing to change: pressing a case button in an empty field should set
+     * the rule for what comes next and do nothing visible, not report an error.
+     */
+    fun recaseField(context: Context, mode: String) {
+        val appContext = context.applicationContext
+        maAppContext = appContext
+        scope.launch {
+            runCatching {
+                val sink = sink(appContext)
+                val selected = sink.selectedText().takeIf { it.isNotBlank() }
+                val whole = if (selected == null) sink.fullText().takeIf { it.isNotBlank() } else null
+                val subject = selected ?: whole ?: return@runCatching
+                val recased = MaCase.transform(subject, mode)
+                if (recased == subject) return@runCatching
+                if (whole != null) sink.selectAll()
+                sink.commitText(recased)
+            }
+        }
     }
 
     fun currentRecordingBytes(): Long = recorder?.bytesWritten ?: 0L
