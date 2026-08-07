@@ -42,11 +42,12 @@
     "shape": "circle()"
   },
   "window-resize-handle": {
-    "background": "var(--primary)"
+    "background": "#12161E",
+    "foreground": "#E8B15C"
   },
   "window-resize-action[windowmode=`fixed`]": {
-    "background": "var(--primary)",
-    "foreground": "var(--on-primary)",
+    "background": "#12161E",
+    "foreground": "#E8B15C",
     "font-size": "24sp",
     "padding": "8dp",
     "shape": "circle()"
@@ -57,7 +58,8 @@
     "shape": "circle()"
   },
   "floating-dock-to-fixed-indicator": {
-    "background": "var(--primary)"
+    "background": "#12161E",
+    "foreground": "#E8B15C"
   },
   "key": {
     "background": "var(--surface)",
@@ -72,14 +74,14 @@
     "foreground": "var(--on-surface)"
   },
   "key[code=10]": {
-    "background": "var(--primary)",
-    "foreground": "var(--on-primary)",
-    "border-color": "var(--on-primary)",
+    "background": "#12161E",
+    "foreground": "#E8B15C",
+    "border-color": "#E8B15C",
     "border-width": "1dp"
   },
   "key[code=10]:pressed": {
-    "background": "var(--primary-variant)",
-    "foreground": "var(--on-primary)"
+    "background": "#1C222C",
+    "foreground": "#E8B15C"
   },
   "key[code=32]": {
     "background": "var(--surface)",
@@ -142,14 +144,15 @@
     "shape": "circle()"
   },
   "smartbar-action-key[code=-214]": {
-    "background": "var(--primary)",
+    "background": "#12161E",
+    "foreground": "#E8B15C",
     "shape": "circle()",
     "margin": "4dp",
-    "border-color": "var(--on-primary)",
+    "border-color": "#E8B15C",
     "border-width": "1dp"
   },
   "smartbar-action-key-icon[code=-214]": {
-    "foreground": "var(--on-primary)",
+    "foreground": "#E8B15C",
     "font-size": "20sp"
   },
   "smartbar-action-key": {
@@ -164,8 +167,8 @@
     "margin": "4dp"
   },
   "smartbar-actions-overflow-customize-button": {
-    "background": "var(--primary)",
-    "foreground": "var(--on-primary)",
+    "background": "#12161E",
+    "foreground": "#E8B15C",
     "font-size": "14sp",
     "margin": "0dp 8dp 0dp 0dp",
     "shape": "rounded-corner(24dp, 24dp, 24dp, 24dp)"
@@ -302,8 +305,8 @@
     "shape": "var(--shape-chip)"
   },
   "clipboard-filter-chip[state=`active`]": {
-    "background": "var(--primary)",
-    "foreground": "var(--on-primary)"
+    "background": "#12161E",
+    "foreground": "#E8B15C"
   },
   "clipboard-filter-chip-text": {
     "margin": "4dp 0dp 0dp 0dp"
@@ -381,8 +384,8 @@
     "padding": "0dp 4dp 0dp 8dp"
   },
   "clipboard-history-disabled-button": {
-    "background": "var(--primary)",
-    "foreground": "var(--on-primary)",
+    "background": "#12161E",
+    "foreground": "#E8B15C",
     "shape": "rounded-corner(24dp,24dp,24dp,24dp)"
   },
   "clipboard-history-locked-title": {
@@ -405,7 +408,7 @@
     "border-width": "2dp"
   },
   "extracted-landscape-input-action": {
-    "background": "var(--primary)",
+    "background": "#12161E",
     "foreground": "var(--on-surface)",
     "shape": "rounded-corner(4dp, 4dp, 4dp, 4dp)"
   },
