@@ -110,13 +110,9 @@ fun TypingScreen() = FlorisScreen {
             // about every dictation being prose.
             ListPreference(
                 prefs.dictate.maTextCase,
+                // No summary parameter on ListPreference; the selected entry's own description is
+                // what shows underneath, which is why each entry carries one.
                 title = "Dictation case",
-                summary = when (prefs.dictate.maTextCase.get()) {
-                    "lower" -> "Always lowercase"
-                    "upper" -> "ALWAYS UPPERCASE"
-                    "none" -> "Leave exactly as transcribed"
-                    else -> "One sentence lowercase, more than one left alone"
-                },
                 entries = listPrefEntries {
                     entry(
                         key = "auto",
@@ -131,8 +127,18 @@ fun TypingScreen() = FlorisScreen {
                         description = "Never change what the recogniser wrote.",
                         showDescriptionOnlyIfSelected = true,
                     )
-                    entry(key = "lower", label = "Always lowercase")
-                    entry(key = "upper", label = "Always uppercase")
+                    entry(
+                        key = "lower",
+                        label = "Always lowercase",
+                        description = "Every dictation, whatever its length.",
+                        showDescriptionOnlyIfSelected = true,
+                    )
+                    entry(
+                        key = "upper",
+                        label = "Always uppercase",
+                        description = "Every dictation, whatever its length.",
+                        showDescriptionOnlyIfSelected = true,
+                    )
                 },
             )
             SwitchPreference(
