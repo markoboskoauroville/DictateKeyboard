@@ -113,16 +113,18 @@ fun MaScopeCanvas(active: Boolean, tint: Color) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(10.dp)
-                .padding(bottom = 4.dp),
+                // A hairline rather than a bar. The thin jumping line reads as movement without
+                // becoming a block of colour competing with the numbers above it.
+                .height(3.dp)
+                .padding(bottom = 1.dp),
         ) {
             val h = size.height
             val full = size.width
             drawRoundRect(
-                color = tint.copy(alpha = 0.14f),
-                topLeft = Offset(0f, h * 0.2f),
-                size = Size(full, h * 0.6f),
-                cornerRadius = CornerRadius(h * 0.3f, h * 0.3f),
+                color = tint.copy(alpha = 0.18f),
+                topLeft = Offset(0f, 0f),
+                size = Size(full, h),
+                cornerRadius = CornerRadius(h / 2f, h / 2f),
             )
             if (sending) {
                 // Out from the middle, both ways at once, like a broadcast meter. It says "this is
@@ -131,24 +133,24 @@ fun MaScopeCanvas(active: Boolean, tint: Color) {
                 val reach = half * sweep
                 drawRoundRect(
                     color = tint.copy(alpha = 0.85f),
-                    topLeft = Offset(half - reach, h * 0.2f),
-                    size = Size(reach * 2f, h * 0.6f),
-                    cornerRadius = CornerRadius(h * 0.3f, h * 0.3f),
+                    topLeft = Offset(half - reach, 0f),
+                    size = Size(reach * 2f, h),
+                    cornerRadius = CornerRadius(h / 2f, h / 2f),
                 )
             } else {
                 val filled = full * maNorm(smoothed)
                 drawRoundRect(
                     color = maDbColour(smoothed, tint),
-                    topLeft = Offset(0f, h * 0.2f),
-                    size = Size(filled, h * 0.6f),
-                    cornerRadius = CornerRadius(h * 0.3f, h * 0.3f),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(filled, h),
+                    cornerRadius = CornerRadius(h / 2f, h / 2f),
                 )
                 // Peak hold, falling back slowly so a transient stays readable.
                 val peakX = (full * maNorm(peakDb)).coerceIn(0f, full - 2f)
                 drawRoundRect(
                     color = maDbColour(peakDb, tint).copy(alpha = 0.9f),
-                    topLeft = Offset(peakX, h * 0.05f),
-                    size = Size(2f, h * 0.9f),
+                    topLeft = Offset(peakX, 0f),
+                    size = Size(2f, h),
                     cornerRadius = CornerRadius(1f, 1f),
                 )
             }
@@ -187,7 +189,9 @@ private fun MaReadings(sending: Boolean, tint: Color) {
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        // Bottom-aligned so the megabyte figure sits just above the meter line with a couple of
+        // pixels of air, rather than floating in the middle of the row beside a much larger number.
+        verticalAlignment = Alignment.Bottom,
     ) {
         // The dB number is gone. The bar underneath already says how loud, continuously and without
         // being read, which is what a meter is for; a number saying the same thing was one reading

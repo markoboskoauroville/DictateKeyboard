@@ -21,6 +21,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -575,7 +576,9 @@ private fun LegacyRecordRow(
     val rewording = dictateState as? DictateController.UiState.Rewording
     // The button is non-interactive while the audio is being transcribed or reworded.
     val busy = dictateState is DictateController.UiState.Transcribing || rewording != null
-    val onAccent = if (accent.luminance() > 0.5f) Color.Black else Color.White
+    // Gold on near-black for everything drawn on the record key. The old rule chose black or white
+    // against the accent fill, which is how white ended up on orange and hard to read at a glance.
+    val onAccent = MaRecordInk
     val sideKey = Modifier.fillMaxHeight().aspectRatio(1f)
 
     // Long-form segmented dictation (#170): whether the "Next segment" button replaces pause and how many
@@ -638,7 +641,19 @@ private fun LegacyRecordRow(
                 .fillMaxHeight()
                 .padding(horizontal = KeyMarginH, vertical = KeyMarginV)
                 .clip(LegacyKeyShape)
-                .background(accent)
+                // A key like the others, not a slab of orange. The old fill was the loudest thing on
+                // screen and it fought the readings printed on it; on a dark keyboard, dark with a
+                // warm outline reads as "this one is special" without shouting.
+                //
+                // The outline is red while recording and the accent otherwise, which is the whole
+                // visual language in one line: colour is reserved for state, and a red edge means
+                // this thing is running.
+                .background(MaRecordFill)
+                .border(
+                    width = if (isRecording) 2.dp else 1.dp,
+                    color = if (isRecording) MaRecordRing else accent.copy(alpha = 0.55f),
+                    shape = LegacyKeyShape,
+                )
                 .then(
                     if (busy) {
                         // Transcribing/rewording: a tap now cancels the in-flight request (issue #192),
@@ -761,16 +776,18 @@ private fun LegacyBottomRow(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Numbers here now. The key that returns to typing moved to the action row's right-hand
-        // end, directly under the microphone that comes the other way, so one place on the screen
-        // means "swap view" in both directions. This slot took the numbers it displaced.
+        // This slot switches to the previous input method, as it did before. It briefly held a
+        // numbers key and that was a trap: VIEW_NUMERIC changes the real keyboard layout, and the
+        // transcribe view has no ABC key to change it back, so pressing it here and then switching
+        // to the typing view left a numeric pad with no way out of it. The number row belongs to
+        // the typing view, where the key that toggles it can also be seen.
         ThemedIconKey(
-            code = KeyCode.VIEW_NUMERIC,
-            icon = Icons.Default.Numbers,
-            contentDescription = stringRes(R.string.dictate__legacy_numbers),
+            code = KeyCode.SYSTEM_PREV_INPUT_METHOD,
+            icon = Icons.Default.KeyboardHide,
+            contentDescription = stringRes(R.string.dictate__legacy_switch_keyboard),
             modifier = sideKey,
             onLongClick = { keyboardManager.tapKey(KeyCode.SYSTEM_INPUT_METHOD_PICKER) },
-            onClick = { keyboardManager.tapKey(KeyCode.VIEW_NUMERIC) },
+            onClick = { keyboardManager.tapKey(KeyCode.SYSTEM_PREV_INPUT_METHOD) },
         )
 
         // The space bar was the width of the whole row for a key that, in a dictation layout, is
@@ -1322,3 +1339,12 @@ private fun MaSegmentsBadge(count: Int, tint: Color, modifier: Modifier = Modifi
         Text(text = "$count", color = tint.copy(alpha = 0.7f), fontSize = 10.sp)
     }
 }
+
+/** Near-black, so the record key sits with the other keys instead of on top of them. */
+private val MaRecordFill = Color(0xFF11151C)
+
+/** The red edge that means recording. The one place red is used, so it always means one thing. */
+private val MaRecordRing = Color(0xFFE5534B)
+
+/** Warm gold for everything printed on the record key. */
+private val MaRecordInk = Color(0xFFE8B15C)
