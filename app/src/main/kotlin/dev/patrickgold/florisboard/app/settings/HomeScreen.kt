@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Keyboard
@@ -213,6 +214,15 @@ fun HomeScreen() = FlorisScreen {
             }
 
             PreferenceGroup(title = "Keyboard extras") {
+                // db first in this group, and with the longest summary of anything here, because it
+                // is the one screen that changes what the keyboard looks like and the one panel that
+                // has no button of its own left on the keyboard.
+                Preference(
+                    icon = Icons.Default.Dashboard,
+                    title = "db",
+                    summary = "The dashboard: what is on it, and how to open it",
+                    onClick = { navController.navigate(Routes.Settings.DbEditor) },
+                )
                 Preference(
                     icon = Icons.Default.Bolt,
                     title = "Macro bar",

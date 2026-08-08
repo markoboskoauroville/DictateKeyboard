@@ -71,6 +71,7 @@ import dev.patrickgold.florisboard.app.settings.dictate.DictatePromptLibraryScre
 import dev.patrickgold.florisboard.app.settings.dictate.DictatePromptsScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateFloatingButtonScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateFormattingScreen
+import dev.patrickgold.florisboard.app.settings.dictate.DbEditorScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateLayoutScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateOutputScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateRecordingScreen
@@ -185,6 +186,10 @@ object Routes {
         @Serializable
         @Deeplink("settings/dictate/layout")
         object DictateLayout
+
+        @Serializable
+        @Deeplink("settings/db")
+        object DbEditor
 
         @Serializable
         @Deeplink("settings/dictate/prompts")
@@ -380,6 +385,7 @@ object Routes {
             composableWithDeepLink(Settings.DictateRecording::class) { DictateRecordingScreen() }
             composableWithDeepLink(Settings.DictateOutput::class) { DictateOutputScreen() }
             composableWithDeepLink(Settings.DictateLayout::class) { DictateLayoutScreen() }
+            composableWithDeepLink(Settings.DbEditor::class) { DbEditorScreen() }
             composableWithDeepLink(Settings.DictateHistory::class) { DictateHistoryScreen() }
             composableWithDeepLink(Settings.DictateFloatingButton::class) { DictateFloatingButtonScreen() }
             composableWithDeepLink(Settings.DictatePrompts::class) { navBackStack ->
