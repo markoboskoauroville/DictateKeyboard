@@ -118,6 +118,9 @@ object KeyCode {
     // three times to reach the third, and no way to see which is coming next.
     const val MA_ROW_BRACKETS =             -233
     const val MA_ROW_ARROWS =               -234
+    // Marko: the editing set. Select, cut, copy, paste and undo on the number row's ten keys, so a
+    // block of dictated text can be selected and moved without the row ever changing size or place.
+    const val MA_ROW_EDITING =              -235
     // Long press on the last key of the top row moves to the next set.
     const val MA_ROW_NEXT_SET =             -236
     // Marko: the Menu Macro dashboard. Each of these shows or hides one section of the keyboard,
@@ -125,6 +128,13 @@ object KeyCode {
     const val MA_TOGGLE_PROMPTS =           -237
     const val MA_TOGGLE_QUICK_ROW =         -238
     const val MA_TOGGLE_CURSOR_ROW =        -239
+    // Marko: the remaining two row sets get their own buttons for the same reason the first two did.
+    // One button per set, never a button that cycles: cycling means pressing three times to reach the
+    // third and gives no way to see which is coming next.
+    const val MA_ROW_DIGITS =               -245
+    const val MA_ROW_DIACRITICS =           -246
+    // Marko: the copy and paste row, the one from the transcribe view, shown or hidden in either view.
+    const val MA_TOGGLE_EDIT_ROW =          -247
 
     const val SYSTEM_INPUT_METHOD_PICKER =  -221
     const val SYSTEM_PREV_INPUT_METHOD =    -222

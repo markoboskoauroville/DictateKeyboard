@@ -78,10 +78,16 @@ data class QuickActionArrangement(
                 // The Menu Macro dashboard: what to show and what to hide, first in the panel,
                 // because trimming the keyboard is the reason this panel gets opened.
                 QuickAction.InsertKey(TextKeyData.MA_TOGGLE_PROMPTS),
+                QuickAction.InsertKey(TextKeyData.MA_TOGGLE_EDIT_ROW),
                 QuickAction.InsertKey(TextKeyData.MA_TOGGLE_QUICK_ROW),
                 QuickAction.InsertKey(TextKeyData.MA_TOGGLE_CURSOR_ROW),
                 QuickAction.InsertKey(TextKeyData.SETTINGS),
+                // Then the row sets, one button each. Digits doubles as the way to turn the row off,
+                // since it is the set the row falls back to and so has nothing else to toggle to.
+                QuickAction.InsertKey(TextKeyData.MA_ROW_DIGITS),
+                QuickAction.InsertKey(TextKeyData.MA_ROW_DIACRITICS),
                 QuickAction.InsertKey(TextKeyData.MA_ROW_BRACKETS),
+                QuickAction.InsertKey(TextKeyData.MA_ROW_EDITING),
                 QuickAction.InsertKey(TextKeyData.MA_ROW_ARROWS),
                 // Default visible order requested by the user. The live prompt is no longer a Smartbar
                 // button – it lives as a chip inside the prompt panel/row – so only the panel opener

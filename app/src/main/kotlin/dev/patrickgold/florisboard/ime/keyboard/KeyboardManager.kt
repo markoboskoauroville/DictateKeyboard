@@ -1124,6 +1124,22 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             // button is its own toggle and the row never needs a separate "off" trip.
             KeyCode.MA_ROW_BRACKETS -> maSelectRowSet("symbols")
             KeyCode.MA_ROW_ARROWS -> maSelectRowSet("arrows")
+            KeyCode.MA_ROW_EDITING -> maSelectRowSet("editing")
+            KeyCode.MA_ROW_DIACRITICS -> maSelectRowSet("diacritics")
+            // Digits is the set the row falls back to, so its button cannot toggle back to itself.
+            // Pressing it while digits already show turns the row off instead, which is the only
+            // thing left for it to mean.
+            KeyCode.MA_ROW_DIGITS -> scope.launch {
+                if (prefs.dictate.maExtraRow.get() && prefs.dictate.maExtraRowMode.get() == "digits") {
+                    prefs.dictate.maExtraRow.set(false)
+                } else {
+                    prefs.dictate.maExtraRowMode.set("digits")
+                    prefs.dictate.maExtraRow.set(true)
+                }
+            }
+            KeyCode.MA_TOGGLE_EDIT_ROW -> scope.launch {
+                prefs.dictate.maEditRow.set(!prefs.dictate.maEditRow.get())
+            }
             // Menu Macro: show or hide one section of the keyboard. Each is its own switch rather
             // than a list behind a dialog, because the point is to see the effect immediately on the
             // keyboard behind the panel.

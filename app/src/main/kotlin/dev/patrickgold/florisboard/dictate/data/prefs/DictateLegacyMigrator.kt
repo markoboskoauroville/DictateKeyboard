@@ -495,6 +495,42 @@ object DictateLegacyMigrator {
         prefs.dictate.maRowV2Applied.set(true)
     }
 
+    /**
+     * Puts the new Menu Macro switches into an arrangement that has already been written.
+     *
+     * Its own flag rather than a bump of the row one, because bumping that key re-runs everything in
+     * that pass, including the accent colour and the action row order, and a phone that has since
+     * been set up by hand would quietly lose those choices. Each batch of "change something a user
+     * may already have written" gets its own flag; that is the rule the earlier passes set and it is
+     * the right one.
+     *
+     * Only inserts what is missing, and only into the visible list, so anything deliberately hidden
+     * stays hidden and anything already placed stays where it was put.
+     */
+    suspend fun applyPanelV14IfNeeded() {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maPanelV14Applied.get()) return
+        val wanted = listOf(
+            TextKeyData.MA_TOGGLE_EDIT_ROW,
+            TextKeyData.MA_ROW_DIGITS,
+            TextKeyData.MA_ROW_DIACRITICS,
+            TextKeyData.MA_ROW_EDITING,
+        )
+        val arrangement = prefs.smartbar.actionArrangement.get()
+        val placed = arrangement.dynamicActions + arrangement.hiddenActions +
+            listOfNotNull(arrangement.stickyAction)
+        val present: Set<Int> = placed
+            .mapNotNull { (it as? QuickAction.InsertKey)?.data?.code }
+            .toSet()
+        val missing = wanted.filter { it.code !in present }.map { QuickAction.InsertKey(it) }
+        if (missing.isNotEmpty()) {
+            prefs.smartbar.actionArrangement.set(
+                arrangement.copy(dynamicActions = arrangement.dynamicActions + missing),
+            )
+        }
+        prefs.dictate.maPanelV14Applied.set(true)
+    }
+
     suspend fun migratePromptsLayoutToRowIfNeeded() {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.promptsLayoutRowMigrated.get()) return

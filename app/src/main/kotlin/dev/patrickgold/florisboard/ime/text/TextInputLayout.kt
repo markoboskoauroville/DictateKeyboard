@@ -36,6 +36,7 @@ import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
 import dev.patrickgold.florisboard.dictate.ui.MaMacroBar
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
 import dev.patrickgold.florisboard.dictate.ui.MaExtraRow
+import dev.patrickgold.florisboard.dictate.ui.LegacyEditRow
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
@@ -102,6 +103,15 @@ fun TextInputLayout(
         // needs no toggle of its own: emptying it is how it is turned off.
         if (!state.isActionsOverflowVisible) {
             MaMacroBar()
+        }
+        // The copy and paste row (Marko), the same one the transcribe view draws, in the space the
+        // macro bar fix freed in build 88. Both views now show the identical row from the identical
+        // code, so arranging it in Settings arranges it everywhere and the two cannot drift apart.
+        if (!state.isActionsOverflowVisible) {
+            val maEditRowEnabled by prefs.dictate.maEditRow.collectAsState()
+            if (maEditRowEnabled) {
+                LegacyEditRow(keyboardManager = keyboardManager)
+            }
         }
         // The extra row sits directly above the keys, where a number row belongs, and renders
         // nothing at all when switched off.

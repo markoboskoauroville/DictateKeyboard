@@ -144,6 +144,10 @@ data class TextKeyData(
                 MA_TOGGLE_CURSOR_ROW,
                 MA_ROW_BRACKETS,
                 MA_ROW_ARROWS,
+                MA_ROW_EDITING,
+                MA_ROW_DIGITS,
+                MA_ROW_DIACRITICS,
+                MA_TOGGLE_EDIT_ROW,
                 MA_TOGGLE_EXTRA_ROW,
                 SYSTEM_INPUT_METHOD_PICKER,
                 SYSTEM_PREV_INPUT_METHOD,
@@ -492,6 +496,22 @@ data class TextKeyData(
         /** Row set: cursor movement. */
         val MA_ROW_ARROWS = TextKeyData(
             type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_ARROWS, label = "ma_row_arrows",
+        )
+        /** Row set: select, cut, copy, paste, undo. */
+        val MA_ROW_EDITING = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_EDITING, label = "ma_row_editing",
+        )
+        /** Row set: the digits, which is also how the row is turned off when it already shows them. */
+        val MA_ROW_DIGITS = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_DIGITS, label = "ma_row_digits",
+        )
+        /** Row set: Croatian diacritics. */
+        val MA_ROW_DIACRITICS = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_ROW_DIACRITICS, label = "ma_row_diacritics",
+        )
+        /** Menu Macro: show or hide the copy and paste row. */
+        val MA_TOGGLE_EDIT_ROW = TextKeyData(
+            type = KeyType.SYSTEM_GUI, code = KeyCode.MA_TOGGLE_EDIT_ROW, label = "ma_toggle_edit_row",
         )
 
         /** Predefined key data for [KeyCode.MA_TOGGLE_EXTRA_ROW] (show or hide the extra row) */

@@ -114,7 +114,12 @@ fun Smartbar() {
     val dictatePromptsLayout by prefs.dictate.promptsLayout.collectAsState()
     val dictateRewordingEnabled by prefs.dictate.rewordingEnabled.collectAsState()
     val dictatePrompts by DictateController.prompts.collectAsState()
-    val showDictatePromptRow = dictateRewordingEnabled && dictatePromptsLayout == DictatePromptsLayout.ROW
+    // Marko: the same switch that hides the little man's row on the transcribe view hides it here.
+    // It was only ever wired to one of the two views, so turning it off left the row sitting on the
+    // keyboard, which is exactly the half of the screen worth reclaiming.
+    val maShowPrompts by prefs.dictate.maShowPrompts.collectAsState()
+    val showDictatePromptRow = dictateRewordingEnabled && maShowPrompts &&
+        dictatePromptsLayout == DictatePromptsLayout.ROW
     LaunchedEffect(showDictatePromptRow) {
         if (showDictatePromptRow) DictateController.refreshPrompts(context)
     }

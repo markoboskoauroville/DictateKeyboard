@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SpaceBar
@@ -413,12 +414,17 @@ private fun ThemedIconKey(
  * [dev.patrickgold.florisboard.app.AppPrefs.Dictate.legacyActionRow] and is arranged in Settings. The
  * default row is select-all · undo · redo · cut · copy · paste · emoji · numbers, but any of the actions
  * in [LegacyEditAction] (also language, history, reinsert, GIF) can be placed here.
+ *
+ * Marko: internal rather than private, because the keyboard view now draws this same row. It is the
+ * same row and not a second one built to look like it, so the two can never drift apart and there is
+ * only one place to arrange it. [onEmoji] and [onNumbers] default to the keyboard view's meaning of
+ * those two actions, which is what lets it be called with no arguments from there.
  */
 @Composable
-private fun LegacyEditRow(
+internal fun LegacyEditRow(
     keyboardManager: KeyboardManager,
-    onEmoji: () -> Unit,
-    onNumbers: () -> Unit,
+    onEmoji: () -> Unit = { keyboardManager.activeState.imeUiMode = ImeUiMode.MEDIA },
+    onNumbers: () -> Unit = { keyboardManager.activeState.keyboardMode = KeyboardMode.NUMERIC_ADVANCED },
 ) {
     val context = LocalContext.current
     val prefs by FlorisPreferenceStore
@@ -795,22 +801,31 @@ private fun LegacyBottomRow(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Nothing here. This slot switched input method, which the system's own globe in the
-        // navigation bar already does; duplicating a system control inside the keyboard spends a key
-        // to save nobody anything. The space bar takes the width.
+        // The little man, and the row he belongs to, turned on and off from here.
+        //
+        // The space bar had the whole row to itself, which looked wrong against the record row
+        // directly above it: the same width divided differently on two rows that read as a pair. It
+        // is a square key, a bar, and a square key up there, so it is a square key, a bar, and a
+        // square key down here, and the space bar is now exactly as wide as the record bar.
+        //
+        // The freed square is the prompts switch. Hiding that row is the single biggest thing that
+        // can be done about how much screen this app takes, so it earns a key of its own rather
+        // than living only in a panel that has to be opened first.
+        val maShowPrompts by prefs.dictate.maShowPrompts.collectAsState()
+        val scope = rememberCoroutineScope()
+        ThemedIconKey(
+            code = KeyCode.MA_TOGGLE_PROMPTS,
+            icon = Icons.Default.RecordVoiceOver,
+            contentDescription = "Prompts row",
+            modifier = sideKey,
+            // Gold when the row is showing, the ordinary key ink when it is not. Colour for state,
+            // as everywhere else, and the only way to read a switch whose effect is off screen.
+            tint = if (maShowPrompts) Color(0xFFE8B15C) else null,
+            onClick = {
+                scope.launch { prefs.dictate.maShowPrompts.set(!maShowPrompts) }
+            },
+        )
 
-        // The space bar was the width of the whole row for a key that, in a dictation layout, is
-        // pressed rarely: the words arrive with their spaces already in them. The keyboards
-        // installed on this phone take the space it was wasting, numbered so the positions stay put
-        // and become muscle memory, and space keeps enough width to still be hit comfortably.
-        val context = LocalContext.current
-
-        // The keyboard switcher, back where it belongs. The format keys that borrowed this space
-        // are gone: the pipeline is settled, so there is nothing left to choose between.
-        // The space bar has the row to itself. The numbered keys beside it switched to other
-        // keyboards, and this one no longer needs an escape hatch to a different keyboard; the
-        // system's own globe remains in the navigation bar for the rare case. Three keys returned to
-        // the space bar, which is the key hardest to miss and most often hit slightly off.
         LegacySpaceKey(
             keyboardManager = keyboardManager,
             modifier = Modifier.weight(1f).fillMaxHeight(),

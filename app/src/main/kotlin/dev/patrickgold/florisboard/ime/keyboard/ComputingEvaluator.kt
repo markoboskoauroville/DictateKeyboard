@@ -331,6 +331,13 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
         KeyCode.MA_TOGGLE_CURSOR_ROW -> Icons.Default.SwapHoriz
         KeyCode.MA_ROW_BRACKETS -> Icons.Default.Code
         KeyCode.MA_ROW_ARROWS -> Icons.Default.SwapHoriz
+        // Scissors for the editing set, digits for the digits, a translate glyph for the Croatian
+        // letters, and the paste glyph for the copy row switch. Every one of these is already used
+        // somewhere in this project, so every one is certain to resolve.
+        KeyCode.MA_ROW_EDITING -> Icons.Default.ContentCut
+        KeyCode.MA_ROW_DIGITS -> Icons.Default.Numbers
+        KeyCode.MA_ROW_DIACRITICS -> Icons.Default.Translate
+        KeyCode.MA_TOGGLE_EDIT_ROW -> Icons.Default.ContentPasteGo
         KeyCode.LANGUAGE_SWITCH -> {
             Icons.Default.Language
         }

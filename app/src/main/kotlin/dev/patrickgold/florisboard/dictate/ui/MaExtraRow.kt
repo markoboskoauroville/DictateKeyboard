@@ -76,6 +76,7 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
         "diacritics" -> MaRowSets.CROATIAN
         "symbols" -> MaRowSets.BRACKETS
         "arrows" -> MaRowSets.ARROWS
+        "editing" -> MaRowSets.EDITING
         else -> MaRowSets.DIGITS
     }
 
@@ -160,6 +161,32 @@ object MaRowSets {
         MaRowKey("\u2193", KeyCode.ARROW_DOWN, repeats = true),
         MaRowKey("\u21de", KeyCode.MOVE_START_OF_PAGE),
         MaRowKey("\u21df", KeyCode.MOVE_END_OF_PAGE, cyclesOnLongPress = true),
+    )
+
+    /**
+     * Select, move, and move text about, on the same ten keys.
+     *
+     * The workflow this is for is one thing: a paragraph has been dictated and a piece of it has to
+     * be picked up and put somewhere else. Select all and select word start it, the selection lock
+     * and the word jumps size it, and cut, copy and paste move it. Undo and redo sit at the end
+     * because that workflow goes wrong more often than any other and the way back should not be in
+     * some other row.
+     *
+     * Short words rather than glyphs. Scissors and clipboards read well at icon size in a flat
+     * strip, but these are letter-sized keys, and a three letter word is unambiguous where a small
+     * symbol is a guess.
+     */
+    val EDITING = listOf(
+        MaRowKey("ALL", KeyCode.CLIPBOARD_SELECT_ALL),
+        MaRowKey("WRD", KeyCode.MA_SELECT_WORD),
+        MaRowKey("SEL", KeyCode.CLIPBOARD_SELECT),
+        MaRowKey("\u00ab", KeyCode.MA_WORD_LEFT, repeats = true),
+        MaRowKey("\u00bb", KeyCode.MA_WORD_RIGHT, repeats = true),
+        MaRowKey("CUT", KeyCode.CLIPBOARD_CUT),
+        MaRowKey("CPY", KeyCode.CLIPBOARD_COPY),
+        MaRowKey("PST", KeyCode.CLIPBOARD_PASTE),
+        MaRowKey("\u21b6", KeyCode.UNDO),
+        MaRowKey("\u21b7", KeyCode.REDO, cyclesOnLongPress = true),
     )
 
 }

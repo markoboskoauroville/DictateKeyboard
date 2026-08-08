@@ -128,10 +128,15 @@ object FlorisImeSizing {
         val smartbarEnabled by prefs.smartbar.enabled.collectAsState()
         val rewordingEnabled by prefs.dictate.rewordingEnabled.collectAsState()
         val promptsLayout by prefs.dictate.promptsLayout.collectAsState()
+        // Must carry the same hide switch the Smartbar reads, or the panels reserve space for a row
+        // that is no longer drawn and the keyboard keeps a band of nothing where it used to be.
+        val maShowPrompts by prefs.dictate.maShowPrompts.collectAsState()
         // The rewording prompt row (ROW layout) is pinned above the Smartbar on the normal keyboard and
         // adds its height (DictatePromptRow uses smartbarHeight * 1.25); include it so the panels match.
         val promptRowHeight =
-            if (smartbarEnabled && rewordingEnabled && promptsLayout == DictatePromptsLayout.ROW) {
+            if (smartbarEnabled && rewordingEnabled && maShowPrompts &&
+                promptsLayout == DictatePromptsLayout.ROW
+            ) {
                 smartbarHeight * 1.25f
             } else {
                 0.dp

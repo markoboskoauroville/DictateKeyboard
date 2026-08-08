@@ -815,10 +815,16 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_extra_row",
             default = false,
         )
-        /** "digits" or "diacritics". */
+        /** "digits", "diacritics", "symbols", "arrows" or "editing". */
         val maExtraRowMode = string(
             key = "dictate__ma_extra_row_mode",
             default = "digits",
+        )
+        // The copy and paste row, shared by both views. On, because it is the row that made the
+        // transcribe view worth using and the keyboard view had no equivalent worth keeping.
+        val maEditRow = boolean(
+            key = "dictate__ma_edit_row",
+            default = true,
         )
         val maCursorRow = boolean(
             key = "dictate__ma_cursor_row",
@@ -838,6 +844,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         )
         val maSunriseApplied = boolean(
             key = "dictate__ma_sunrise_applied",
+            default = false,
+        )
+        // The Menu Macro switches added after v13. Its own flag, not a bump of the row one: bumping
+        // that key re-runs the whole of that pass, and a phone set up by hand since would lose those
+        // choices to it.
+        val maPanelV14Applied = boolean(
+            key = "dictate__ma_panel_v14_applied",
             default = false,
         )
         // The macro bar: every preset, serialized by MaMacros. One string because that is all a
