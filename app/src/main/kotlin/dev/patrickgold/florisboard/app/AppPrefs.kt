@@ -835,6 +835,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_numeric_secondary",
             default = MaNumericSecondary.DEFAULT,
         )
+        // Personal word prediction: counts of what follows what, learned from this phone only and
+        // never sent anywhere. On, because the words it exists to learn are the ones no shipped
+        // dictionary contains, and it cannot learn them while switched off.
+        val maNgramEnabled = boolean(
+            key = "dictate__ma_ngram_enabled",
+            default = true,
+        )
         // The copy and paste row, shared by both views. On, because it is the row that made the
         // transcribe view worth using and the keyboard view had no equivalent worth keeping.
         val maEditRow = boolean(

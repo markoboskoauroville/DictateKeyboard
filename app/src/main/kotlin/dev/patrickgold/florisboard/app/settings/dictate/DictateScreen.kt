@@ -460,6 +460,7 @@ fun DictateLayoutScreen() = FlorisScreen {
             LegacyActionRowSetting()
             EnterLongPressCharsSetting()
             MaNumericSecondarySetting()
+            MaNgramSetting()
         }
     }
 }

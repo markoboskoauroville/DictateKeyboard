@@ -109,10 +109,17 @@ object KeyCode {
     // Marko: move the caret a whole word at a time. Sent as ctrl+arrow, which is what a hardware
     // keyboard does and what Android's text views already understand.
     const val MA_WORD_LEFT =                -230
-    const val MA_WORD_RIGHT =               -231
+    // -249, not -231. -231 is IME_SHOW_UI upstream, and two names for one number is not a clash the
+    // compiler can see: the `when` in KeyboardManager simply takes whichever branch is written
+    // first and the other becomes unreachable. Moved rather than reordered, because reordering only
+    // decides which of the two is silently broken.
+    const val MA_WORD_RIGHT =               -249
     // Marko: record without leaving the typing keyboard. The Smartbar already draws a full recording
     // bar in this view, so there is somewhere for it to happen; nothing was starting it.
-    const val MA_QUICK_RECORD =             -232
+    // -248, not -232, which is IME_HIDE_UI upstream. This one was not theoretical: IME_HIDE_UI is
+    // written first, so quick record never ran, while the label lookup is ordered the other way and
+    // so read "quick record" on a key that hid the keyboard.
+    const val MA_QUICK_RECORD =             -248
     // Marko: one button per row set, not one button cycling through them. Cycling means pressing
     // three times to reach the third, and no way to see which is coming next.
     const val MA_ROW_BRACKETS =             -233

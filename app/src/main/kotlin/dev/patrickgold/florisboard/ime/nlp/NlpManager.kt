@@ -25,6 +25,7 @@ import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem
 import dev.patrickgold.florisboard.ime.clipboard.provider.ItemType
 import dev.patrickgold.florisboard.ime.core.Subtype
+import dev.patrickgold.florisboard.dictate.nlp.MaNgram
 import dev.patrickgold.florisboard.ime.editor.EditorContent
 import dev.patrickgold.florisboard.ime.editor.EditorRange
 import dev.patrickgold.florisboard.ime.dictionary.DictionaryManager
@@ -238,11 +239,35 @@ class NlpManager(context: Context) {
                     )
                 }
             }
+            // The personal model goes in front of the shipped one.
+            //
+            // It knows nothing about language in general and a great deal about the words written on
+            // this phone, which is exactly the set the shipped dictionary is missing: place names,
+            // project names, the jargon of one trade. Where it has an answer at all it is the better
+            // answer, and where it has none it returns nothing and costs nothing.
+            //
+            // Duplicates are dropped rather than shown twice: the same word arriving from both is
+            // the common case, not the exception.
+            val personal = MaNgram.predict(
+                textBeforeCursor = content.textBeforeSelection,
+                currentWord = content.currentWordText,
+                isIncognito = keyboardManager.activeState.isIncognitoMode,
+            ).map { hit ->
+                WordSuggestionCandidate(
+                    text = hit.word,
+                    secondaryText = null,
+                    confidence = 0.9,
+                    isEligibleForAutoCommit = false,
+                    sourceProvider = null,
+                )
+            }
             internalSuggestionsGuard.withLock {
                 if (internalSuggestions.first < reqTime) {
                     internalSuggestions = reqTime to buildList {
                         addAll(emojiSuggestions)
-                        addAll(suggestions)
+                        addAll(personal)
+                        val seen = personal.map { it.text.toString().lowercase() }.toSet()
+                        addAll(suggestions.filter { it.text.toString().lowercase() !in seen })
                     }
                 }
             }

@@ -45,6 +45,7 @@ import android.view.WindowManager
 import androidx.lifecycle.lifecycleScope
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.MaLanguage
+import dev.patrickgold.florisboard.dictate.nlp.MaNgram
 import dev.patrickgold.florisboard.app.FlorisAppActivity
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.ImeUiMode
@@ -498,6 +499,11 @@ class FlorisImeService : LifecycleInputMethodService() {
         super.onFinishInput()
         editorInstance.handleFinishInput()
         NlpInlineAutofill.clearInlineSuggestions()
+        // The half-written sentence goes to the personal model now, and the model goes to disk. An
+        // input method is killed without warning, so anything still only in memory when the field
+        // closes is likely never to be written at all.
+        MaNgram.flushPending(keyboardManager.activeState.isIncognitoMode)
+        MaNgram.flush()
     }
 
     override fun onWindowShown() {
