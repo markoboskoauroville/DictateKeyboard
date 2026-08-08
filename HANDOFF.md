@@ -117,7 +117,7 @@ transcribed slowly, while FFmpeg's Opus of the same audio did not.
 Order matters. Items are sequenced so that a failure is contained and so that each one leaves the app
 in a usable state.
 
-### Done at build 89: the Ctrl key and modifier locking
+### Done at build 90: the Ctrl key and modifier locking
 
 Built as described. `?123` is now **ctrl** in the bottom left corner, the same width as Shift so the
 two make a modifier column, and the layout switch sits where the smiley was. Tap arms for one key,
