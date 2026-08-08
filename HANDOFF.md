@@ -312,22 +312,53 @@ Android's own `TextToSpeech` with `onRangeStart` is the fallback if the Edge pro
 unworkable. It is offline and simpler, but the voices are worse and Croatian is often not installed
 at all, which would break half the point.
 
-#### Shared with the standalone port, and the rule for keeping them one thing
+#### The engine lives in its own repository, and there are no copies
 
-A separate project, **MA Reader Android** (`markoboskoauroville/MA_READER_ANDROID`), is porting the
-whole of MA Reader v26 to a standalone app. It needs the same two components LLL needs: the Kotlin
-Edge speech client and the alignment port.
+The Edge speech client and the word timing alignment are needed by LLL **and** by the standalone
+**MA Reader Android** port. They live in **`markoboskoauroville/MA_READER_ENGINE`** and nowhere else.
 
-**Canonical home: `shared/reader/` in this repository.** Read `shared/reader/README.md` before
-writing either component.
+This document previously described a `shared/reader/` folder here plus a rule for keeping copies in
+step. That is gone and must not come back. Marko rejected it and he was right: two copies with a
+synchronisation rule are still two copies, and a rule that depends on being remembered is one that
+eventually is not. The failure is quiet, a fix reaching one app and not the other, and the symptom is
+a highlight that stops sitting on the word being spoken.
 
-The rule, in Marko's words, is that the two projects compare dates and take the latest. In full:
-every shared file carries a version and a date on its first line; before touching one, read both
-copies, take the newer whole rather than merging by hand, then bump the version and **push it back to
-`shared/reader/` in the same session.** That last step is the one that makes it work. Without it,
-"take the latest" is a rule for copying, and copying is the thing it exists to prevent.
+Consume it as a **git submodule included as a Gradle module**, not as a published artifact.
+Publishing means pinning a version, and pinning means the two apps can be on different versions,
+which is the thing the repository exists to prevent.
 
-#### Build order
+```
+git submodule add https://github.com/markoboskoauroville/MA_READER_ENGINE.git engine-repo
+```
+
+`settings.gradle.kts`:
+
+```kotlin
+include(":engine")
+project(":engine").projectDir = file("engine-repo/engine")
+```
+
+**CI must check out submodules** or the build fails on a missing module, which is a confusing error
+for the cause:
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    submodules: recursive
+```
+
+A submodule points at a commit, so a change in the engine does not arrive here until this repository
+is told to move: `git submodule update --remote engine-repo`, then commit the new pointer. That is
+deliberate. A change can never break both apps at once without somebody choosing it.
+
+Marko's rule applies at that level: when the two apps sit on different engine commits, compare the
+dates and move the older one up. There is only ever one version of the code, so this is a question of
+when a change is picked up, never of which version is correct.
+
+Nothing that knows about a keyboard, an `ImeUiMode` or a Compose theme goes in the engine. The test:
+both apps must need it, and it must not care which is calling.
+
+#### Build order#### Build order
 
 1. **The Kotlin voice client.** Highest technical risk, needed whichever way anything else goes.
    Voice in, audio file plus word boundaries out. Prove it against a Croatian sentence with a number
