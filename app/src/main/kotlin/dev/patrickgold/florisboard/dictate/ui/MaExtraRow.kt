@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.dictate.MaNumericSecondary
 import dev.patrickgold.florisboard.ime.input.InputShiftState
 import dev.patrickgold.florisboard.ime.input.LocalInputFeedbackController
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
@@ -72,12 +74,15 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
     val mode by prefs.dictate.maExtraRowMode.collectAsState()
     if (!enabled) return
 
+    val secondaryRaw by prefs.dictate.maNumericSecondary.collectAsState()
+    val secondaries = remember(secondaryRaw) { MaNumericSecondary.parse(secondaryRaw) }
+
     val keys: List<MaRowKey> = when (mode) {
         "diacritics" -> MaRowSets.CROATIAN
         "symbols" -> MaRowSets.BRACKETS
         "arrows" -> MaRowSets.ARROWS
         "editing" -> MaRowSets.EDITING
-        else -> MaRowSets.DIGITS
+        else -> remember(secondaries) { MaRowSets.digits(secondaries) }
     }
 
     Row(
@@ -92,15 +97,10 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
             MaRowKeyButton(
                 key = key,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
-                onLongPress = if (key.cyclesOnLongPress) {
-                    {
-                        keyboardManager.inputEventDispatcher.sendDownUp(
-                            TextKeyData(code = KeyCode.MA_ROW_NEXT_SET),
-                        )
-                    }
-                } else {
-                    null
-                },
+                // A second symbol wins over the cycle, because a key that types something is worth
+                // more than a shortcut to a set the dashboard already lists by name. Only the sets
+                // that carry no second symbols still cycle.
+                onLongPress = maLongPress(key, keyboardManager),
                 onFire = {
                     if (key.code != null) {
                         keyboardManager.inputEventDispatcher.sendDownUp(TextKeyData(code = key.code))
@@ -116,11 +116,51 @@ fun MaExtraRow(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * What holding [key] does, or null for a key with no long press at all.
+ *
+ * A second symbol wins over the cycle to the next set, because a key that types something is worth
+ * more than a shortcut to a set the dashboard already lists by name. Written as a function taking
+ * the value out of the key first, so the nullability is settled here rather than inside a lambda
+ * that runs long after the check.
+ */
+private fun maLongPress(
+    key: MaRowKey,
+    keyboardManager: dev.patrickgold.florisboard.ime.keyboard.KeyboardManager,
+): (() -> Unit)? {
+    val text = key.secondary
+    if (text != null && text.isNotEmpty()) {
+        return {
+            for (ch in text) {
+                keyboardManager.inputEventDispatcher.sendDownUp(
+                    TextKeyData(code = ch.code, label = ch.toString()),
+                )
+            }
+        }
+    }
+    if (key.cyclesOnLongPress) {
+        return {
+            keyboardManager.inputEventDispatcher.sendDownUp(
+                TextKeyData(code = KeyCode.MA_ROW_NEXT_SET),
+            )
+        }
+    }
+    return null
+}
+
 /** One key: what is printed on it, and either a character to type or an action to fire. */
 data class MaRowKey(
     val label: String,
     val code: Int? = null,
     val repeats: Boolean = false,
+    /**
+     * What a long press types, or null for a key that has no second character.
+     *
+     * A whole string rather than a character, because a second symbol worth reaching for is
+     * sometimes two: an arrow made of a hyphen and a bracket, a pair of braces, a shell prefix.
+     * Typed as text, so anything that can be written can be assigned.
+     */
+    val secondary: String? = null,
     /**
      * True when a long press moves to the next set.
      *
@@ -140,8 +180,21 @@ data class MaRowKey(
  * nine things nobody wants to reach the one they do.
  */
 object MaRowSets {
-    val DIGITS = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9").map { MaRowKey(it) } +
-        MaRowKey("0", cyclesOnLongPress = true)
+    /** The ten digits, in the order they are printed. Built with their second symbols by [digits]. */
+    val DIGIT_LABELS = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
+
+    /**
+     * The digits, each carrying whatever second symbol is assigned to it.
+     *
+     * Zero used to hold the cycle to the next set on its long press, which made it the one key on
+     * the row that could not have a second character. It has no cycle now and is an ordinary digit
+     * like the other nine: the dashboard has a button per set, so the cycle was a shortcut to
+     * something already one tap away, and it was costing the row its most useful key.
+     */
+    fun digits(secondaries: List<String>): List<MaRowKey> =
+        DIGIT_LABELS.mapIndexed { index, label ->
+            MaRowKey(label, secondary = secondaries.getOrNull(index)?.takeIf { it.isNotEmpty() })
+        }
 
     val CROATIAN = listOf("č", "ć", "ž", "š", "đ", "Č", "Ć", "Ž", "Š").map { MaRowKey(it) } +
         MaRowKey("Đ", cyclesOnLongPress = true)
@@ -274,5 +327,22 @@ private fun MaRowKeyButton(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        // The second symbol, small, in the corner, exactly where the letter keys print theirs.
+        //
+        // Printed rather than left to be discovered: a long press that types something is invisible
+        // until it is found by accident, and the letters below already teach that a corner mark
+        // means hold this. Dimmed so the digit stays the thing being read.
+        key.secondary?.let { hint ->
+            Text(
+                text = hint,
+                color = foreground.copy(alpha = 0.55f),
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 5.dp, top = 1.dp),
+            )
+        }
     }
 }

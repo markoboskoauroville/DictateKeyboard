@@ -25,6 +25,7 @@ import dev.patrickgold.florisboard.app.settings.theme.SnyggLevel
 import dev.patrickgold.florisboard.app.setup.NotificationPermissionState
 import dev.patrickgold.florisboard.dictate.DictateFloatingButtonDesign
 import dev.patrickgold.florisboard.dictate.DictateLongformMode
+import dev.patrickgold.florisboard.dictate.MaNumericSecondary
 import dev.patrickgold.florisboard.dictate.audio.DictateAudioSource
 import dev.patrickgold.florisboard.dictate.DictateFloatingButtonSize
 import dev.patrickgold.florisboard.dictate.DictateLegacyLayout
@@ -819,6 +820,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val maExtraRowMode = string(
             key = "dictate__ma_extra_row_mode",
             default = "digits",
+        )
+        // What each digit on the number row types when it is held. Ten slots joined by a unit
+        // separator; see MaNumericSecondary. Underscore on all ten by default, because it costs
+        // three layout switches to reach otherwise and appears constantly in scripts and paths.
+        val maNumericSecondary = string(
+            key = "dictate__ma_numeric_secondary",
+            default = MaNumericSecondary.DEFAULT,
         )
         // The copy and paste row, shared by both views. On, because it is the row that made the
         // transcribe view worth using and the keyboard view had no equivalent worth keeping.
