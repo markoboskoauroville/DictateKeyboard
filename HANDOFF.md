@@ -1,6 +1,7 @@
 # Talk to Type — handoff and development plan
 
-Written at build 88. Read this first, then `git log --oneline -20` to see anything newer.
+Written at build 88, updated at build 111. Read this first, then `git log --oneline -20` to see
+anything newer.
 
 ---
 
@@ -358,16 +359,65 @@ when a change is picked up, never of which version is correct.
 Nothing that knows about a keyboard, an `ImeUiMode` or a Compose theme goes in the engine. The test:
 both apps must need it, and it must not care which is calling.
 
-#### Build order#### Build order
+#### Build order
 
-1. **The Kotlin voice client.** Highest technical risk, needed whichever way anything else goes.
-   Voice in, audio file plus word boundaries out. Prove it against a Croatian sentence with a number
-   in it, since that is where boundaries stop matching cleanly.
+1. ~~**The Kotlin voice client.**~~ **Done**, in the engine repository, see below.
 2. **The alignment port.** `align_tokens` and `refine_tokens` in Kotlin, tested against the same
    sentences the Python handles. This is where the quality lives.
 3. **The reader view.** Third `ImeUiMode`, keyboard footprint, gold on near-black, the word
    highlight, play and pause, the latest clip shown on entry and the history reachable. Reached by
    the three way view swap key, not a gesture.
+
+#### Step 1, the voice client: done, and living in the engine repository
+
+`MaEdgeVoice` is in **`markoboskoauroville/MA_READER_ENGINE`**, package
+`dev.mantraproductions.reader.engine`. Text and a voice in, mp3 bytes and word boundaries out. It is
+**not** in this repository and must not be copied here.
+
+It was written into `lib/dictate-core` first, before the engine repository existed, and moved. If
+anything that looks like a reader engine ever turns up under `lib/` again, that is the mistake
+repeating, not a second implementation.
+
+Read that repository's README before touching the speech protocol. The short version, because it is
+the part that fails silently and none of it is guessable: the accepted Chromium version in
+`Sec-MS-GEC-Version` moves and a stale one is a flat 403, word boundaries have to be asked for
+explicitly or no word events arrive at all, and OkHttp writes `Sec-WebSocket-Version` itself so
+setting it again is answered with HTTP 400. A wrong clock reads as forbidden and is handled by
+reading the server's own `Date` header and retrying once.
+
+**Proven against the live service before it was pushed**, not left for CI to discover. Croatian,
+`hr-HR-GabrijelaNeural`:
+
+```
+Danas je 8. mjesec i imam 25 godina.
+26064 bytes of real mp3 frames, 4.344 s, 6 boundaries
+   0.100 +0.475  Danas
+   0.575 +0.088  je
+   0.663 +0.825  8. mjesec
+   1.488 +0.188  i
+   1.675 +0.463  imam
+   2.138 +1.350  25 godina
+```
+
+**Six boundaries for eight visible words, and that is the brief for step 2.** The engine answered
+`8. mjesec` and `25 godina` as single boundaries covering two visible words each, so boundary text
+cannot be matched to visible text one to one. That is exactly the mess `align_tokens` absorbs. Do
+not simplify it when porting, and test the port against that sentence.
+
+That repository has its own CI job which speaks for real on every push and once a night. If the
+reader ever goes quiet, look there before looking here: the failure is far more likely to be
+Microsoft moving than anything in this app.
+
+**The submodule is deliberately not wired in yet.** Nothing in the keyboard calls the engine until
+step 3, and a submodule that nothing uses can only break the APK build, which is what everything
+else here depends on. Wire it when the reader view needs it, following the instructions above, and
+remember `submodules: recursive` in CI at the same time.
+
+**Where the sandbox got the proof from.** There is no Kotlin compiler in it by default, but the JVM
+is there and the network is open, so `kotlin-compiler-2.3.20.zip` plus OkHttp, Kotest and the
+serialization jars from Maven Central are enough to compile *and run* anything with no Android
+imports. That is what turns "expect roughly one CI failure per non-trivial change" into none. Keep
+engine code free of Android APIs and it stays provable this way.
 
 #### Switching views: a button, and the existing flip is not to be touched
 
