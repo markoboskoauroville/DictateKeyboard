@@ -261,6 +261,12 @@ It occupies exactly the keyboard's footprint and uses the same scheme: near-blac
 no decoration. Marko is dyslexic and the word highlight is the point of the whole thing, not a
 flourish.
 
+**The name is the brief.** LLL is Look, Listen, Learn, and Marko says every app he builds has the
+property of teaching something. The pairing of a lit word and a spoken word is the teaching
+mechanism, so anything that weakens it (a highlight that lags, a sweep that collapses onto one word,
+a sentence that scrolls away before it is finished) is not a cosmetic bug. It is the product
+failing.
+
 **Voices: four, no more.** From the reference implementation:
 
 | | female | male |
@@ -317,19 +323,66 @@ at all, which would break half the point.
    highlight, play and pause, the latest clip shown on entry and the history reachable. Reached by
    the three way view swap key, not a gesture.
 
-#### Switching views: a button, not a gesture
+#### Switching views: a button, and the existing flip is not to be touched
 
-**Decided.** A two finger flip was considered and rejected by Marko: pressing a button is easier
-than making a gesture, and a gesture that must never fire accidentally is a gesture that is awkward
-on purpose.
+**Decided, and this corrects an earlier plan in this document.** The view swap key must stay a **two
+way flip** between the typing view and the transcribe view. Marko uses that pair constantly and likes
+it exactly as it is. A three way cycle was proposed here and he rejected it: it would make the pair
+he uses every minute cost two presses instead of one, to save a press on the view he uses least.
 
-The view swap key already exists, in the copy and paste row, in the slot that used to say "back to
-the typing keyboard". It shows a microphone in the typing view and a keyboard in the transcribe view
-and already means *change view*. Extend it to a three way cycle: typing → transcribe → reader →
-typing. One key, never moving, always meaning the same thing, and the icon says where the next press
-leads rather than where you are.
+The reader is reached by **its own button, placed in the transcribe view**. The common path stays one
+press, the third view is one press away when it is wanted, and whoever never opens the reader never
+pays for it.
 
-Holding that key opens db and must keep doing so.
+A gesture was also considered and rejected: pressing a button is easier than making a gesture, and a
+gesture that must never fire accidentally is awkward on purpose.
+
+Holding the view swap key opens db and must keep doing so.
+
+#### The reading pane behaves like a teleprompter
+
+The currently spoken **sentence** stays in the vertical centre of the display and the text feeds
+through it. The word highlight moves within that sentence. Two scales at once: sentences centred,
+words lit.
+
+This lines up with how the reference implementation already works, which is worth noticing rather
+than rediscovering: it splits the passage into sentences and synthesises each sentence into its own
+mp3 with its own word timings. One sentence is therefore the natural unit for the audio, the cache
+and the scroll, and all three stay in step for free.
+
+#### Fullscreen, and the honest constraint
+
+Next to play there is a fullscreen button, and pressing it should give an immersive dark reader: text
+highlighting itself and nothing else on screen. Marko's phrase is *ebook reader*.
+
+**The constraint to face before building it.** An input method's window sits at the bottom of the
+screen with the host app above it. It can be made very tall, but it is still a keyboard window: it
+cannot own the screen, and it disappears the moment the keyboard closes.
+
+Two ways to do it, and the second is probably right:
+
+1. Grow the input view until it nearly fills the screen. Cheap, one process, but the host app is
+   still visible above it and the reading still dies when the keyboard closes.
+2. **Launch a real Activity.** True fullscreen, survives the keyboard closing, can keep playing while
+   another app is used, and takes a back press to return. It also answers the open question below
+   about audio outliving the keyboard, and it is the honest answer to *ebook reader* rather than an
+   approximation of one.
+
+The Activity is more work and gives the reader a second place to live, so the reading state must
+belong to one object that both the view and the Activity read from, never be duplicated.
+
+#### Storage: a day cache
+
+**Decided.** Synthesised mp3s are kept for the day and are gone the next. Keyed by the text and the
+voice, so re-reading the same passage today costs nothing and reading it tomorrow simply synthesises
+again.
+
+This is the right shape because it needs no management: no size limit to tune, no cleanup screen, no
+files to prune, nothing accumulating unnoticed. Wipe on the first use of a new day rather than on a
+timer, so a phone left alone for a week does not carry a week of audio.
+
+The day cache and the per sentence synthesis fit together: the unit cached is one sentence, so a long
+article stopped halfway resumes without re-synthesising what was already heard.
 
 #### The relationship with the clipboard panel, worth understanding before building
 
@@ -350,9 +403,10 @@ needing a list, it should look like the panel's list, not a second design.
   edit suite, is a keyboard that gets switched off. A large obvious play control with the text
   already shown is the safer default and costs one press.
 - **What happens at the end of a passage:** stop and stay, or return to the previous view.
-- **Whether the reader needs to survive the keyboard closing.** Reading a long article and then
-  tapping another app currently means the IME goes away and the audio with it. If that matters it is
-  a foreground service, which is a much larger job and should be its own decision.
+- **Whether reading survives the keyboard closing.** Largely answered by the fullscreen Activity
+  above: inside an Activity it survives naturally. Still open for the non-fullscreen case, where
+  closing the keyboard should probably just stop the audio rather than leave a voice talking from an
+  invisible window.
 
 ### Smaller items, any order
 
