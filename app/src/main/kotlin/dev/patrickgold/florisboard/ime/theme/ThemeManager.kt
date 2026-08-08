@@ -18,7 +18,6 @@ package dev.patrickgold.florisboard.ime.theme
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
@@ -40,7 +39,6 @@ import dev.patrickgold.florisboard.lib.devtools.flogInfo
 import dev.patrickgold.florisboard.lib.ext.ExtensionComponentName
 import dev.patrickgold.florisboard.lib.ext.ExtensionMeta
 import dev.patrickgold.florisboard.lib.io.ZipUtils
-import dev.patrickgold.florisboard.lib.util.TimeUtils.javaLocalTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,7 +54,6 @@ import org.florisboard.lib.kotlin.io.subDir
 import org.florisboard.lib.kotlin.io.subFile
 import org.florisboard.lib.snygg.SnyggStylesheet
 import org.florisboard.lib.snygg.value.SnyggStaticColorValue
-import java.time.LocalTime
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -160,33 +157,24 @@ class ThemeManager(context: Context) {
         )
     }
 
+    /**
+     * Always Sunrise.
+     *
+     * The scheme is settled, so the machinery that chose between schemes is not earning its keep:
+     * a day theme, a night theme, four modes, sunrise and sunset times, and a screen to arrange them
+     * all, in service of a decision that has one answer and will keep having one answer.
+     *
+     * Pinned here rather than by deleting the day and night preferences, because the Snygg loader
+     * underneath is what actually draws every key and is not going anywhere. This is the one line
+     * that decides, and everything downstream of it is unchanged.
+     *
+     * It also closes a real hazard: a saved copy of a theme in internal storage used to shadow the
+     * bundled asset, so an edit to the stylesheet could silently fail to appear. Nothing can shadow
+     * a name that is never read from a preference.
+     */
     private fun evaluateActiveThemeName(): ExtensionComponentName {
         previewThemeId.value?.let { return it }
-        return when (prefs.theme.mode.get()) {
-            ThemeMode.ALWAYS_DAY -> {
-                prefs.theme.dayThemeId.get()
-            }
-            ThemeMode.ALWAYS_NIGHT -> {
-                prefs.theme.nightThemeId.get()
-            }
-            ThemeMode.FOLLOW_SYSTEM -> if (appContext.resources.configuration.uiMode and
-                Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-            ) {
-                prefs.theme.nightThemeId.get()
-            } else {
-                prefs.theme.dayThemeId.get()
-            }
-            ThemeMode.FOLLOW_TIME -> {
-                val current = LocalTime.now()
-                val sunrise = prefs.theme.sunriseTime.get().javaLocalTime
-                val sunset = prefs.theme.sunsetTime.get().javaLocalTime
-                if (current in sunrise..sunset) {
-                    prefs.theme.dayThemeId.get()
-                } else {
-                    prefs.theme.nightThemeId.get()
-                }
-            }
-        }
+        return extCoreTheme("sunrise")
     }
 
     /**

@@ -47,7 +47,6 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Keyboard
-import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -232,11 +231,9 @@ fun HomeScreen() = FlorisScreen {
             }
         } else {
             PreferenceGroup(title = "Inherited from FlorisBoard") {
-                Preference(
-                    icon = Icons.Outlined.Palette,
-                    title = stringRes(R.string.settings__theme__title),
-                    onClick = { navController.navigate(Routes.Settings.Theme) },
-                )
+                // No theme entry. The scheme is baked in, so this screen could only be used to
+                // leave it, and a saved theme in internal storage used to shadow the bundled one,
+                // which made an edit to the stylesheet fail silently.
                 Preference(
                     icon = Icons.Outlined.Keyboard,
                     title = stringRes(R.string.settings__keyboard__title),

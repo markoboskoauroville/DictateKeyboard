@@ -50,6 +50,13 @@ why no row-set button in db has one.
 offered, no auto-detect, no other layouts or popup mappings. If a future request needs another
 language it is a decision to be taken deliberately, not a file quietly added back.
 
+**The scheme is baked in.** `ThemeManager.evaluateActiveThemeName()` returns Sunrise and reads no
+preference. The day and night theme settings, the four modes and the sunrise and sunset times are
+gone from the interface. Do not reintroduce a theme picker. The Snygg loader underneath stays,
+because it is what draws every key; only the choosing is removed. A side effect worth knowing: a
+saved theme in internal storage can no longer shadow the bundled stylesheet, which used to make an
+edit to `sunrise.json` fail silently.
+
 **The status line.** Small, gold, monospace, from `MaStatusFontSize` and `MaStatusFontFamily` in
 `LegacyDictateLayout.kt`. Both views read those two values so they cannot drift apart again.
 
