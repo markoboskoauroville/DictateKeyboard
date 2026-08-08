@@ -64,17 +64,18 @@ jobs:
           cp "$APK" mantra-voice-type-build-${{ github.run_number }}.apk
           gh release create "build-${{ github.run_number }}" mantra-voice-type-build-${{ github.run_number }}.apk --title "Mantra Voice Type build ${{ github.run_number }}" --notes "Mantra Voice Type, by Mantra Productions. Installs over the previous build."
 
-      # Only the newest release may exist. An old APK left on the releases page is an old APK
-      # somebody downloads, and they then judge the app by a version that was already replaced.
+      # The two newest releases stay, everything older goes. One was too few: a link handed over
+      # is dead the moment the next push publishes, and a one line change to a document is enough
+      # to do that. Two means the link in somebody's hand still works while the next build lands.
+      # Still bounded, so an old APK never sits there long enough to be mistaken for the current one.
       # Runs only after the publish step succeeds, so a failed build never deletes a good release.
-      - name: Keep only the newest release
+      - name: Keep the two newest releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          KEEP="build-${{ github.run_number }}"
-          gh release list --limit 200 --json tagName --jq '.[].tagName' | while read -r tag; do
-            if [ "$tag" != "$KEEP" ]; then
-              gh release delete "$tag" --yes --cleanup-tag || true
-              echo "removed $tag"
-            fi
+          gh release list --limit 200 --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[2:] | .[].tagName' | while read -r tag; do
+            [ -z "$tag" ] && continue
+            gh release delete "$tag" --yes --cleanup-tag || true
+            echo "removed $tag"
           done

@@ -26,9 +26,10 @@ with `sed "s/$(tr -d ' \t\n\r' < /mnt/user-data/uploads/github_token.txt)/***RED
 
 ## 2. Rules that are not negotiable
 
-**Releases.** Only one release may exist at any time, always the newest. CI deletes older releases
-and their tags automatically after each successful publish. An old APK on the releases page is an old
-APK somebody downloads.
+**Releases.** The two newest releases may exist, never more. CI deletes everything older after each
+successful publish. Two rather than one because a link already handed over dies the moment the next
+push publishes, and a one line change to a document is enough to cause that; it happened at build 90.
+Two is still bounded, so an old APK never sits there long enough to be mistaken for the current one.
 
 **Version codes.** CI passes `1000 + run_number`. The offset is permanent. Lowering it makes a build
 look older than one already installed, and Android refuses the install — this happened at build 62
