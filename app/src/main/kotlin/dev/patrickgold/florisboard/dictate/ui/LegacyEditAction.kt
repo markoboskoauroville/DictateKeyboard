@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.History
@@ -50,6 +51,11 @@ enum class LegacyEditAction {
     REINSERT,
     GIF,
     SWITCH,
+    // The clipboard panel: everything copied recently, to pick from rather than to guess at.
+    // Distinct from HISTORY, which is past dictations. Two different pasts.
+    CLIPBOARD_HISTORY,
+    // Select all, delete, wait, paste. See LegacyActionKey for why the wait is there.
+    ALL_PASTE,
     // Back to the typing keyboard. Placed where the microphone sits in the other view, so one spot
     // on the screen means "swap view" whichever view is showing and the thumb stops hunting.
     KEYBOARD,
@@ -70,6 +76,8 @@ enum class LegacyEditAction {
             REINSERT -> Icons.Default.Replay
             GIF -> Icons.Outlined.Gif
             SWITCH -> Icons.Default.KeyboardHide
+            CLIPBOARD_HISTORY -> Icons.AutoMirrored.Outlined.Assignment
+            ALL_PASTE -> Icons.Default.ContentPaste
             KEYBOARD -> Icons.Default.Keyboard
             BACKSPACE -> Icons.Default.Backspace
         }
@@ -90,6 +98,8 @@ enum class LegacyEditAction {
             REINSERT -> R.string.dictate__legacy_action_reinsert
             GIF -> R.string.dictate__legacy_action_gif
             SWITCH -> R.string.dictate__legacy_action_switch
+            CLIPBOARD_HISTORY -> R.string.dictate__legacy_action_clipboard_history
+            ALL_PASTE -> R.string.dictate__legacy_action_all_paste
             KEYBOARD -> R.string.dictate__legacy_action_keyboard
             // Reuses the existing backspace content-description string (already localised everywhere).
             BACKSPACE -> R.string.dictate__legacy_backspace

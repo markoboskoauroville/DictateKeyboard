@@ -2007,4 +2007,6 @@
     <string name="quick_action__ma_toggle_cursor_row" comment="Show or hide the arrow strip">Arrow row</string>
     <string name="quick_action__ma_toggle_cursor_row__tooltip">Show or hide the arrows along the bottom</string>
   <string name="quick_actions_overflow__close" comment="Close the dashboard">Close</string>
+  <string name="dictate__legacy_action_clipboard_history" comment="Open the clipboard panel">Clipboard history</string>
+  <string name="dictate__legacy_action_all_paste" comment="Replace everything with the clipboard">Replace all with paste</string>
 </resources>

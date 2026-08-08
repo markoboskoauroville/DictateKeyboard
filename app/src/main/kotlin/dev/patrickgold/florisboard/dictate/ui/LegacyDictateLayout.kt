@@ -486,7 +486,57 @@ private fun LegacyActionKey(
 ) {
     val context = LocalContext.current
     val label = stringRes(action.labelRes)
+    val actionScope = rememberCoroutineScope()
     when (action) {
+        // The clipboard panel: everything copied recently, to pick from rather than to guess at.
+        // This is not the history key further along the row, which is past dictations. Two different
+        // pasts, and the one worth reaching for while editing is this one.
+        LegacyEditAction.CLIPBOARD_HISTORY -> ThemedIconKey(
+            code = KeyCode.IME_UI_MODE_CLIPBOARD,
+            icon = action.icon,
+            contentDescription = label,
+            modifier = modifier,
+            onClick = { keyboardManager.tapKey(KeyCode.IME_UI_MODE_CLIPBOARD) },
+        )
+
+        // AP: replace the whole field with what is on the clipboard.
+        //
+        // Select all, delete, wait, paste. The delete is not redundant even though pasting over a
+        // selection replaces it: some fields, and password fields in particular, treat a paste onto
+        // a selection differently from a paste into an empty field, and clearing first makes the
+        // result the same everywhere.
+        //
+        // The wait is the reason this is a macro and not three key presses. Deleting a selection and
+        // pasting are both handled by the field being typed into, not by this keyboard, and a field
+        // that is still settling after a delete can drop the paste entirely. A third of a second is
+        // long enough for anything to catch up and short enough not to be felt as a delay.
+        //
+        // Drawn as two letters because there is no picture of this. Every clipboard glyph already
+        // means one of the four keys beside it.
+        LegacyEditAction.ALL_PASTE -> ThemedKey(
+            code = KeyCode.NOOP,
+            modifier = modifier,
+            onClick = {
+                actionScope.launch {
+                    keyboardManager.activeState.isManualSelectionMode = false
+                    FlorisImeService.currentInputConnection()?.let { ic ->
+                        ic.performContextMenuAction(android.R.id.selectAll)
+                        ic.commitText("", 1)
+                    }
+                    delay(333L)
+                    FlorisImeService.currentInputConnection()
+                        ?.performContextMenuAction(android.R.id.paste)
+                }
+            },
+        ) { fg ->
+            Text(
+                text = "AP",
+                color = fg,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
         // Select-all toggles: with a selection it becomes "deselect" and collapses the cursor.
         LegacyEditAction.SELECT_ALL -> ThemedIconKey(
             code = KeyCode.CLIPBOARD_SELECT_ALL,

@@ -776,7 +776,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             // paste is the one pair pressed together often enough to be a single motion: it is how
             // a field is replaced. Cut and copy read out of the field rather than into it, so they
             // follow.
-            default = "UNDO,REDO,SELECT_ALL,PASTE,CUT,COPY,HISTORY,KEYBOARD",
+            // Undo and redo left the row. Undo is on the number row's editing set and was the
+            // least reached for of the eight here; redo even less. Their places go to the two things
+            // that had nowhere to live: the clipboard panel, and the replace-everything macro.
+            default = "CLIPBOARD_HISTORY,ALL_PASTE,SELECT_ALL,PASTE,CUT,COPY,HISTORY,KEYBOARD",
         )
         // Sticky panel: when on, whichever of the two main views was last used comes back the next
         // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
@@ -883,6 +886,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // Paste ahead of cut and copy in a row already written.
         val maActionRowV19Applied = boolean(
             key = "dictate__ma_action_row_v19_applied",
+            default = false,
+        )
+        // Clipboard panel and the replace-all macro in place of undo and redo.
+        val maActionRowV20Applied = boolean(
+            key = "dictate__ma_action_row_v20_applied",
             default = false,
         )
         // The macro bar: every preset, serialized by MaMacros. One string because that is all a

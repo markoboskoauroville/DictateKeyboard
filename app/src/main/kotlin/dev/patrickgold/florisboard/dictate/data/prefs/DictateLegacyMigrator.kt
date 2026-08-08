@@ -692,6 +692,37 @@ object DictateLegacyMigrator {
         prefs.dictate.maActionRowV19Applied.set(true)
     }
 
+    /**
+     * Swaps undo and redo out of the copy row for the clipboard panel and the replace-all macro.
+     *
+     * In place rather than by rebuilding the row, so whatever order the row is in survives and only
+     * these two slots change. Undo and redo are the least reached for of the eight, and undo is
+     * still on the number row's editing set, so nothing is actually lost.
+     *
+     * A row that has neither is left alone: there is nowhere to put the new keys without evicting
+     * something that was chosen deliberately, and silently dropping a key somebody placed is worse
+     * than not adding one.
+     */
+    suspend fun applyActionRowV20IfNeeded() {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maActionRowV20Applied.get()) return
+        val row = prefs.dictate.legacyActionRow.get().split(',').filter { it.isNotBlank() }
+        val next = row.map { entry ->
+            when (entry) {
+                "UNDO" -> "CLIPBOARD_HISTORY"
+                "REDO" -> "ALL_PASTE"
+                else -> entry
+            }
+        }
+        // Never leave two of the same key in the row: if one of the new names was already placed by
+        // hand, the swap would duplicate it.
+        val deduped = LinkedHashSet(next).toList()
+        if (deduped != row) {
+            prefs.dictate.legacyActionRow.set(deduped.joinToString(","))
+        }
+        prefs.dictate.maActionRowV20Applied.set(true)
+    }
+
     suspend fun migratePromptsLayoutToRowIfNeeded() {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.promptsLayoutRowMigrated.get()) return
