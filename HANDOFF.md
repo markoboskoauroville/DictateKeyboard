@@ -312,6 +312,21 @@ Android's own `TextToSpeech` with `onRangeStart` is the fallback if the Edge pro
 unworkable. It is offline and simpler, but the voices are worse and Croatian is often not installed
 at all, which would break half the point.
 
+#### Shared with the standalone port, and the rule for keeping them one thing
+
+A separate project, **MA Reader Android** (`markoboskoauroville/MA_READER_ANDROID`), is porting the
+whole of MA Reader v26 to a standalone app. It needs the same two components LLL needs: the Kotlin
+Edge speech client and the alignment port.
+
+**Canonical home: `shared/reader/` in this repository.** Read `shared/reader/README.md` before
+writing either component.
+
+The rule, in Marko's words, is that the two projects compare dates and take the latest. In full:
+every shared file carries a version and a date on its first line; before touching one, read both
+copies, take the newer whole rather than merging by hand, then bump the version and **push it back to
+`shared/reader/` in the same session.** That last step is the one that makes it work. Without it,
+"take the latest" is a rule for copying, and copying is the thing it exists to prevent.
+
 #### Build order
 
 1. **The Kotlin voice client.** Highest technical risk, needed whichever way anything else goes.
