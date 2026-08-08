@@ -71,6 +71,31 @@ class InputFeedbackController private constructor(private val ims: InputMethodSe
         if (prefs.inputFeedback.hapticFeatKeyLongPress.get()) performHapticFeedback(data, 0.4)
     }
 
+    /**
+     * Marko: the buzz that says a modifier has locked.
+     *
+     * Longer and stronger than any other feedback here, and deliberately so. The finger that locked
+     * the key is sitting on top of it, so the colour change underneath cannot be seen at the moment
+     * it happens, and the buzz is the only thing that can carry the message. It goes straight to the
+     * vibrator rather than through the system haptic constants, which have no length worth speaking
+     * of and would feel like an ordinary tap.
+     */
+    fun modifierLock(data: KeyData = TextKeyData.UNSPECIFIED) {
+        if (prefs.inputFeedback.audioFeatKeyLongPress.get()) performAudioFeedback(data, 0.7)
+        if (!prefs.inputFeedback.hapticFeatKeyLongPress.get()) return
+        if (vibrator == null) return
+        if (!prefs.inputFeedback.hapticEnabled.get()) return
+        if (prefs.inputFeedback.hapticActivationMode.get() ==
+            InputFeedbackActivationMode.RESPECT_SYSTEM_SETTINGS && !systemHapticEnabled) return
+        scope.launch {
+            vibrator.vibrate(
+                duration = prefs.inputFeedback.hapticVibrationDuration.get(),
+                strength = prefs.inputFeedback.hapticVibrationStrength.get(),
+                factor = 2.0,
+            )
+        }
+    }
+
     fun keyRepeatedAction(data: KeyData = TextKeyData.UNSPECIFIED) {
         if (prefs.inputFeedback.audioFeatKeyRepeatedAction.get()) performAudioFeedback(data, 0.4)
         if (prefs.inputFeedback.hapticFeatKeyRepeatedAction.get()) performHapticFeedback(data, 0.05)

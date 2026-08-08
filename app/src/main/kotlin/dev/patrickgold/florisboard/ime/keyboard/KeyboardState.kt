@@ -19,6 +19,7 @@ package dev.patrickgold.florisboard.ime.keyboard
 import androidx.compose.ui.unit.LayoutDirection
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.input.InputShiftState
+import dev.patrickgold.florisboard.ime.input.MaCtrlState
 import dev.patrickgold.florisboard.ime.sheet.isAnyBottomSheetVisible
 import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +50,7 @@ import kotlin.properties.Delegates
  *          |          | 1        |          | Is incognito mode
  *          |        1 |          |          | Is quick actions overflow visible
  *          |       1  |          |          | Is quick actions editor visible
+ *          |     11   |          |          | MaCtrlState
  *          |    1     |          |          | Is composing enabled
  *          |   1      |          |          | Is character half-width enabled
  *          |  1       |          |          | Is Kana Kata enabled
@@ -77,6 +79,11 @@ open class KeyboardState protected constructor(open var rawValue: ULong) {
         const val O_INPUT_SHIFT_STATE: Int =                8
         const val M_IME_UI_MODE: ULong =                    0x07u
         const val O_IME_UI_MODE: Int =                      24
+        // Marko: bits 18 and 19 were the only pair still free below the ime ui mode region. Two bits
+        // rather than two flags, because off, armed and locked are three states of one thing and
+        // storing them separately would allow a fourth that means nothing.
+        const val M_MA_CTRL_STATE: ULong =                  0x03u
+        const val O_MA_CTRL_STATE: Int =                    18
 
         const val F_IS_SELECTION_MODE: ULong =              0x00000400u
         const val F_IS_MANUAL_SELECTION_MODE: ULong =       0x00000800u
@@ -145,6 +152,21 @@ open class KeyboardState protected constructor(open var rawValue: ULong) {
     var inputShiftState: InputShiftState
         get() = InputShiftState.fromInt(getRegion(M_INPUT_SHIFT_STATE, O_INPUT_SHIFT_STATE))
         set(v) { setRegion(M_INPUT_SHIFT_STATE, O_INPUT_SHIFT_STATE, v.toInt()) }
+
+    /**
+     * Marko: whether Ctrl is off, armed for the next key, or locked until pressed again.
+     */
+    var maCtrlState: MaCtrlState
+        get() = MaCtrlState.fromInt(getRegion(M_MA_CTRL_STATE, O_MA_CTRL_STATE))
+        set(v) { setRegion(M_MA_CTRL_STATE, O_MA_CTRL_STATE, v.toInt()) }
+
+    /** Whether the next character key should be read as a Ctrl shortcut. */
+    val isCtrlActive: Boolean
+        get() = maCtrlState != MaCtrlState.OFF
+
+    /** Whether Ctrl stays on after the key it applied to. */
+    val isCtrlLocked: Boolean
+        get() = maCtrlState == MaCtrlState.LOCKED
 
     var imeUiMode: ImeUiMode
         get() = ImeUiMode.fromInt(getRegion(M_IME_UI_MODE, O_IME_UI_MODE))

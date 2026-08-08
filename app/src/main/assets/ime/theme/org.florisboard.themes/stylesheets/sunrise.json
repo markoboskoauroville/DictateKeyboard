@@ -98,8 +98,24 @@
   "key[code=-205]": {
     "text-max-lines": "2"
   },
+  "key[code=-1]": {
+    "font-size": "16sp"
+  },
+  "key[code=-1][ctrlstate=`armed`]": {
+    "foreground": "#E8B15C"
+  },
+  "key[code=-1][ctrlstate=`locked`]": {
+    "foreground": "#6FA85A",
+    "border-color": "#6FA85A",
+    "border-width": "1dp"
+  },
+  "key[code=-11][shiftstate=`shifted_manual`]": {
+    "foreground": "#E8B15C"
+  },
   "key[code=-11][shiftstate=`caps_lock`]": {
-    "foreground": "var(--primary)"
+    "foreground": "#6FA85A",
+    "border-color": "#6FA85A",
+    "border-width": "1dp"
   },
   "key-hint": {
     "background": "transparent",

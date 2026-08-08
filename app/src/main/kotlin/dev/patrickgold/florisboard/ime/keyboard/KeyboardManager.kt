@@ -44,6 +44,7 @@ import dev.patrickgold.florisboard.ime.input.CapitalizationBehavior
 import dev.patrickgold.florisboard.ime.input.InputEventDispatcher
 import dev.patrickgold.florisboard.ime.input.InputKeyEventReceiver
 import dev.patrickgold.florisboard.ime.input.InputShiftState
+import dev.patrickgold.florisboard.ime.input.MaCtrlState
 import dev.patrickgold.florisboard.ime.nlp.ClipboardSuggestionCandidate
 import dev.patrickgold.florisboard.ime.nlp.PunctuationRule
 import dev.patrickgold.florisboard.ime.nlp.SuggestionCandidate
@@ -104,6 +105,13 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
     val activeState = ObservableKeyboardState.new()
     var smartbarVisibleDynamicActionsCount by mutableIntStateOf(0)
     private var lastToastReference = WeakReference<Toast>(null)
+
+    /**
+     * Marko: set when a long press has just locked Ctrl, cleared by the release of that same press.
+     * The long press sends CTRL_LOCK and then lets the Ctrl key up through, and without this the
+     * finger lifting would immediately release the lock it had just made.
+     */
+    private var maCtrlJustLocked = false
 
     /**
      * Holds the live query of the in-keyboard emoji search (issue #110), or `null` when no search is
@@ -503,6 +511,99 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         )
     }
 
+    /**
+     * Handles a [KeyCode.CTRL] press.
+     *
+     * A tap arms Ctrl for exactly the next key, a second tap disarms it, and a tap while it is
+     * locked releases the lock. Locking itself happens on long press, which arrives here first as
+     * [KeyCode.CTRL_LOCK]; [maCtrlJustLocked] then swallows the release of that same press, or the
+     * finger lifting would undo the lock it just made.
+     */
+    private fun handleCtrlUp() {
+        if (maCtrlJustLocked) {
+            maCtrlJustLocked = false
+            return
+        }
+        activeState.maCtrlState = when (activeState.maCtrlState) {
+            MaCtrlState.OFF -> MaCtrlState.ARMED
+            MaCtrlState.ARMED -> MaCtrlState.OFF
+            MaCtrlState.LOCKED -> MaCtrlState.OFF
+        }
+    }
+
+    /**
+     * Handles a [KeyCode.CTRL_LOCK] press, sent by a long press on the Ctrl key.
+     */
+    private fun handleCtrlLock() {
+        activeState.maCtrlState = MaCtrlState.LOCKED
+        maCtrlJustLocked = true
+    }
+
+    /**
+     * Runs [data] as a Ctrl combination when Ctrl is armed or locked, and reports whether it did.
+     *
+     * Only character and numeric keys are read this way. Arrows are deliberately left out: they
+     * open a mass selection on key down that has to be closed on key up, so swallowing their key up
+     * here would leave that selection open. Word-wise movement already has its own keys on the
+     * arrows row.
+     *
+     * The five shortcuts that matter go to the editor operations that already exist and are already
+     * tested, rather than to a synthesised key event, because those handle the composing region and
+     * the phantom space correctly. Everything else falls through to a real ctrl+key event, which is
+     * what gives Ctrl+B and Ctrl+I in an editor that understands them. A letter the receiving app
+     * does not understand does nothing, and in particular does not type itself.
+     */
+    private fun maHandleCtrlCombo(data: KeyData): Boolean {
+        if (!activeState.isCtrlActive) return false
+        if (data.type != KeyType.CHARACTER && data.type != KeyType.NUMERIC) return false
+        val text = data.asString(isForDisplay = false)
+        val ch = text.firstOrNull()?.lowercaseChar() ?: return false
+        val shift = activeState.inputShiftState != InputShiftState.UNSHIFTED ||
+            inputEventDispatcher.isPressed(KeyCode.SHIFT)
+        when (ch) {
+            'a' -> editorInstance.performClipboardSelectAll()
+            'c' -> editorInstance.performClipboardCopy()
+            'x' -> editorInstance.performClipboardCut()
+            'v' -> editorInstance.performClipboardPaste()
+            'z' -> if (shift) editorInstance.performRedo() else editorInstance.performUndo()
+            'y' -> editorInstance.performRedo()
+            else -> {
+                val androidCode = when (ch) {
+                    in 'a'..'z' -> KeyEvent.KEYCODE_A + (ch - 'a')
+                    in '0'..'9' -> KeyEvent.KEYCODE_0 + (ch - '0')
+                    else -> null
+                }
+                if (androidCode != null) {
+                    editorInstance.sendDownUpKeyEvent(
+                        androidCode,
+                        editorInstance.meta(ctrl = true, shift = shift),
+                    )
+                }
+            }
+        }
+        if (!activeState.isCtrlLocked) {
+            activeState.maCtrlState = MaCtrlState.OFF
+        }
+        return true
+    }
+
+    /**
+     * Keeps the selection lock in step with the shift lock.
+     *
+     * On a desktop, shift held down plus an arrow extends the selection. A finger cannot hold shift
+     * on a touch screen, so shift locked is the only thing that can mean the same. The arrows
+     * already read [KeyboardState.isManualSelectionMode], so locking shift turns that on and
+     * unlocking turns it off, and no new mechanism is needed. Pass the lock state as it was before
+     * the key was handled; nothing happens unless it changed, which is what stops a plain shift tap
+     * from clearing a selection lock somebody set from the arrows row.
+     */
+    private fun maSyncSelectionLock(wasLocked: Boolean) {
+        val isLocked = activeState.inputShiftState == InputShiftState.CAPS_LOCK
+        if (isLocked != wasLocked) {
+            activeState.isManualSelectionMode = isLocked
+        }
+    }
+
     private fun revertPreviouslyAcceptedCandidate() {
         editorInstance.phantomSpace.candidateForRevert?.let { candidateForRevert ->
             candidateForRevert.sourceProvider?.let { sourceProvider ->
@@ -604,6 +705,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         // Gboard-style: when text is selected, Shift cycles the selection's capitalization
         // (Title case → UPPERCASE → lowercase → …) and keeps it selected, instead of toggling the shift state.
         if (cycleSelectionCapitalization()) return
+        val wasLocked = activeState.inputShiftState == InputShiftState.CAPS_LOCK
         val prefs = prefs.keyboard.capitalizationBehavior
         when (prefs.get()) {
             CapitalizationBehavior.CAPSLOCK_BY_DOUBLE_TAP -> {
@@ -626,6 +728,7 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 }
             }
         }
+        maSyncSelectionLock(wasLocked)
     }
 
     /**
@@ -693,14 +796,18 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
      * Handles a [KeyCode.CAPS_LOCK] event.
      */
     private fun handleCapsLock() {
+        val wasLocked = activeState.inputShiftState == InputShiftState.CAPS_LOCK
         activeState.inputShiftState = InputShiftState.CAPS_LOCK
+        maSyncSelectionLock(wasLocked)
     }
 
     /**
      * Handles a [KeyCode.SHIFT] cancel event.
      */
     private fun handleShiftCancel() {
+        val wasLocked = activeState.inputShiftState == InputShiftState.CAPS_LOCK
         activeState.inputShiftState = InputShiftState.UNSHIFTED
+        maSyncSelectionLock(wasLocked)
     }
 
     /**
@@ -958,6 +1065,11 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         if (gifSearchQuery.value != null && handleGifSearchKey(data)) {
             return@batchEdit
         }
+        // Ctrl comes first, because when it is on a letter key is a shortcut and not a letter, and
+        // the switch below would otherwise type it.
+        if (maHandleCtrlCombo(data)) {
+            return@batchEdit
+        }
         when (data.code) {
             KeyCode.ARROW_DOWN,
             KeyCode.ARROW_LEFT,
@@ -971,6 +1083,8 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 handleArrow(data.code)
             }
             KeyCode.CAPS_LOCK -> handleCapsLock()
+            KeyCode.CTRL -> handleCtrlUp()
+            KeyCode.CTRL_LOCK -> handleCtrlLock()
             KeyCode.CHAR_WIDTH_SWITCHER -> handleCharWidthSwitch()
             KeyCode.CHAR_WIDTH_FULL -> handleCharWidthFull()
             KeyCode.CHAR_WIDTH_HALF -> handleCharWidthHalf()
@@ -1168,6 +1282,9 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 editorInstance.massSelection.end()
             }
             KeyCode.SHIFT -> handleShiftCancel()
+            // A finger that slides off the key never sends the key up that would have cleared this,
+            // and a stale flag would swallow the next real Ctrl tap.
+            KeyCode.CTRL -> maCtrlJustLocked = false
         }
     }
 

@@ -117,22 +117,37 @@ transcribed slowly, while FFmpeg's Opus of the same audio did not.
 Order matters. Items are sequenced so that a failure is contained and so that each one leaves the app
 in a usable state.
 
-### First: the Ctrl key and modifier locking
+### Done at build 89: the Ctrl key and modifier locking
 
-The largest queued item and the reason to start fresh. It touches the input pipeline, so it should
-fail alone rather than take other features down with it.
+Built as described. `?123` is now **ctrl** in the bottom left corner, the same width as Shift so the
+two make a modifier column, and the layout switch sits where the smiley was. Tap arms for one key,
+long press locks, tap while locked releases. Colour carries the state: gold armed, green `#6FA85A`
+with a matching outline locked. `Ctrl+A/C/X/V/Z` go to the editor operations that already existed,
+`Ctrl+Shift+Z` and `Ctrl+Y` redo, every other letter falls through to a real ctrl+key event, which is
+what gives `Ctrl+B` and `Ctrl+I` where the app understands them. Shift locked plus an arrow extends
+the selection, through `isManualSelectionMode`, so no new mechanism was added for it.
 
-- `?123` becomes **Ctrl**; the layout-switch key moves to where the smiley was
-- Long press **locks** either Ctrl or Shift; locked shows **green**; locking gives a **haptic buzz**,
-  because a finger covers the key it just pressed and cannot see the state change
-- Both can be locked at once, so `Ctrl+Shift+Z` is reachable
-- `Ctrl+A` select all, `Ctrl+Z` undo, `Ctrl+Shift+Z` redo, `Ctrl+X/C/V`
-- Shift locked plus an arrow **extends the selection**, as on a desktop
+Where it lives: `MaCtrlState` (new, three states, `toString` lowercase so a stylesheet can match it),
+a two-bit region at offset 18 in `KeyboardState`, `handleCtrlUp` / `handleCtrlLock` /
+`maHandleCtrlCombo` / `maSyncSelectionLock` in `KeyboardManager`, a `KeyCode.CTRL` branch in the
+`onLongPress` block of `TextKeyboardLayout`, `modifierLock()` in `InputFeedbackController`, and the
+`ctrlstate` attribute added to `FlorisImeUi.Attr` and to every key's attribute map.
 
-Note: `CLIPBOARD_SELECT` already toggles the state that makes arrows carry shift. That mechanism
-exists and is reachable from the arrows row; the work is exposing it as a real modifier key.
+Two things worth knowing next time. Arrows are deliberately **not** read as Ctrl combinations: they
+open a mass selection on key down that must be closed on key up, so swallowing their key up would
+leave it open. And `maCtrlJustLocked` exists because a long press sends `CTRL_LOCK` and then lets the
+Ctrl key up through; without it the finger lifting would release the lock it had just made. It is
+cleared on cancel too, or a finger sliding off the key would leave it stale and swallow the next tap.
 
-### Second: the language row in the keyboard view
+**Still open, one answer needed.** The symbols view was left alone, so `ABC` stays in the far left
+corner while `?123` now sits beside the space bar, and the round trip is asymmetric. Mirroring it is
+two lines. Do not guess which way.
+
+Also unverified on a device: if the green never appears, the first thing to rule out is a saved copy
+of the Sunrise theme in internal storage shadowing the bundled asset. That only happens if the theme
+editor was ever opened and saved.
+
+### Next: the language row in the keyboard view
 
 **Blocked on one answer from Marko, ask before building.** HR / EN / AUTO currently set the
 *transcription* language. He wants the same row in the keyboard view, also driving the *keyboard's*
@@ -145,12 +160,12 @@ guess.
 The copy/paste bar belongs in the same new row, between the suggestion strip and the keys — the space
 freed by the fix in build 88.
 
-### Third: the keyboard-view recorder made identical to the transcribe view
+### After that: the keyboard-view recorder made identical to the transcribe view
 
 The meter is already shared (`MaRecordMeter`). What differs is the surrounding bar. Make the two
 byte-identical so starting a recording from either place looks like one feature.
 
-### Fourth: smaller items, any order
+### Smaller items, any order
 
 - The trailing space after a recased word
 - Retranscribe button in both views for an interrupted recording (the Recovered screen covers part of

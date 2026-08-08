@@ -184,6 +184,9 @@ fun ComputingEvaluator.computeLabel(data: KeyData): String? {
             KeyCode.VIEW_SYMBOLS -> {
                 evaluator.context()?.getString(R.string.key__view_symbols)
             }
+            // Marko: a word, not an icon. There is no glyph for control that reads the same way in
+            // every keyboard tradition, and the three states are told by colour instead.
+            KeyCode.CTRL, KeyCode.CTRL_LOCK -> "ctrl"
             KeyCode.VIEW_SYMBOLS2 -> {
                 evaluator.context()?.getString(R.string.key__view_symbols2)
             }

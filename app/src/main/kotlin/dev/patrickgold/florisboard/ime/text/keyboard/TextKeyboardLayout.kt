@@ -335,6 +335,7 @@ private fun TextKeyButton(
         FlorisImeUi.Attr.Code to key.computedData.code,
         FlorisImeUi.Attr.Mode to evaluator.keyboard.mode.toString(),
         FlorisImeUi.Attr.ShiftState to evaluator.state.inputShiftState.toString(),
+        FlorisImeUi.Attr.CtrlState to evaluator.state.maCtrlState.toString(),
     )
     val selector = when {
         !key.isEnabled -> SnyggSelector.DISABLED
@@ -608,9 +609,22 @@ private class TextKeyboardLayoutController(
                         KeyCode.SHIFT -> {
                             if (inputEventDispatcher.isUninterruptedEventSequence(key.computedData)) {
                                 inputEventDispatcher.sendDownUp(TextKeyData.CAPS_LOCK)
-                                inputFeedbackController?.keyLongPress(key.computedData)
+                                // A modifier locking gets its own buzz rather than the long press
+                                // one: the finger is covering the key, so the colour change under
+                                // it cannot be seen at the moment it happens.
+                                inputFeedbackController?.modifierLock(key.computedData)
                             }
                             // We always return false here to prevent blockade for the up touch event
+                            false
+                        }
+                        // Marko: Ctrl locks the same way shift does. Returning false lets the key up
+                        // through, which KeyboardManager then swallows, so the finger lifting does
+                        // not release the lock the long press just made.
+                        KeyCode.CTRL -> {
+                            if (inputEventDispatcher.isUninterruptedEventSequence(key.computedData)) {
+                                inputEventDispatcher.sendDownUp(TextKeyData.CTRL_LOCK)
+                                inputFeedbackController?.modifierLock(key.computedData)
+                            }
                             false
                         }
                         KeyCode.LANGUAGE_SWITCH -> {
