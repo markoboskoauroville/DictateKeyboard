@@ -853,6 +853,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_panel_v14_applied",
             default = false,
         )
+        // One-handed mode and the floating window, out of an arrangement already written.
+        val maRemovalV15Applied = boolean(
+            key = "dictate__ma_removal_v15_applied",
+            default = false,
+        )
         // The macro bar: every preset, serialized by MaMacros. One string because that is all a
         // macro bar is, and because a control-character encoding lets a macro contain commas,
         // quotes, newlines and braces without any escaping to get wrong.
@@ -1651,20 +1656,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
                 }
             }
             "smartbar__action_arrangement" -> {
-                fun migrateAction(action: QuickAction): QuickAction {
-                    return if (action is QuickAction.InsertKey && action.data.code == KeyCode.COMPACT_LAYOUT_TO_RIGHT) {
-                        action.copy(data = TextKeyData.TOGGLE_COMPACT_LAYOUT)
-                    } else {
-                        action
-                    }
-                }
-
+                // The one-handed migration went with the feature; there is nothing left to migrate
+                // those actions into.
                 val arrangement = QuickActionJsonConfig.decodeFromString<QuickActionArrangement>(entry.rawValue)
-                var newArrangement = arrangement.copy(
-                    stickyAction = arrangement.stickyAction?.let{ migrateAction(it) },
-                    dynamicActions = arrangement.dynamicActions.map { migrateAction(it) },
-                    hiddenActions = arrangement.hiddenActions.map { migrateAction(it) },
-                )
+                var newArrangement = arrangement
                 if (QuickAction.InsertKey(TextKeyData.LANGUAGE_SWITCH) !in newArrangement) {
                     newArrangement = newArrangement.copy(
                         dynamicActions = newArrangement.dynamicActions.plus(QuickAction.InsertKey(TextKeyData.LANGUAGE_SWITCH))
@@ -1680,11 +1675,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
                         dynamicActions = newArrangement.dynamicActions.plus(QuickAction.InsertKey(TextKeyData.IME_HIDE_UI))
                     )
                 }
-                if (QuickAction.InsertKey(TextKeyData.TOGGLE_FLOATING_WINDOW) !in newArrangement) {
-                    newArrangement = newArrangement.copy(
-                        dynamicActions = newArrangement.dynamicActions.plus(QuickAction.InsertKey(TextKeyData.TOGGLE_FLOATING_WINDOW))
-                    )
-                }
+                // The upstream pass that put the floating window button back on every migration is
+                // gone with the feature. This is why "Floating" kept reappearing in the panel after
+                // being retired: one migration was removing it and another was adding it again.
                 if (QuickAction.InsertKey(TextKeyData.TOGGLE_RESIZE_MODE) !in newArrangement) {
                     newArrangement = newArrangement.copy(
                         dynamicActions = newArrangement.dynamicActions.plus(QuickAction.InsertKey(TextKeyData.TOGGLE_RESIZE_MODE))

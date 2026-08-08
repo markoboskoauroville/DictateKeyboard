@@ -320,7 +320,6 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
             SwipeAction.MA_SWITCH_DICTATE_VIEW -> null // handled above
             SwipeAction.SWITCH_TO_PREV_KEYBOARD -> TextKeyData.SYSTEM_PREV_INPUT_METHOD
             SwipeAction.TOGGLE_SMARTBAR_VISIBILITY -> TextKeyData.TOGGLE_SMARTBAR_VISIBILITY
-            SwipeAction.TOGGLE_COMPACT_LAYOUT -> TextKeyData.TOGGLE_COMPACT_LAYOUT
             else -> null
         }
         if (keyData != null) {
@@ -1112,8 +1111,6 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 clipboardManager.updatePrimaryClip(null)
                 appContext.showShortToastSync(R.string.clipboard__cleared_primary_clip)
             }
-            KeyCode.TOGGLE_FLOATING_WINDOW -> windowController.actions.toggleFloatingWindow()
-            KeyCode.TOGGLE_COMPACT_LAYOUT -> windowController.actions.toggleCompactLayout()
             // Extra row: show/hide, and swap digits for Croatian diacritics. Switching contents also
             // turns the row on, because asking for diacritics while the row is hidden can only mean
             // "show me diacritics".
@@ -1158,8 +1155,6 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
                 prefs.dictate.maExtraRowMode.set(order[(at + 1) % order.size])
                 prefs.dictate.maExtraRow.set(true)
             }
-            KeyCode.COMPACT_LAYOUT_TO_LEFT -> windowController.actions.compactLayoutToLeft()
-            KeyCode.COMPACT_LAYOUT_TO_RIGHT -> windowController.actions.compactLayoutToRight()
             KeyCode.TOGGLE_RESIZE_MODE -> windowController.editor.toggleEnabled()
             KeyCode.DELETE -> handleBackwardDelete(OperationUnit.CHARACTERS)
             KeyCode.DELETE_WORD -> handleBackwardDelete(OperationUnit.WORDS)

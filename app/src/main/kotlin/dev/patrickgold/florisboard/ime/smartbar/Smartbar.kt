@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.UnfoldLess
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.runtime.Composable
@@ -69,10 +70,10 @@ import dev.patrickgold.florisboard.dictate.ui.DictateSmartbarUi
 import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionButton
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionsRow
-import dev.patrickgold.florisboard.ime.smartbar.quickaction.ToggleOverflowPanelAction
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
 import dev.patrickgold.florisboard.nlpManager
+import dev.patrickgold.florisboard.subtypeManager
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -81,10 +82,12 @@ import org.florisboard.lib.android.AndroidVersion
 import org.florisboard.lib.compose.horizontalTween
 import org.florisboard.lib.compose.verticalTween
 import org.florisboard.lib.snygg.ui.SnyggBox
+import org.florisboard.lib.snygg.ui.SnyggButton
 import org.florisboard.lib.snygg.ui.SnyggColumn
 import org.florisboard.lib.snygg.ui.SnyggIcon
 import org.florisboard.lib.snygg.ui.SnyggIconButton
 import org.florisboard.lib.snygg.ui.SnyggRow
+import org.florisboard.lib.snygg.ui.SnyggText
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
 
 const val AnimationDuration = 200
@@ -178,6 +181,7 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val keyboardManager by context.keyboardManager()
     val nlpManager by context.nlpManager()
+    val subtypeManager by context.subtypeManager()
     val scope = rememberCoroutineScope()
 
     val inlineSuggestions by NlpInlineAutofill.suggestions.collectAsState()
@@ -219,55 +223,70 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
         hasDictateSelection &&
         dictatePrompts.isNotEmpty()
 
+    /**
+     * The Menu Macro dashboard, straight from the top row.
+     *
+     * This was the arrow that expanded a second row of quick actions over the suggestions. That row
+     * held select all, undo, redo and cut, all of which the copy and paste row below already carries,
+     * and the two row-set buttons, which belong in the dashboard with the other five. So it was a
+     * row of duplicates sitting on top of the one thing this strip is actually for.
+     *
+     * The button now opens the dashboard directly. That is where the row sets live, so it is also
+     * one tap shorter than it was: expand, then three dots, is now just this.
+     */
     @Composable
-    fun SharedActionsToggle() {
+    fun MenuMacroToggle() {
         SnyggIconButton(
             elementName = FlorisImeUi.SmartbarSharedActionsToggle.elementName,
             onClick = {
-                if (/* was */ sharedActionsExpanded) {
-                    keyboardManager.activeState.isActionsOverflowVisible = false
-                }
-                scope.launch {
-                    prefs.smartbar.sharedActionsExpanded.set(!sharedActionsExpanded)
-                }
+                keyboardManager.activeState.isActionsOverflowVisible =
+                    !keyboardManager.activeState.isActionsOverflowVisible
             },
             modifier = Modifier.sizeIn(maxHeight = FlorisImeSizing.smartbarHeight).aspectRatio(1f)
         ) {
-            val transition = updateTransition(sharedActionsExpanded, label = "sharedActionsExpandedToggleBtn")
-            val rotation by transition.animateFloat(
-                transitionSpec = {
-                    if (shouldAnimate) AnimationTween else NoAnimationTween
-                },
-                label = "rotation",
-            ) {
-                if (it) 180f else 0f
-            }
-            val arrowIcon = if (flipToggles) {
-                Icons.AutoMirrored.Default.KeyboardArrowLeft
-            } else {
-                Icons.AutoMirrored.Default.KeyboardArrowRight
-            }
             val incognitoIcon = ImageVector.vectorResource(id = R.drawable.ic_incognito)
-            val incognitoDisplayMode = prefs.keyboard.incognitoDisplayMode.collectAsState()
             val isIncognitoMode = keyboardManager.activeState.isIncognitoMode
-            val icon = if (isIncognitoMode) {
-                when (incognitoDisplayMode.value) {
-                    IncognitoDisplayMode.REPLACE_SHARED_ACTIONS_TOGGLE -> incognitoIcon
-                    IncognitoDisplayMode.DISPLAY_BEHIND_KEYBOARD -> arrowIcon
-                }
-            } else {
-                arrowIcon
-            }
             SnyggIcon(
-                modifier = Modifier.rotate(if (incognitoDisplayMode.value == IncognitoDisplayMode.DISPLAY_BEHIND_KEYBOARD) rotation else 0f),
-                imageVector = icon,
+                imageVector = if (isIncognitoMode) incognitoIcon else Icons.Default.MoreHoriz,
             )
+        }
+    }
+
+    /**
+     * The suggestion language, as two or three small capitals.
+     *
+     * A specialised language guesses better than one hedging between two, and the switch has to be
+     * where the suggestions are or it will not be used mid sentence. Shows the active subtype's
+     * code; a tap moves to the next one. With only one language installed there is nothing to move
+     * to, so it opens the picker instead of doing nothing, which at least explains itself.
+     */
+    @Composable
+    fun LanguageToggle() {
+        val subtypes by subtypeManager.subtypesFlow.collectAsState()
+        val activeSubtype by subtypeManager.activeSubtypeFlow.collectAsState()
+        val code = remember(activeSubtype) {
+            activeSubtype.primaryLocale.language.uppercase().take(3)
+        }
+        SnyggButton(
+            elementName = FlorisImeUi.SmartbarSharedActionsToggle.elementName,
+            onClick = {
+                if (subtypes.size > 1) {
+                    subtypeManager.switchToNextSubtype()
+                } else {
+                    keyboardManager.activeState.isSubtypeSelectionVisible = true
+                }
+            },
+            modifier = Modifier.sizeIn(maxHeight = FlorisImeSizing.smartbarHeight),
+        ) {
+            SnyggText(text = code)
         }
     }
 
     @Composable
     fun RowScope.CenterContent() {
-        val expanded = sharedActionsExpanded && smartbarLayout == SmartbarLayout.SUGGESTIONS_ACTIONS_SHARED
+        // No expanded state left. This strip shows the suggestions, or the recording interface in
+        // the same place while dictating, and nothing else competes for it.
+        val expanded = false
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -360,10 +379,6 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
                 actionArrangement.stickyAction
             }
 
-            smartbarLayout == SmartbarLayout.SUGGESTIONS_ACTIONS_SHARED && sharedActionsExpanded -> {
-                ToggleOverflowPanelAction
-            }
-
             else -> null
         }
 
@@ -416,13 +431,15 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
 
             SmartbarLayout.SUGGESTIONS_ACTIONS_SHARED -> {
                 if (!flipToggles) {
-                    SharedActionsToggle()
+                    MenuMacroToggle()
+                    LanguageToggle()
                     CenterContent()
                     StickyAction()
                 } else {
                     StickyAction()
                     CenterContent()
-                    SharedActionsToggle()
+                    LanguageToggle()
+                    MenuMacroToggle()
                 }
             }
 

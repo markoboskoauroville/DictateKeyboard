@@ -102,7 +102,6 @@ data class QuickActionArrangement(
                 QuickAction.InsertKey(TextKeyData.SETTINGS),
                 QuickAction.InsertKey(TextKeyData.TOGGLE_RESIZE_MODE),
                 QuickAction.InsertKey(TextKeyData.IME_UI_MODE_CLIPBOARD),
-                QuickAction.InsertKey(TextKeyData.TOGGLE_COMPACT_LAYOUT),
                 QuickAction.InsertKey(TextKeyData.CLIPBOARD_CLEAR_PRIMARY_CLIP),
                 // The extra row above the keyboard: one action shows or hides it, the other swaps
                 // digits for Croatian diacritics. These replace a dozen actions that were removed as

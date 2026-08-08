@@ -52,7 +52,6 @@ enum class SwipeAction {
     // by default, which is a gesture already under the thumb and previously spent on the system's
     // input method picker, something reached for perhaps twice a year.
     MA_SWITCH_DICTATE_VIEW,
-    TOGGLE_COMPACT_LAYOUT,
     TOGGLE_SMARTBAR_VISIBILITY,
     UNDO;
 }

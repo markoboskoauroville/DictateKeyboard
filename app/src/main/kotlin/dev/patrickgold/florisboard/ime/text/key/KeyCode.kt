@@ -68,12 +68,11 @@ object KeyCode {
     const val CLIPBOARD_CLEAR_FULL_HISTORY = -37
     const val CLIPBOARD_CLEAR_PRIMARY_CLIP = -38
 
-    const val TOGGLE_FLOATING_WINDOW =      -109
-    const val TOGGLE_COMPACT_LAYOUT =       -110
-    const val COMPACT_LAYOUT_TO_LEFT =      -111
-    const val COMPACT_LAYOUT_TO_RIGHT =     -112
-    const val SPLIT_LAYOUT =                -113
-    const val MERGE_LAYOUT =                -114
+    // -109 to -114 were the floating window and the one-handed layout, with its two nudge keys and
+    // the split and merge pair. Removed outright: a dictation keyboard is held in one hand and
+    // spoken into, and neither feature was ever reached for here. The codes are left unused rather
+    // than reassigned, so an old saved arrangement naming one of them resolves to nothing at all
+    // instead of quietly becoming some other key.
     const val TOGGLE_RESIZE_MODE =          -115
 
     const val UNDO =                        -131

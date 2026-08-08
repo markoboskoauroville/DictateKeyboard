@@ -437,12 +437,9 @@ object DictateLegacyMigrator {
         // trap that keeps catching me: a changed default never reaches a preference that has already
         // been written, so one-handed mode kept appearing in the panel long after it left the code.
         val retired = setOf(
-            // "One-handed mode" in the panel is TOGGLE_COMPACT_LAYOUT; the two names I first used
-            // do not exist. Its two nudge keys go with it, since they only steer a layout that can
-            // no longer be switched on.
-            KeyCode.TOGGLE_COMPACT_LAYOUT,
-            KeyCode.COMPACT_LAYOUT_TO_LEFT,
-            KeyCode.COMPACT_LAYOUT_TO_RIGHT,
+            // One-handed mode and the floating window are gone from the code entirely, so their
+            // codes are gone too and cannot be named here. They are stripped from saved
+            // arrangements by number in applyRemovalV15IfNeeded instead.
             KeyCode.LANGUAGE_SWITCH,
             KeyCode.IME_UI_MODE_MEDIA,
             KeyCode.IME_UI_MODE_GIF,
@@ -452,7 +449,6 @@ object DictateLegacyMigrator {
             KeyCode.ARROW_LEFT,
             KeyCode.ARROW_RIGHT,
             KeyCode.FORWARD_DELETE,
-            KeyCode.TOGGLE_FLOATING_WINDOW,
         )
         fun keeps(a: QuickAction): Boolean =
             (a as? QuickAction.InsertKey)?.data?.code !in retired
@@ -529,6 +525,35 @@ object DictateLegacyMigrator {
             )
         }
         prefs.dictate.maPanelV14Applied.set(true)
+    }
+
+    /**
+     * Strips the one-handed and floating window buttons out of an arrangement already written.
+     *
+     * By number, not by name, because the constants are gone with the features. -109 was the
+     * floating window, -110 the one-handed layout, and -111 and -112 its two nudge keys.
+     *
+     * The reason these kept coming back is worth recording. One pass was removing them and an
+     * upstream preference migration was adding the floating one straight back on every run, so the
+     * removal looked like it had simply never worked. That adder is deleted; this clears whatever it
+     * left behind.
+     */
+    suspend fun applyRemovalV15IfNeeded() {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maRemovalV15Applied.get()) return
+        val gone = setOf(-109, -110, -111, -112, -113, -114)
+        fun keeps(a: QuickAction): Boolean =
+            (a as? QuickAction.InsertKey)?.data?.code !in gone
+        val arrangement = prefs.smartbar.actionArrangement.get()
+        val cleaned = arrangement.copy(
+            stickyAction = arrangement.stickyAction?.takeIf { keeps(it) },
+            dynamicActions = arrangement.dynamicActions.filter { keeps(it) },
+            hiddenActions = arrangement.hiddenActions.filter { keeps(it) },
+        )
+        if (cleaned != arrangement) {
+            prefs.smartbar.actionArrangement.set(cleaned)
+        }
+        prefs.dictate.maRemovalV15Applied.set(true)
     }
 
     suspend fun migratePromptsLayoutToRowIfNeeded() {

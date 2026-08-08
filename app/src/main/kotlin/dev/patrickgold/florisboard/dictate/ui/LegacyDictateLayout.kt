@@ -1294,7 +1294,7 @@ private const val MA_BRAILLE = "\u280B\u2819\u2839\u2838\u283C\u2834\u2826\u2827
  * a still frame then reads as waiting rather than as frozen, and the line beside it says what for.
  */
 @Composable
-private fun MaBrailleSpinner(color: Color, fontSize: androidx.compose.ui.unit.TextUnit) {
+internal fun MaBrailleSpinner(color: Color, fontSize: androidx.compose.ui.unit.TextUnit) {
     var frame by remember { mutableIntStateOf(0) }
     var waitedMs by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {

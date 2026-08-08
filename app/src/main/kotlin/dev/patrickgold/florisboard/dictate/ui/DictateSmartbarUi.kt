@@ -484,26 +484,31 @@ private fun LanguageChip() {
 
 @Composable
 private fun TranscribingContent(state: DictateController.UiState.Transcribing) {
-    val transition = rememberInfiniteTransition(label = "transcribing")
-    val rotation by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(900)),
-        label = "spin",
-    )
+    // The same spinner and the same line as the transcribe view, and for the same reason.
+    //
+    // Two arrows chasing each other says only that something is happening. It cannot say which key
+    // is being tried, how large the upload is, how fast it is moving, or whether it is retrying,
+    // and it looks identical whether the request is in flight or the app has died. The braille
+    // spinner blinks after six seconds so a pause never reads as a crash, and maStatus is the line
+    // that says what is actually being waited for.
+    //
+    // Drawn from the shared composable rather than a copy, so the two views cannot drift.
     val retrying = state.attempt > 1
-    SnyggIcon(
-        imageVector = if (retrying) Icons.Default.CloudOff else Icons.Default.Sync,
-        modifier = Modifier
-            .size(18.dp)
-            .then(if (retrying) Modifier else Modifier.rotate(rotation)),
-    )
+    val ink = LocalContentColor.current
+    if (retrying) {
+        SnyggIcon(
+            imageVector = Icons.Default.CloudOff,
+            modifier = Modifier.size(18.dp),
+        )
+    } else {
+        MaBrailleSpinner(color = ink, fontSize = 16.sp)
+    }
     Spacer(modifier = Modifier.width(10.dp))
+    val maLine by DictateController.maStatus.collectFlowAsState()
     SnyggText(
-        text = if (retrying) {
-            stringRes(R.string.dictate__status_retrying, "attempt" to state.attempt)
-        } else {
-            stringRes(R.string.dictate__status_transcribing)
+        text = when {
+            retrying -> stringRes(R.string.dictate__status_retrying, "attempt" to state.attempt)
+            else -> maLine.ifBlank { stringRes(R.string.dictate__status_transcribing) }
         },
     )
 }
@@ -528,7 +533,14 @@ private fun RewordingContent(state: DictateController.UiState.Rewording) {
             .rotate(rotation),
     )
     Spacer(modifier = Modifier.width(10.dp))
-    SnyggText(text = state.label.ifBlank { stringRes(R.string.dictate__status_rewording) })
+    // Rewording reports its progress through the same line while a request is in flight, so show it
+    // here too and fall back to the prompt's own label when there is nothing more specific to say.
+    val maLine by DictateController.maStatus.collectFlowAsState()
+    SnyggText(
+        text = maLine.ifBlank {
+            state.label.ifBlank { stringRes(R.string.dictate__status_rewording) }
+        },
+    )
 }
 
 /**
