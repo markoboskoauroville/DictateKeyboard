@@ -874,7 +874,7 @@ class OpenAiCompatibleClient(
                 if (mapped.kind.isRetryable && attempt < maxRetries) {
                     attempt++
                     onRetry(attempt + 1) // report the upcoming attempt (2nd, 3rd, …)
-                    delay(RETRY_DELAY_MS)
+                    delay(retryDelayFor(request, attempt))
                 } else {
                     throw mapped
                 }
@@ -1295,6 +1295,37 @@ class OpenAiCompatibleClient(
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
         private const val RETRY_DELAY_MS = 3000L
+
+        /** Added per megabyte of upload before retrying. */
+        private const val RETRY_DELAY_PER_MB_MS = 2000L
+
+        /** However large the upload or however many the attempt, never wait longer than this. */
+        private const val RETRY_DELAY_CEILING_MS = 20_000L
+
+        /**
+         * How long to wait before retrying [request] on its [attempt]th retry.
+         *
+         * Two things lengthen the wait. The size of the upload, because a three minute dictation is
+         * megabytes and a failure part-way through it usually means the connection is struggling
+         * rather than momentarily absent; retrying a large body immediately tends to fail the same
+         * way and burn the allowance of attempts in a few seconds. And the attempt number, because
+         * if the first retry did not help, the thing being waited for is taking longer than a moment.
+         *
+         * The content length is read from the request that is about to be repeated, so nothing has
+         * to be threaded down from the recorder and every caller gets the behaviour without knowing
+         * about it.
+         *
+         * Capped, because a retry the user has given up waiting for is not a retry. Twenty seconds
+         * is long enough for a train tunnel and short enough that the manual retry is still the
+         * faster option when the connection is genuinely gone.
+         */
+        private fun retryDelayFor(request: Request, attempt: Int): Long {
+            val bytes = runCatching { request.body?.contentLength() ?: 0L }.getOrDefault(0L)
+            val megabytes = if (bytes > 0L) bytes.toDouble() / (1024.0 * 1024.0) else 0.0
+            val sizeComponent = (megabytes * RETRY_DELAY_PER_MB_MS).toLong()
+            val base = RETRY_DELAY_MS + sizeComponent
+            return (base * attempt.coerceAtLeast(1)).coerceAtMost(RETRY_DELAY_CEILING_MS)
+        }
         internal const val OPENROUTER_TRANSCRIPTION_MAX_RETRIES = 0
         private const val OPENROUTER_TRANSCRIPTION_TEMPERATURE = 0.0
         internal const val NETWORK_CONNECT_TIMEOUT_SECONDS = 8L

@@ -1427,7 +1427,10 @@ object DictateController {
                             ).transcribe(
                                 request,
                                 onRetry = { attempt ->
-                                    _maStatus.value = "no answer, retrying, attempt $attempt"
+                                    // Named as waiting rather than as retrying, because that is what
+                                    // is actually happening for the next several seconds and a line
+                                    // that says "retrying" while nothing moves reads as a hang.
+                                    _maStatus.value = "no answer, waiting to retry, attempt $attempt"
                                     _state.value = UiState.Transcribing(attempt)
                                 },
                             )
