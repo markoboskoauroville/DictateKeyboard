@@ -95,10 +95,10 @@ fun GesturesScreen() = FlorisScreen {
                 title = stringRes(R.string.pref__gestures__delete_key_long_press__label),
                 entries = enumDisplayEntriesOf(SwipeAction::class, "deleteLongPress"),
             )
-            // Mantra Voice Type: the swipe-to-symbol switch, placed directly above the two
+            // Talk to Type: the swipe-to-symbol switch, placed directly above the two
             // thresholds that govern how far and how fast a swipe must be, since turning it on
             // and then tuning those two is one continuous task rather than three separate ones.
-            // Mantra Voice Type: the cursor row. Kept beside the space-bar cursor gesture below,
+            // Talk to Type: the cursor row. Kept beside the space-bar cursor gesture below,
             // because the two are the same job solved twice and it should be obvious that turning
             // one on does not turn the other off.
             SwitchPreference(

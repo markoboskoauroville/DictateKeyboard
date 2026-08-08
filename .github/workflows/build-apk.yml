@@ -1,4 +1,4 @@
-name: Build Mantra Voice Type APK
+name: Build Talk to Type APK
 
 on:
   workflow_dispatch:
@@ -61,8 +61,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          cp "$APK" mantra-voice-type-build-${{ github.run_number }}.apk
-          gh release create "build-${{ github.run_number }}" mantra-voice-type-build-${{ github.run_number }}.apk --title "Mantra Voice Type build ${{ github.run_number }}" --notes "Mantra Voice Type, by Mantra Productions. Installs over the previous build."
+          cp "$APK" ttt-talk-to-type-build-${{ github.run_number }}.apk
+          gh release create "build-${{ github.run_number }}" ttt-talk-to-type-build-${{ github.run_number }}.apk --title "Talk to Type build ${{ github.run_number }}" --notes "Talk to Type (TTT), by Mantra Productions. Installs over the previous build."
 
       # The two newest releases stay, everything older goes. One was too few: a link handed over
       # is dead the moment the next push publishes, and a one line change to a document is enough

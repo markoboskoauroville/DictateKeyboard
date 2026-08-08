@@ -1,10 +1,10 @@
 <resources>
     <item name="floris_app_name" translatable="false" type="string">@string/app_name</item>
     <!-- Full product name for prose/About/Setup. -->
-    <string name="app_name_full" translatable="false">Mantra Voice Type</string>
+    <string name="app_name_full" translatable="false">Talk to Type</string>
 
     <!--
-        Mantra Voice Type URLs. Keys keep the historic `florisboard__` prefix so the many references in
+        Talk to Type URLs. Keys keep the historic `florisboard__` prefix so the many references in
         code stay valid; only the values point at Marko Bosko's repository now. Upstream credit is a
         single row in About and the ATTRIBUTION.md / NOTICE files, which Apache 2.0 requires to stay.
     -->

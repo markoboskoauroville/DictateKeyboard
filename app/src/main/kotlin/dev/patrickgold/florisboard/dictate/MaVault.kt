@@ -105,7 +105,7 @@ object MaVault {
         val total = sections.sumOf { it.second.size }
         if (total == 0) return false
         val text = buildString {
-            appendLine("# Mantra Voice Type, API key backup")
+            appendLine("# Talk to Type, API key backup")
             appendLine("# Written " + java.text.SimpleDateFormat("d.M.yyyy HH:mm", java.util.Locale.getDefault())
                 .format(java.util.Date()))
             appendLine("# Keep this file. A fresh install reads it from here with no clicks.")

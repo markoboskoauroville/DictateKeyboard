@@ -1,4 +1,4 @@
-# Mantra Voice Type — handoff and development plan
+# Talk to Type — handoff and development plan
 
 Written at build 88. Read this first, then `git log --oneline -20` to see anything newer.
 
@@ -25,6 +25,13 @@ with `sed "s/$(tr -d ' \t\n\r' < /mnt/user-data/uploads/github_token.txt)/***RED
 ---
 
 ## 2. Rules that are not negotiable
+
+**The name.** The app is **Talk to Type**, short form **TTT**. Renamed from Mantra Voice Type at
+build 109. The **package id stays `com.mantraproductions.voicetype`** and must not be changed:
+Android treats a new package as a different app, so changing it would install alongside the old one
+and abandon every API key, preference and the learned n-gram model rather than upgrading. The
+package id is not visible to Marko; the launcher name and the APK filename are, and those are what
+changed.
 
 **Releases.** The two newest releases may exist, never more. CI deletes everything older after each
 successful publish. Two rather than one because a link already handed over dies the moment the next

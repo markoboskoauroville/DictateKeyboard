@@ -55,7 +55,7 @@ import org.florisboard.lib.compose.FlorisCanvasIcon
 import org.florisboard.lib.compose.stringRes
 
 /**
- * About, rebuilt for Mantra Voice Type.
+ * About, rebuilt for Talk to Type.
  *
  * The header carries Marko Bosko's own name and build number rather than the upstream author's, and
  * the row list is trimmed to what this build actually has: the repository, the release list, the two

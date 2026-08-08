@@ -669,7 +669,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // (see DictateLanguages; "detect" = auto-detect). Default mirrors the legacy app.
         val inputLanguages = string(
             key = "dictate__input_languages",
-            // Mantra Voice Type: detect first, so mixed Croatian and English is the default rather
+            // Talk to Type: detect first, so mixed Croatian and English is the default rather
             // than something to opt into, then the two Marko actually speaks.
             default = "detect,hr,en",
         )
@@ -1125,7 +1125,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
     val gestures = Gestures()
     inner class Gestures {
         /**
-         * Mantra Voice Type: swipe toward a symbol printed on a key to type it, rather than long
+         * Talk to Type: swipe toward a symbol printed on a key to type it, rather than long
          * pressing and choosing from the popup. Off by default so nobody's muscle memory changes
          * without asking.
          */

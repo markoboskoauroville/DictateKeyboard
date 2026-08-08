@@ -799,7 +799,7 @@ private class TextKeyboardLayoutController(
                 initialKey.computedData.code > KeyCode.SPACE && !popupUiController.isShowingExtendedPopup -> when {
                     !isGlideEnabled && !pointer.hasTriggeredGestureMove -> when (event.type) {
                         SwipeGesture.Type.TOUCH_UP -> {
-                            // Mantra Voice Type: swipe toward a corner symbol to type it, instead of
+                            // Talk to Type: swipe toward a corner symbol to type it, instead of
                             // long pressing and picking from a popup. The idea is Unexpected
                             // Keyboard's; the implementation is ours, since that project is GPL and
                             // this one is Apache. Only when the key actually carries a symbol for
@@ -1076,7 +1076,7 @@ private class TextKeyboardLayoutController(
 }
 
 /**
- * Mantra Voice Type: which character a corner swipe on [key] should type, or null if that
+ * Talk to Type: which character a corner swipe on [key] should type, or null if that
  * direction carries nothing.
  *
  * The corners are read from the key's own popup set, which every layout already fills in, so no

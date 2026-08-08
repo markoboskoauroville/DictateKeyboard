@@ -109,7 +109,7 @@ fun SetupScreen() = FlorisScreen {
     var providerSkipped by rememberSaveable { mutableStateOf(false) }
     // The floating-button step is optional and has no completion signal of its own, so (like the
     // provider step) a flag lets the user move past it to the final page once they've decided.
-    // Mantra Voice Type: starts passed, so setup never shows the floating-button page. The bubble
+    // Talk to Type: starts passed, so setup never shows the floating-button page. The bubble
     // was removed, and a wizard step offering a feature that no longer exists is worse than no step.
     var floatingButtonStepPassed by rememberSaveable { mutableStateOf(true) }
 
