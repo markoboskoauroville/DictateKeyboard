@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright (C) 2026 Marko Boško, Mantra Productions
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<!--
+    The Mac shift glyph, resting: a hollow upward arrow drawn as a stroke.
+
+    Drawn here rather than picked from the Material set because the Material set has no hollow
+    upward arrow without a bar under it, and the bar is what caps lock means. Same outline as the
+    filled version so the key does not change shape between states, only weight.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="24dp"
+        android:height="24dp"
+        android:viewportWidth="24"
+        android:viewportHeight="24">
+
+    <path android:fillColor="#00000000"
+          android:strokeColor="#000000"
+          android:strokeWidth="1.7"
+          android:strokeLineJoin="round"
+          android:strokeLineCap="round"
+          android:pathData="M12,3.6 L20.4,12 L15.7,12 L15.7,19 L8.3,19 L8.3,12 L3.6,12 Z"/>
+</vector>

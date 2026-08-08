@@ -661,10 +661,19 @@ class FlorisImeService : LifecycleInputMethodService() {
     /**
      * Volume keys as dictation controls, while the keyboard is on screen.
      *
-     * Volume up starts a recording and, pressed again, ends it and sends it. Volume down swaps
-     * between the typing keyboard and the transcribe view. Both are things otherwise done by looking
-     * at the screen and aiming a thumb, and both are exactly what a physical button is good for:
-     * speaking into a phone held away from the face, or in the dark.
+     * Volume up starts a recording and, pressed again, ends it and sends it. Volume down throws away
+     * a recording in progress. Both are things otherwise done by looking at the screen and aiming a
+     * thumb, and both are exactly what a physical button is good for: speaking into a phone held
+     * away from the face, or in the dark. Cancel belongs on a hardware key for the same reason start
+     * does; realising mid-sentence that the wrong thing is being said is precisely the moment the
+     * screen is not being looked at.
+     *
+     * Volume down used to swap between the typing keyboard and the transcribe view. That swap is
+     * reachable by the microphone key and the keyboard key, both of which are on screen whenever it
+     * is wanted, so the hardware key was spending itself on something already easy.
+     *
+     * With nothing recording, volume down does nothing at all rather than guessing at some other
+     * meaning. A key that does one thing and is silent otherwise can be trusted in the dark.
      *
      * Deliberately scoped to while the input view is shown. An input method only receives key events
      * then, and taking the volume keys away from the whole system would be indefensible; the moment
@@ -684,11 +693,9 @@ class FlorisImeService : LifecycleInputMethodService() {
                 true
             }
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                activeState.imeUiMode = if (activeState.imeUiMode == ImeUiMode.TRANSCRIBE) {
-                    ImeUiMode.TEXT
-                } else {
-                    ImeUiMode.TRANSCRIBE
-                }
+                // The bar is held briefly so the discard is visible as something that happened,
+                // rather than the recording simply vanishing with no account of itself.
+                DictateController.cancelRecording(keepBarForMs = 600L)
                 true
             }
             else -> false

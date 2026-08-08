@@ -37,13 +37,11 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.KeyboardCapslock
 import androidx.compose.material.icons.filled.KeyboardAlt
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.RadioButtonChecked
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -348,21 +346,23 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
             Icons.Default.Settings
         }
         KeyCode.SHIFT -> {
-            // Three states, three glyphs, following the convention every physical keyboard uses.
-            // Before this, one-shot shift and caps lock drew the identical icon, so the key could not
-            // say whether the next letter would be capital or all of them would, which is exactly the
-            // confusion worth removing.
+            // Three states, three glyphs, one family. The Material icons that were here were three
+            // unrelated shapes: a chevron, a plain arrow, and the caps lock arrow, so only the last
+            // of them read as the Mac symbol and the other two looked like leftovers of something
+            // else. These are drawn in the project so all three are the same arrow.
             //
-            //   unshifted   a light chevron, resting
-            //   shifted     a solid arrow, armed for exactly one letter
-            //   caps lock   the arrow with a bar beneath it, the Mac symbol, meaning it stays
+            //   unshifted   the arrow hollow, resting
+            //   shifted     the same arrow filled, armed for exactly one letter
+            //   caps lock   the arrow with a bar beneath it, meaning it stays
             //
-            // Three different icon names rather than a filled and outlined pair of one name: both
-            // are extension properties called ArrowUpward, so importing both is a name clash.
+            // Locked is also green, so the bar is confirmation rather than the only signal.
             when (evaluator.state.inputShiftState) {
-                InputShiftState.UNSHIFTED -> Icons.Default.KeyboardArrowUp
-                InputShiftState.CAPS_LOCK -> Icons.Default.KeyboardCapslock
-                else -> Icons.Default.ArrowUpward
+                InputShiftState.UNSHIFTED ->
+                    context()?.vectorResource(id = R.drawable.ic_ma_shift)
+                InputShiftState.CAPS_LOCK ->
+                    context()?.vectorResource(id = R.drawable.ic_ma_shift_lock)
+                else ->
+                    context()?.vectorResource(id = R.drawable.ic_ma_shift_filled)
             }
         }
         KeyCode.SPACE, KeyCode.CJK_SPACE -> {
