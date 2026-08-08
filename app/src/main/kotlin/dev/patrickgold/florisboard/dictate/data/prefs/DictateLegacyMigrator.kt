@@ -665,6 +665,33 @@ object DictateLegacyMigrator {
         prefs.dictate.maDashboardV18Applied.set(true)
     }
 
+    /**
+     * Moves paste ahead of cut and copy in a row that has already been written.
+     *
+     * Select all then paste is the one pair pressed together often enough to be a single motion: it
+     * is how a field is replaced. Cut and copy read out of the field rather than into it, so they
+     * follow.
+     *
+     * Only the relative order of those three changes. Every other key keeps its place, and any key
+     * the row does not contain is simply not there to move, so a row that was rearranged by hand
+     * keeps its arrangement everywhere except in the one detail this pass exists to fix.
+     */
+    suspend fun applyActionRowV19IfNeeded() {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maActionRowV19Applied.get()) return
+        val row = prefs.dictate.legacyActionRow.get().split(',').filter { it.isNotBlank() }
+        val cutIndex = row.indexOf("CUT")
+        val pasteIndex = row.indexOf("PASTE")
+        // Nothing to do unless both are present and paste is currently behind cut.
+        if (cutIndex >= 0 && pasteIndex > cutIndex) {
+            val without = row.filterNot { it == "PASTE" }
+            val target = without.indexOf("CUT")
+            val next = without.toMutableList().apply { add(target, "PASTE") }
+            prefs.dictate.legacyActionRow.set(next.joinToString(","))
+        }
+        prefs.dictate.maActionRowV19Applied.set(true)
+    }
+
     suspend fun migratePromptsLayoutToRowIfNeeded() {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.promptsLayoutRowMigrated.get()) return

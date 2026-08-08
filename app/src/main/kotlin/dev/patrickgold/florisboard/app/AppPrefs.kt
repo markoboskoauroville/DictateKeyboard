@@ -772,7 +772,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             // "take that back" keys and sit together on the left; select all belongs with cut, copy
             // and paste because selecting is the first move of all three, and separating it from
             // them was the reason the row read as a jumble.
-            default = "UNDO,REDO,SELECT_ALL,CUT,COPY,PASTE,HISTORY,KEYBOARD",
+            // Paste sits directly after select all, ahead of cut and copy, because select all then
+            // paste is the one pair pressed together often enough to be a single motion: it is how
+            // a field is replaced. Cut and copy read out of the field rather than into it, so they
+            // follow.
+            default = "UNDO,REDO,SELECT_ALL,PASTE,CUT,COPY,HISTORY,KEYBOARD",
         )
         // Sticky panel: when on, whichever of the two main views was last used comes back the next
         // time the keyboard opens, instead of always landing on the typing keyboard. Marko is in the
@@ -874,6 +878,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // The row sets to the front of a panel already written.
         val maDashboardV18Applied = boolean(
             key = "dictate__ma_dashboard_v18_applied",
+            default = false,
+        )
+        // Paste ahead of cut and copy in a row already written.
+        val maActionRowV19Applied = boolean(
+            key = "dictate__ma_action_row_v19_applied",
             default = false,
         )
         // The macro bar: every preset, serialized by MaMacros. One string because that is all a

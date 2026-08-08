@@ -235,9 +235,9 @@ object MaRowSets {
         MaRowKey("SEL", KeyCode.CLIPBOARD_SELECT),
         MaRowKey("\u00ab", KeyCode.MA_WORD_LEFT, repeats = true),
         MaRowKey("\u00bb", KeyCode.MA_WORD_RIGHT, repeats = true),
+        MaRowKey("PST", KeyCode.CLIPBOARD_PASTE),
         MaRowKey("CUT", KeyCode.CLIPBOARD_CUT),
         MaRowKey("CPY", KeyCode.CLIPBOARD_COPY),
-        MaRowKey("PST", KeyCode.CLIPBOARD_PASTE),
         MaRowKey("\u21b6", KeyCode.UNDO),
         MaRowKey("\u21b7", KeyCode.REDO, cyclesOnLongPress = true),
     )
