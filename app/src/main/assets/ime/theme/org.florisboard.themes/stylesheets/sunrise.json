@@ -73,19 +73,8 @@
     "background": "var(--surface-variant)",
     "foreground": "var(--on-surface)"
   },
-  "key[code=10]": {
-    "background": "#12161E",
-    "foreground": "#E8B15C",
-    "border-color": "#E8B15C",
-    "border-width": "1dp"
-  },
-  "key[code=10]:pressed": {
-    "background": "#1C222C",
-    "foreground": "#E8B15C"
-  },
+
   "key[code=32]": {
-    "background": "var(--surface)",
-    "foreground": "var(--on-surface-variant)",
     "font-size": "12sp",
     "text-overflow": "ellipsis"
   },
