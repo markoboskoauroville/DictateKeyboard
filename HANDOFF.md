@@ -236,10 +236,30 @@ hand over to another without sending the user through the system input-method pi
 would open a grey system dialog. As one app the flip is instant, there is no second install, and the
 clipboard is already shared because it is the same process. He agreed to this.
 
-**What it does.** Takes the text on the clipboard (or a selection), speaks it in a Microsoft Edge
-neural voice, and highlights each word as it is spoken. It occupies exactly the keyboard's footprint
-and uses the same scheme: near-black surfaces, gold ink, no decoration. Marko is dyslexic and the
-word highlight is the point of the whole thing, not a flourish.
+**What it is: a window onto the clipboard that reads.** Not a text editor, not a box to paste into.
+It shows what was last copied and speaks it in a Microsoft Edge neural voice, highlighting each word
+as it goes, and it lists the clipboard history so anything copied earlier can be read again. That is
+the whole product. Marko's words: *a window to the clipboard which reads*.
+
+Framing it this way settles more than it looks:
+
+- **No text input of its own.** Nothing to type into, nothing to paste into, no keyboard needed
+  inside it. Text arrives by being copied anywhere on the phone, which is a thing the user already
+  does constantly and needs no instruction.
+- **No dependency on a focused text field.** The reader does not touch the `InputConnection` at all,
+  so it works with nothing focused, over any app, on a page that has no editable field. This is a
+  large simplification: everything else in this keyboard is built around an editor being present.
+- **It reads TTT's own clipboard history, not the system clipboard.** Android 10 and later only let
+  the foreground app or the active IME read the system clipboard, and TTT already keeps its own
+  history database with pinning. Reading from that store sidesteps the restriction entirely and gets
+  snippets for free: a pinned snippet is a thing kept to be read again.
+- **Snippets and the reader are the same feature seen twice.** Hold the clipboard key to save
+  something worth keeping; open the reader to hear it. Do not build a second store for reading
+  material.
+
+It occupies exactly the keyboard's footprint and uses the same scheme: near-black surfaces, gold ink,
+no decoration. Marko is dyslexic and the word highlight is the point of the whole thing, not a
+flourish.
 
 **Voices: four, no more.** From the reference implementation:
 
@@ -293,13 +313,46 @@ at all, which would break half the point.
    in it, since that is where boundaries stop matching cleanly.
 2. **The alignment port.** `align_tokens` and `refine_tokens` in Kotlin, tested against the same
    sentences the Python handles. This is where the quality lives.
-3. **The reader view.** Third `ImeUiMode`, keyboard footprint, gold on near-black, the sweep, and
-   play/pause. Two finger horizontal flip to enter and leave it.
+3. **The reader view.** Third `ImeUiMode`, keyboard footprint, gold on near-black, the word
+   highlight, play and pause, the latest clip shown on entry and the history reachable. Reached by
+   the three way view swap key, not a gesture.
+
+#### Switching views: a button, not a gesture
+
+**Decided.** A two finger flip was considered and rejected by Marko: pressing a button is easier
+than making a gesture, and a gesture that must never fire accidentally is a gesture that is awkward
+on purpose.
+
+The view swap key already exists, in the copy and paste row, in the slot that used to say "back to
+the typing keyboard". It shows a microphone in the typing view and a keyboard in the transcribe view
+and already means *change view*. Extend it to a three way cycle: typing → transcribe → reader →
+typing. One key, never moving, always meaning the same thing, and the icon says where the next press
+leads rather than where you are.
+
+Holding that key opens db and must keep doing so.
+
+#### The relationship with the clipboard panel, worth understanding before building
+
+The clipboard panel (`IME_UI_MODE_CLIPBOARD`, the first key in the copy row) already shows the
+history as a grid, with pinned items first. The reader shows the same history and adds a reading
+pane and a voice. They are close enough that building the reader carelessly produces two lists of
+the same things.
+
+The distinction to hold: the **panel is for putting text back into a field**, the **reader is for
+taking text off the screen and into the ear**. Same store, opposite directions. If the reader ends up
+needing a list, it should look like the panel's list, not a second design.
 
 #### Open questions, do not guess
 
-- Whether the reader reads the clipboard automatically on entry, or waits for a play press.
-- What happens at the end of a passage: stop, or return to the previous view.
+- **Does it speak the moment the view opens, or show the text and wait for a press?** Marko leaned
+  towards automatic and then said he was not sure, so this is genuinely undecided. Note the risk
+  before deciding: a keyboard that starts talking out loud the instant it is opened, in a bus or an
+  edit suite, is a keyboard that gets switched off. A large obvious play control with the text
+  already shown is the safer default and costs one press.
+- **What happens at the end of a passage:** stop and stay, or return to the previous view.
+- **Whether the reader needs to survive the keyboard closing.** Reading a long article and then
+  tapping another app currently means the IME goes away and the audio with it. If that matters it is
+  a foreground service, which is a much larger job and should be its own decision.
 
 ### Smaller items, any order
 
