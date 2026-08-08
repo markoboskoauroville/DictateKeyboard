@@ -202,17 +202,22 @@ Read the commit messages for the reasoning; each one says why, not just what.
   underscore by default, editable in Settings.
 - **Personal n-gram prediction.** See `nlp/MaNgram*.kt`.
 
-### Next: robust sending and retranscribe
+### Also shipped since (builds 105 to 110)
 
-The one remaining item where a failure costs Marko material rather than convenience. He dictates long
-passages away from good signal; a send that fails with no way back loses the words.
+- **Retry waits scale with the upload size** and with the attempt, capped at twenty seconds. They
+  were three seconds flat, so a long dictation burned all its attempts in ten seconds while the
+  signal was merely poor. The status line says *waiting to retry*, not *retrying*.
+- **The scheme is baked in.** Sunrise always, no picker, see the rule above.
+- **Snippets**, see below.
+- **Renamed to Talk to Type (TTT)** at build 109. Package id unchanged, see the rule above.
 
-- retry automatically twice, with a wait scaled to the recording length
-- say that it is retrying, in the status line that both views now share
-- then offer a manual retry: a circular back-arrow, in **both** views, whenever a recording was
-  interrupted or failed
-- the braille spinner must never look frozen; it already blinks after six seconds, but the line
-  beside it must always name what is being waited for
+### Next: retranscribe
+
+Robust sending is done. What remains of that item is the manual half: a circular back-arrow, in
+**both** views, whenever a recording was interrupted or failed, so the kept audio can be resent
+deliberately. The resend path already exists in the error handling (`ErrorAction.RESEND`, retained
+audio); it is simply not surfaced as a key. This is the last item where a failure costs Marko words
+rather than convenience.
 
 ### Snippets
 
@@ -221,6 +226,80 @@ copy row to save the selection (or the current clip); tap it to open the panel, 
 sit at the top. `ClipboardManager.saveSnippet` inserts then looks the item back up before pinning,
 because insertion is what assigns the id. Do not build a separate snippet store: it would mean a
 second list, a second screen and a second place to look, for something the clipboard already does.
+
+### The reader view (LLL), the next real project
+
+**Decided: one app, not two.** The reader is a **third view inside TTT**, beside the keyboard view
+and the transcribe view. Marko first asked for a separate sister APK that flips across with a two
+finger gesture. That cannot work: Android allows one active input method at a time and an IME cannot
+hand over to another without sending the user through the system input-method picker, so every flip
+would open a grey system dialog. As one app the flip is instant, there is no second install, and the
+clipboard is already shared because it is the same process. He agreed to this.
+
+**What it does.** Takes the text on the clipboard (or a selection), speaks it in a Microsoft Edge
+neural voice, and highlights each word as it is spoken. It occupies exactly the keyboard's footprint
+and uses the same scheme: near-black surfaces, gold ink, no decoration. Marko is dyslexic and the
+word highlight is the point of the whole thing, not a flourish.
+
+**Voices: four, no more.** From the reference implementation:
+
+| | female | male |
+|---|---|---|
+| English (UK) | `en-GB-SoniaNeural` | `en-GB-RyanNeural` |
+| Croatian | `hr-HR-GabrijelaNeural` | `hr-HR-SreckoNeural` |
+
+Same two languages as the keyboard, so `MaLanguage` should pick the pair and the reader only chooses
+male or female within it.
+
+#### The reference implementation
+
+`reference/26sh_i_ma_reader_v26_macos.sh` in this repo is Marko's MA Reader v26: a single-file
+macOS installer with a Flask server and the whole reader embedded. It is a year of work and it is
+the specification. **Read it before writing anything.** The parts that matter:
+
+- `synth_unit` around line 1365: the edge-tts call. Thirty lines, and the least valuable part.
+- `_communicate` around line 1351: edge-tts 7.x changed the default boundary from `WordBoundary` to
+  `SentenceBoundary`, which silently produced no word events at all and dropped the app onto its
+  fallback. Whatever we build must ask for word boundaries explicitly.
+- `align_tokens` around line 828: **the valuable part.** Maps engine word boundaries onto exact
+  character ranges in the visible text, resyncing when the voice expands a number or spells an
+  acronym, and interpolating by word width where matching fails so the highlight always travels left
+  to right and never collapses onto the last word.
+- `refine_tokens` / `measure_silence`: pins each onset to the real waveform after synthesis.
+
+`align_tokens` and `refine_tokens` are pure logic with nothing Python-specific in them and port to
+Kotlin almost line for line. Port them faithfully rather than reinventing; every branch in there
+exists because something went wrong once.
+
+#### The one hard technical fact
+
+**edge-tts cannot be used on Android.** It is a Python library and Python does not run in an IME.
+But it is only a *client*: it opens a WebSocket to Microsoft's speech endpoint, sends SSML, and reads
+back binary audio frames interleaved with `WordBoundary` JSON text frames. That protocol is
+reimplementable in Kotlin, and this project already ships OkHttp with a WebSocket client in use at
+`lib/dictate-core/.../RealtimeClient.kt`, which is the pattern to follow.
+
+Do not reach for Chaquopy to run Python on device: tens of megabytes for a library we would use
+thirty lines of, in a process the system kills routinely.
+
+Android's own `TextToSpeech` with `onRangeStart` is the fallback if the Edge protocol proves
+unworkable. It is offline and simpler, but the voices are worse and Croatian is often not installed
+at all, which would break half the point.
+
+#### Build order
+
+1. **The Kotlin voice client.** Highest technical risk, needed whichever way anything else goes.
+   Voice in, audio file plus word boundaries out. Prove it against a Croatian sentence with a number
+   in it, since that is where boundaries stop matching cleanly.
+2. **The alignment port.** `align_tokens` and `refine_tokens` in Kotlin, tested against the same
+   sentences the Python handles. This is where the quality lives.
+3. **The reader view.** Third `ImeUiMode`, keyboard footprint, gold on near-black, the sweep, and
+   play/pause. Two finger horizontal flip to enter and leave it.
+
+#### Open questions, do not guess
+
+- Whether the reader reads the clipboard automatically on entry, or waits for a play press.
+- What happens at the end of a passage: stop, or return to the previous view.
 
 ### Smaller items, any order
 
