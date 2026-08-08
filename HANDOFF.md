@@ -1,7 +1,7 @@
 # Talk to Type — handoff and development plan
 
-Written at build 88, updated at build 111. Read this first, then `git log --oneline -20` to see
-anything newer.
+Written at build 88, updated at build 116, when the voice client landed. Read this first, then
+`git log --oneline -20` to see anything newer.
 
 ---
 
