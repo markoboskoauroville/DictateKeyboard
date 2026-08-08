@@ -858,6 +858,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_removal_v15_applied",
             default = false,
         )
+        // Croatian and English on the keyboard, once, without being asked.
+        val maLanguagesV16Applied = boolean(
+            key = "dictate__ma_languages_v16_applied",
+            default = false,
+        )
         // The macro bar: every preset, serialized by MaMacros. One string because that is all a
         // macro bar is, and because a control-character encoding lets a macro contain commas,
         // quotes, newlines and braces without any escaping to get wrong.

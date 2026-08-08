@@ -129,6 +129,7 @@ class FlorisApplication : Application() {
             DictateLegacyMigrator.applyRowV2IfNeeded(this@FlorisApplication)
             DictateLegacyMigrator.applyPanelV14IfNeeded()
             DictateLegacyMigrator.applyRemovalV15IfNeeded()
+            DictateLegacyMigrator.applyLanguagesV16IfNeeded(this@FlorisApplication)
             DictateLegacyMigrator.restoreKeysFromVaultIfEmpty(this@FlorisApplication)
             DictateLegacyMigrator.reofferRateAndDonateIfNeeded()
             preferenceStoreLoaded.value = true

@@ -102,6 +102,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -730,7 +731,8 @@ private fun LegacyRecordRow(
                         Text(
                             text = maLine.ifBlank { stringRes(R.string.dictate__status_transcribing) },
                             color = onAccent,
-                            fontSize = 13.sp,
+                            fontSize = MaStatusFontSize,
+                            fontFamily = MaStatusFontFamily,
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Icon(Icons.Default.Stop, contentDescription = null, tint = onAccent, modifier = Modifier.size(20.dp))
@@ -1343,4 +1345,15 @@ private val MaRecordFill = Color(0xFF11151C)
 private val MaRecordRing = Color(0xFF9B3B33)
 
 /** Warm gold for everything printed on the record key. */
-private val MaRecordInk = Color(0xFFE8B15C)
+internal val MaRecordInk = Color(0xFFE8B15C)
+
+/**
+ * The status line's type: small, monospaced, gold.
+ *
+ * This line is machine output. It reports sizes, elapsed seconds, transfer rates and which key is
+ * being tried, and monospace is what that kind of reading wants: the digits stop shifting sideways
+ * as they change, so a number that is growing reads as growing rather than as the whole line
+ * twitching. Shared by both views so the keyboard view cannot drift from the transcribe view again.
+ */
+internal val MaStatusFontSize = 13.sp
+internal val MaStatusFontFamily = FontFamily.Monospace

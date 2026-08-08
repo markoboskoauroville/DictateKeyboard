@@ -22,6 +22,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +75,7 @@ import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
 import dev.patrickgold.florisboard.nlpManager
 import dev.patrickgold.florisboard.subtypeManager
+import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -253,32 +255,35 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
     }
 
     /**
-     * The suggestion language, as two or three small capitals.
+     * The language, written like a suggestion.
      *
-     * A specialised language guesses better than one hedging between two, and the switch has to be
-     * where the suggestions are or it will not be used mid sentence. Shows the active subtype's
-     * code; a tap moves to the next one. With only one language installed there is nothing to move
-     * to, so it opens the picker instead of doing nothing, which at least explains itself.
+     * One badge for one language. It is the transcription language and the suggestion language at
+     * once, because those are now the same thing (see [MaLanguage]); this is the indicator and the
+     * switch in one, and a tap moves to the other language.
+     *
+     * Typed like a candidate rather than drawn as a button: same element name, so it takes the
+     * theme's suggestion size, weight and colour. A button here was taller than the strip and its
+     * label ran past its own edge.
      */
     @Composable
     fun LanguageToggle() {
-        val subtypes by subtypeManager.subtypesFlow.collectAsState()
+        // Recomposes with the subtype so the badge follows a switch made anywhere else, including
+        // the volume key and the transcribe view's own row.
         val activeSubtype by subtypeManager.activeSubtypeFlow.collectAsState()
-        val code = remember(activeSubtype) {
-            activeSubtype.primaryLocale.language.uppercase().take(3)
-        }
-        SnyggButton(
-            elementName = FlorisImeUi.SmartbarSharedActionsToggle.elementName,
-            onClick = {
-                if (subtypes.size > 1) {
-                    subtypeManager.switchToNextSubtype()
-                } else {
-                    keyboardManager.activeState.isSubtypeSelectionVisible = true
-                }
-            },
-            modifier = Modifier.sizeIn(maxHeight = FlorisImeSizing.smartbarHeight),
+        val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
+        val badge = remember(activeSubtype, activeCode) { MaLanguage.badge() }
+        SnyggBox(
+            elementName = FlorisImeUi.SmartbarCandidateWord.elementName,
+            modifier = Modifier
+                .fillMaxHeight()
+                .clickable { MaLanguage.toggle(context) }
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            SnyggText(text = code)
+            SnyggText(
+                elementName = "${FlorisImeUi.SmartbarCandidateWord.elementName}-text",
+                text = badge,
+            )
         }
     }
 

@@ -11,6 +11,9 @@
 package dev.patrickgold.florisboard.dictate.data.prefs
 
 import android.content.Context
+import dev.patrickgold.florisboard.dictate.MaLanguage
+import dev.patrickgold.florisboard.subtypeManager
+import dev.patrickgold.florisboard.lib.FlorisLocale
 import androidx.compose.ui.graphics.Color
 import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.ime.text.gestures.SwipeAction
@@ -554,6 +557,47 @@ object DictateLegacyMigrator {
             prefs.smartbar.actionArrangement.set(cleaned)
         }
         prefs.dictate.maRemovalV15Applied.set(true)
+    }
+
+    /**
+     * Puts Croatian and English on the keyboard, once, without being asked.
+     *
+     * This app is Croatian and English. Shipping it with no subtypes configured meant a yellow
+     * warning in Settings, a fallback to English QWERTY, and a language switch with nothing to
+     * switch to, which is why the toggle looked broken: it was correct, and there was genuinely only
+     * one language installed.
+     *
+     * Both are added from the bundled presets, so each gets its proper layout, popup mapping and
+     * currency set rather than a hand-built approximation. Croatian is qwertz with the euro,
+     * English is qwerty with the dollar.
+     *
+     * The dictation language list is narrowed to the same two, so the transcribe view's row and the
+     * badge in the suggestion strip offer exactly the same choice. Auto-detect goes: with two
+     * languages and one key to flip between them, guessing is slower and worse than saying.
+     *
+     * Only ever adds. Anything already configured stays, because a subtype somebody added by hand is
+     * not ours to delete on an upgrade.
+     */
+    suspend fun applyLanguagesV16IfNeeded(context: Context) {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maLanguagesV16Applied.get()) return
+        val subtypeManager by context.subtypeManager()
+        val wanted = listOf(FlorisLocale.from("hr"), FlorisLocale.from("en", "US"))
+        for (locale in wanted) {
+            val alreadyThere = subtypeManager.subtypes.any {
+                it.primaryLocale.language.equals(locale.language, ignoreCase = true)
+            }
+            if (alreadyThere) continue
+            val preset = subtypeManager.getSubtypePresetForLocale(locale) ?: continue
+            subtypeManager.addSubtype(preset.toSubtype())
+        }
+        // The two, in the order the toggle moves through them, and nothing else.
+        prefs.dictate.inputLanguages.set("${MaLanguage.HR},${MaLanguage.EN}")
+        val current = prefs.dictate.activeInputLanguage.get().substringBefore('-').lowercase()
+        if (current != MaLanguage.HR && current != MaLanguage.EN) {
+            prefs.dictate.activeInputLanguage.set(MaLanguage.HR)
+        }
+        prefs.dictate.maLanguagesV16Applied.set(true)
     }
 
     suspend fun migratePromptsLayoutToRowIfNeeded() {

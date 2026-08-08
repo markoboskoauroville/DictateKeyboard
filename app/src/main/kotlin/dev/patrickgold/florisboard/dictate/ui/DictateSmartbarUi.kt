@@ -494,22 +494,30 @@ private fun TranscribingContent(state: DictateController.UiState.Transcribing) {
     //
     // Drawn from the shared composable rather than a copy, so the two views cannot drift.
     val retrying = state.attempt > 1
-    val ink = LocalContentColor.current
     if (retrying) {
         SnyggIcon(
             imageVector = Icons.Default.CloudOff,
             modifier = Modifier.size(18.dp),
         )
     } else {
-        MaBrailleSpinner(color = ink, fontSize = 16.sp)
+        MaBrailleSpinner(color = MaRecordInk, fontSize = MaStatusFontSize)
     }
-    Spacer(modifier = Modifier.width(10.dp))
+    Spacer(modifier = Modifier.width(8.dp))
     val maLine by DictateController.maStatus.collectFlowAsState()
-    SnyggText(
+    // Plain Text with the shared status type rather than SnyggText: the theme's text styling sizes
+    // this for a suggestion, which is far too large for a line of machine output sitting in a strip
+    // this shallow. Same size, same gold and same monospace as the transcribe view, from the same
+    // two values, so the two cannot drift apart again.
+    Text(
         text = when {
             retrying -> stringRes(R.string.dictate__status_retrying, "attempt" to state.attempt)
             else -> maLine.ifBlank { stringRes(R.string.dictate__status_transcribing) }
         },
+        color = MaRecordInk,
+        fontSize = MaStatusFontSize,
+        fontFamily = MaStatusFontFamily,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -532,14 +540,19 @@ private fun RewordingContent(state: DictateController.UiState.Rewording) {
             .size(18.dp)
             .rotate(rotation),
     )
-    Spacer(modifier = Modifier.width(10.dp))
+    Spacer(modifier = Modifier.width(8.dp))
     // Rewording reports its progress through the same line while a request is in flight, so show it
     // here too and fall back to the prompt's own label when there is nothing more specific to say.
     val maLine by DictateController.maStatus.collectFlowAsState()
-    SnyggText(
+    Text(
         text = maLine.ifBlank {
             state.label.ifBlank { stringRes(R.string.dictate__status_rewording) }
         },
+        color = MaRecordInk,
+        fontSize = MaStatusFontSize,
+        fontFamily = MaStatusFontFamily,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
     )
 }
 

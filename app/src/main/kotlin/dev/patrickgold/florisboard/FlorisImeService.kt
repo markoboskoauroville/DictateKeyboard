@@ -44,6 +44,7 @@ import androidx.core.view.WindowCompat
 import android.view.WindowManager
 import androidx.lifecycle.lifecycleScope
 import dev.patrickgold.florisboard.dictate.DictateController
+import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.florisboard.app.FlorisAppActivity
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.ime.ImeUiMode
@@ -693,9 +694,18 @@ class FlorisImeService : LifecycleInputMethodService() {
                 true
             }
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                // The bar is held briefly so the discard is visible as something that happened,
-                // rather than the recording simply vanishing with no account of itself.
-                DictateController.cancelRecording(keepBarForMs = 600L)
+                // Two meanings, decided by whether anything is being recorded, and they never
+                // overlap. Mid recording the only thing worth a physical key is throwing it away.
+                // With nothing recording there is nothing to cancel, and the thing most worth
+                // reaching for without looking is the language, because it has to be right *before*
+                // speaking and checking it means looking at the screen. The bar is held briefly on a
+                // discard so it reads as something that happened rather than the recording simply
+                // vanishing.
+                if (DictateController.state.value is DictateController.UiState.Recording) {
+                    DictateController.cancelRecording(keepBarForMs = 600L)
+                } else {
+                    MaLanguage.toggle(this)
+                }
                 true
             }
             else -> false

@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.MaCase
+import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.dictate.provider.ProviderRegistry
 import dev.patrickgold.florisboard.ime.input.InputShiftState
@@ -83,6 +84,9 @@ private fun maQuickAttributes(code: Int) = mapOf(
 @Composable
 fun MaQuickRow(modifier: Modifier = Modifier) {
     val prefs by FlorisPreferenceStore
+    // Its own name: the Row below already declares a `context` for the case buttons, and two of the
+    // same name in one scope is a redeclaration, not a shadow.
+    val maContext = LocalContext.current
 
     val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
     val selectionRaw by prefs.dictate.inputLanguages.collectAsState()
@@ -105,7 +109,10 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
             val isAuto = lang.code == DictateLanguages.DETECT
             MaQuickKey(
                 selected = lang.code == activeCode,
-                onClick = { DictateController.setLanguage(lang.code) },
+                // Through MaLanguage, not setLanguage: this row has to move the suggestion
+                // language with it, or the two drift apart again from the one place they are most
+                // obviously expected to agree.
+                onClick = { MaLanguage.set(maContext, lang.code) },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             ) { fg ->
                 if (isAuto) {
