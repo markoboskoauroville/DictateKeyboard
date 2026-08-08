@@ -128,6 +128,7 @@ import dev.patrickgold.florisboard.ime.text.gestures.SwipeAction
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyData
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
+import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionsOverflowPanel
 import dev.patrickgold.florisboard.keyboardManager
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlin.math.abs
@@ -269,6 +270,21 @@ fun LegacyDictateLayout(
     }
 
     var overlay by remember { mutableStateOf(LegacyOverlay.NONE) }
+
+    // The dashboard opens where it was asked for.
+    //
+    // It was only ever drawn by the typing view, so pressing db here set the flag, the panel
+    // appeared on a screen that was not showing, and this view carried on as though nothing had
+    // happened. Worse, the flag stayed set, so the next trip to the typing keyboard landed in a
+    // panel nobody had asked for. Both views draw it now, and it covers this one the same way it
+    // covers that one.
+    val state by keyboardManager.activeState.collectAsState()
+    if (state.isActionsOverflowVisible) {
+        Box(modifier = modifier.fillMaxWidth()) {
+            QuickActionsOverflowPanel()
+        }
+        return
+    }
 
     Box(modifier = modifier.fillMaxWidth()) {
         when (overlay) {

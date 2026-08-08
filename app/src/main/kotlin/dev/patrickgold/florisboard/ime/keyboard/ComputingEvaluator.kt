@@ -42,7 +42,6 @@ import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.RadioButtonChecked
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Translate
@@ -314,14 +313,18 @@ fun ComputingEvaluator.computeImageVector(data: KeyData): ImageVector? {
         KeyCode.MA_TOGGLE_PROMPTS -> Icons.Default.RecordVoiceOver
         KeyCode.MA_TOGGLE_QUICK_ROW -> Icons.Default.Translate
         KeyCode.MA_TOGGLE_CURSOR_ROW -> Icons.Default.SwapHoriz
-        KeyCode.MA_ROW_BRACKETS -> Icons.Default.Code
-        KeyCode.MA_ROW_ARROWS -> Icons.Default.SwapHoriz
-        // Scissors for the editing set, digits for the digits, a translate glyph for the Croatian
-        // letters, and the paste glyph for the copy row switch. Every one of these is already used
-        // somewhere in this project, so every one is certain to resolve.
-        KeyCode.MA_ROW_EDITING -> Icons.Default.ContentCut
-        KeyCode.MA_ROW_DIGITS -> Icons.Default.Numbers
-        KeyCode.MA_ROW_DIACRITICS -> Icons.Default.Translate
+        // No icon for any of the row sets, deliberately.
+        //
+        // Each of these swaps what the number row shows, and no glyph says that. The translate icon
+        // on the Croatian one was the clearest failure: it promised a translation and delivered a
+        // row of letters. Scissors on the editing set had the same problem, since it does far more
+        // than cut. Their tiles say what they do in words instead, and the words name the number row
+        // so the effect is obvious before pressing.
+        KeyCode.MA_ROW_BRACKETS,
+        KeyCode.MA_ROW_ARROWS,
+        KeyCode.MA_ROW_EDITING,
+        KeyCode.MA_ROW_DIGITS,
+        KeyCode.MA_ROW_DIACRITICS -> null
         KeyCode.MA_TOGGLE_EDIT_ROW -> Icons.Default.ContentPasteGo
         KeyCode.LANGUAGE_SWITCH -> {
             Icons.Default.Language

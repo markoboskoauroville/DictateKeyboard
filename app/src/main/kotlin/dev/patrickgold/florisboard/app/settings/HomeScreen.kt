@@ -252,11 +252,10 @@ fun HomeScreen() = FlorisScreen {
                     title = stringRes(R.string.settings__clipboard__title),
                     onClick = { navController.navigate(Routes.Settings.Clipboard) },
                 )
-                Preference(
-                    icon = Icons.Default.Language,
-                    title = stringRes(R.string.settings__localization__title),
-                    onClick = { navController.navigate(Routes.Settings.Localization) },
-                )
+                // No language entry. The app is Croatian and English, both installed on first run,
+                // and the switch between them is a badge on the keyboard and the volume down key.
+                // A screen offering a choice that has already been made can only be used to get it
+                // wrong, which is how an install ended up with no subtypes at all.
             }
         }
 

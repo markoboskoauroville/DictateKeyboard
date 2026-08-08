@@ -16,6 +16,8 @@
 
 package dev.patrickgold.florisboard.ime.smartbar.quickaction
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -23,10 +25,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -39,6 +44,7 @@ import dev.patrickgold.jetpref.datastore.model.collectAsState
 import org.florisboard.lib.compose.stringRes
 import org.florisboard.lib.snygg.ui.SnyggBox
 import org.florisboard.lib.snygg.ui.SnyggButton
+import org.florisboard.lib.snygg.ui.SnyggIcon
 import org.florisboard.lib.snygg.ui.SnyggText
 
 @Composable
@@ -74,6 +80,28 @@ fun QuickActionsOverflowPanel() {
                 .fillMaxWidth(),
             columns = GridCells.Adaptive(FlorisImeSizing.smartbarHeight.coerceAtLeast(1.dp) * 2.2f),
         ) {
+            // The way out, first and small.
+            //
+            // This panel covers the whole keyboard, and it had no exit of its own: it closed only by
+            // pressing the button that opened it, which is behind the panel. Opened from the
+            // transcribe view, where that button is somewhere else entirely, there was no way back
+            // at all.
+            //
+            // Half a tile rather than a full one, because it is pressed once per visit and the tiles
+            // beside it are the reason for the visit. It sits first so it is always in the same
+            // corner however many actions are shown.
+            item {
+                SnyggBox(
+                    elementName = FlorisImeUi.SmartbarActionTile.elementName,
+                    modifier = Modifier.aspectRatio(2f),
+                    clickAndSemanticsModifier = Modifier.clickable {
+                        keyboardManager.activeState.isActionsOverflowVisible = false
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SnyggIcon(imageVector = Icons.Default.Close)
+                }
+            }
             items(visibleActions) { action ->
                 QuickActionButton(
                     action = action,

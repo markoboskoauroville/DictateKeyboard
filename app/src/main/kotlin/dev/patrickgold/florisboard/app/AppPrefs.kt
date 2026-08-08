@@ -863,6 +863,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_languages_v17_applied",
             default = false,
         )
+        // The row sets to the front of a panel already written.
+        val maDashboardV18Applied = boolean(
+            key = "dictate__ma_dashboard_v18_applied",
+            default = false,
+        )
         // The macro bar: every preset, serialized by MaMacros. One string because that is all a
         // macro bar is, and because a control-character encoding lets a macro contain commas,
         // quotes, newlines and braces without any escaping to get wrong.

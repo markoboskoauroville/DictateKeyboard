@@ -409,7 +409,17 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
                 // microphone now, and the microphone itself moved down into the copy and paste row,
                 // where it is the same size and colour as every other key. Both were spending the
                 // width of a suggestion each, on a strip whose whole job is showing suggestions.
-                LanguageToggle()
+                //
+                // The badge stands down while dictating, so the recording bar gets the whole strip
+                // and its timer sits in the true centre of the screen. Anything at all to the left
+                // of the centre content shifts that centre right by its own width, and a stopwatch
+                // that is nearly centred reads as a mistake rather than as a measurement. Nothing is
+                // lost by hiding it: the language cannot be changed mid recording anyway, since
+                // volume down means cancel while a recording runs.
+                val isDictatingNow = dictateState !is DictateController.UiState.Idle
+                if (!isDictatingNow) {
+                    LanguageToggle()
+                }
                 CenterContent()
             }
 

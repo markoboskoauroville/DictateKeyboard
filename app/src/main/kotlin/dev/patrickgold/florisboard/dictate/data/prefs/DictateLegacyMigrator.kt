@@ -628,6 +628,43 @@ object DictateLegacyMigrator {
         prefs.dictate.maLanguagesV16Applied.set(true)
     }
 
+    /**
+     * Moves the row sets to the front of a panel that has already been written.
+     *
+     * Changing what the number row holds is the thing this panel gets opened for, so those five come
+     * first and everything else keeps its order behind them. Anything deliberately hidden stays
+     * hidden; this only reorders what is already visible, and adds a row set that is missing
+     * entirely, which is the editing one on any install that predates it.
+     */
+    suspend fun applyDashboardV18IfNeeded() {
+        val prefs by FlorisPreferenceStore
+        if (prefs.dictate.maDashboardV18Applied.get()) return
+        val rowSets = listOf(
+            TextKeyData.MA_ROW_EDITING,
+            TextKeyData.MA_ROW_DIACRITICS,
+            TextKeyData.MA_ROW_BRACKETS,
+            TextKeyData.MA_ROW_ARROWS,
+            TextKeyData.MA_ROW_DIGITS,
+        )
+        val rowSetCodes = rowSets.map { it.code }.toSet()
+        val arrangement = prefs.smartbar.actionArrangement.get()
+        val hiddenCodes = arrangement.hiddenActions
+            .mapNotNull { (it as? QuickAction.InsertKey)?.data?.code }
+            .toSet()
+        // Front of the list, in the order above, skipping any the user has deliberately hidden.
+        val front = rowSets
+            .filter { it.code !in hiddenCodes }
+            .map { QuickAction.InsertKey(it) }
+        val rest = arrangement.dynamicActions.filter {
+            (it as? QuickAction.InsertKey)?.data?.code !in rowSetCodes
+        }
+        val reordered = arrangement.copy(dynamicActions = front + rest)
+        if (reordered != arrangement) {
+            prefs.smartbar.actionArrangement.set(reordered)
+        }
+        prefs.dictate.maDashboardV18Applied.set(true)
+    }
+
     suspend fun migratePromptsLayoutToRowIfNeeded() {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.promptsLayoutRowMigrated.get()) return

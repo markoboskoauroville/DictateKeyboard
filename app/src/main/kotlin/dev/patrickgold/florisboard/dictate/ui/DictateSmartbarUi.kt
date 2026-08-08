@@ -140,8 +140,13 @@ private val RecordingRed = Color(0xFF9B3B33)
  */
 @Composable
 fun DictateSmartbarUi(state: DictateController.UiState, modifier: Modifier = Modifier) {
+    // Centred while recording as well.
+    //
+    // SpaceBetween pushed the discard button to one edge and the meter and stopwatch to the other,
+    // so the numbers sat wherever the leftover width happened to leave them. Centre puts the group
+    // in the middle of the strip and keeps it there as the timer grows a digit.
     val arrangement = when {
-        state is DictateController.UiState.Recording -> Arrangement.SpaceBetween
+        state is DictateController.UiState.Recording -> Arrangement.Center
         state is DictateController.UiState.Error &&
             state.action != DictateController.ErrorAction.NONE -> Arrangement.SpaceBetween
         // The interrupted-recording chip always carries send/dismiss buttons on the right.
