@@ -33,6 +33,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -185,6 +186,24 @@ class FlorisAppActivity : ComponentActivity() {
         // any onward navigation). Completing setup navigates explicitly instead.
         val startDestination = remember {
             if (isImeSetUp) Routes.Settings.Home::class else Routes.Setup.Screen::class
+        }
+
+        // Marko: a set-up install opens on About.
+        //
+        // Once the keyboard works, the app gets opened for one reason: to read the build number and
+        // see whether the update actually landed. Home leads with "try out your setup", which is the
+        // one thing there is no need to do at that moment, and the build number was two taps further
+        // on. Navigating rather than changing the start destination keeps Home underneath, so the
+        // back arrow goes to Home instead of straight out of the app.
+        //
+        // Once per launch, not once per composition, or every rotation would throw the user back to
+        // About from wherever they had navigated to.
+        var openedAbout by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(isImeSetUp) {
+            if (isImeSetUp && !openedAbout) {
+                openedAbout = true
+                navController.navigate(Routes.Settings.About)
+            }
         }
 
         // After the onboarding's optional floating-button step finishes setup, jump on to the

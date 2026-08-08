@@ -66,7 +66,6 @@ import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SpaceBar
@@ -505,16 +504,37 @@ private fun LegacyActionKey(
         LegacyEditAction.REINSERT -> ThemedIconKey(KeyCode.NOOP, action.icon, label, modifier) {
             DictateController.reinsertLastDictation(context)
         }
-        // A second "switch to last keyboard" button (#206) — the bottom-row one stays; placing this in the
-        // top action row (e.g. the rightmost slot) makes it far easier to reach one-handed. Long-press opens
-        // the system IME picker, exactly like the fixed bottom-row switch key.
-        LegacyEditAction.KEYBOARD -> ThemedIconKey(
-            code = KeyCode.IME_UI_MODE_TEXT,
-            icon = action.icon,
-            contentDescription = label,
-            modifier = modifier,
-            onClick = { keyboardManager.tapKey(KeyCode.IME_UI_MODE_TEXT) },
-        )
+        // The view switch, and the way into the dashboard.
+        //
+        // This slot used to say "back to the typing keyboard" in both views, which meant that in the
+        // typing view it did nothing at all: you were already there. It is the view swap now, and it
+        // shows where it will take you rather than where you are. A microphone in the typing view, a
+        // keyboard in the transcribe view, one place on the screen, so the thumb stops hunting.
+        //
+        // The microphone that used to sit in the corner of the suggestion strip, gold and ringed, is
+        // this key. It has no colour of its own here because it never carried state, only emphasis,
+        // and the strip it left is now entirely suggestions.
+        //
+        // Holding it opens the Menu Macro dashboard. The dashboard lost its own button in the same
+        // clear-out, and a long press on a key that is always in the same place costs no width at
+        // all. There is nowhere else on this keyboard left to put it.
+        LegacyEditAction.KEYBOARD -> {
+            val inTranscribe = keyboardManager.activeState.imeUiMode == ImeUiMode.TRANSCRIBE
+            ThemedIconKey(
+                code = KeyCode.NOOP,
+                icon = if (inTranscribe) Icons.Default.Keyboard else Icons.Default.Mic,
+                contentDescription = label,
+                modifier = modifier,
+                onLongClick = {
+                    keyboardManager.activeState.isActionsOverflowVisible = true
+                },
+                onClick = {
+                    keyboardManager.tapKey(
+                        if (inTranscribe) KeyCode.IME_UI_MODE_TEXT else KeyCode.IME_UI_MODE_DICTATE,
+                    )
+                },
+            )
+        }
         LegacyEditAction.SWITCH -> ThemedIconKey(
             code = KeyCode.SYSTEM_PREV_INPUT_METHOD,
             icon = action.icon,
@@ -589,6 +609,7 @@ private fun LegacyRecordRow(
 ) {
     val prefs by FlorisPreferenceStore
     val context = LocalContext.current
+    val keyboardManager by context.keyboardManager()
     val recording = dictateState as? DictateController.UiState.Recording
     val rewording = dictateState as? DictateController.UiState.Rewording
     // The button is non-interactive while the audio is being transcribed or reworded.
@@ -632,13 +653,31 @@ private fun LegacyRecordRow(
                 onClick = { DictateController.discardRecording(context) },
             )
         } else {
-            ThemedIconKey(
-                code = KeyCode.SETTINGS,
-                icon = Icons.Default.Settings,
-                contentDescription = stringRes(R.string.dictate__action_settings),
+            // db, the dashboard, in lowercase.
+            //
+            // Two letters rather than an icon, because there is no glyph that says "the panel where
+            // this keyboard is configured" and three dots said only "more". Lowercase d and b are
+            // mirror images of each other, which makes the pair read as a mark rather than as an
+            // abbreviation, and it costs nothing to draw.
+            //
+            // It takes this slot because the gear moved down to the corner, where a left thumb
+            // reaches without the hand shifting. Settings is opened rarely and deliberately; the
+            // dashboard is opened mid sentence, so the dashboard gets the better position of the two
+            // and the gear gets the easier one to find.
+            ThemedKey(
+                code = KeyCode.TOGGLE_ACTIONS_OVERFLOW,
                 modifier = sideKey,
-                onClick = { FlorisImeService.launchSettings("settings/dictate") },
-            )
+                onClick = {
+                    keyboardManager.activeState.isActionsOverflowVisible = true
+                },
+            ) { fg ->
+                Text(
+                    text = "db",
+                    color = fg,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
 
         // Center: the big Record button – the one deliberate accent element (like the Smartbar mic).
@@ -803,29 +842,21 @@ private fun LegacyBottomRow(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // The little man, and the row he belongs to, turned on and off from here.
+        // The gear, in the corner, where a left thumb reaches it without the hand moving.
         //
-        // The space bar had the whole row to itself, which looked wrong against the record row
-        // directly above it: the same width divided differently on two rows that read as a pair. It
-        // is a square key, a bar, and a square key up there, so it is a square key, a bar, and a
-        // square key down here, and the space bar is now exactly as wide as the record bar.
+        // The little man's switch was here and is gone. It was a third way to do one thing: his row
+        // is shared by both views, so it belongs in the dashboard with every other show-and-hide
+        // switch rather than having a key of its own on one screen. One switch in one place beats
+        // the same switch in three.
         //
-        // The freed square is the prompts switch. Hiding that row is the single biggest thing that
-        // can be done about how much screen this app takes, so it earns a key of its own rather
-        // than living only in a panel that has to be opened first.
-        val maShowPrompts by prefs.dictate.maShowPrompts.collectAsState()
-        val scope = rememberCoroutineScope()
+        // Settings takes the corner and the dashboard takes the slot above, because settings is
+        // opened rarely and deliberately while the dashboard is opened mid sentence.
         ThemedIconKey(
-            code = KeyCode.MA_TOGGLE_PROMPTS,
-            icon = Icons.Default.RecordVoiceOver,
-            contentDescription = "Prompts row",
+            code = KeyCode.SETTINGS,
+            icon = Icons.Default.Settings,
+            contentDescription = stringRes(R.string.dictate__action_settings),
             modifier = sideKey,
-            // Gold when the row is showing, the ordinary key ink when it is not. Colour for state,
-            // as everywhere else, and the only way to read a switch whose effect is off screen.
-            tint = if (maShowPrompts) Color(0xFFE8B15C) else null,
-            onClick = {
-                scope.launch { prefs.dictate.maShowPrompts.set(!maShowPrompts) }
-            },
+            onClick = { FlorisImeService.launchSettings("settings/dictate") },
         )
 
         LegacySpaceKey(

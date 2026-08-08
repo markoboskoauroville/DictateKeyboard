@@ -860,7 +860,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         )
         // Croatian and English on the keyboard, once, without being asked.
         val maLanguagesV16Applied = boolean(
-            key = "dictate__ma_languages_v16_applied",
+            key = "dictate__ma_languages_v17_applied",
             default = false,
         )
         // The macro bar: every preset, serialized by MaMacros. One string because that is all a

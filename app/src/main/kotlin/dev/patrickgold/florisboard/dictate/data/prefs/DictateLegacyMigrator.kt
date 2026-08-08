@@ -14,6 +14,13 @@ import android.content.Context
 import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.florisboard.subtypeManager
 import dev.patrickgold.florisboard.lib.FlorisLocale
+import dev.patrickgold.florisboard.ime.core.Subtype
+import dev.patrickgold.florisboard.ime.core.SubtypeLayoutMap
+import dev.patrickgold.florisboard.ime.keyboard.extCoreComposer
+import dev.patrickgold.florisboard.ime.keyboard.extCoreCurrencySet
+import dev.patrickgold.florisboard.ime.keyboard.extCoreLayout
+import dev.patrickgold.florisboard.ime.keyboard.extCorePopupMapping
+import dev.patrickgold.florisboard.ime.keyboard.extCorePunctuationRule
 import androidx.compose.ui.graphics.Color
 import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.ime.text.gestures.SwipeAction
@@ -562,34 +569,55 @@ object DictateLegacyMigrator {
     /**
      * Puts Croatian and English on the keyboard, once, without being asked.
      *
-     * This app is Croatian and English. Shipping it with no subtypes configured meant a yellow
-     * warning in Settings, a fallback to English QWERTY, and a language switch with nothing to
-     * switch to, which is why the toggle looked broken: it was correct, and there was genuinely only
-     * one language installed.
+     * This app is Croatian and English. Shipping with no subtypes configured meant a yellow warning
+     * in Settings, a fallback to English QWERTY, and a language switch with nothing to switch to.
      *
-     * Both are added from the bundled presets, so each gets its proper layout, popup mapping and
-     * currency set rather than a hand-built approximation. Croatian is qwertz with the euro,
-     * English is qwerty with the dollar.
+     * The two are built here from literal values rather than read out of the bundled subtype
+     * presets, and that is the whole fix rather than a style choice. Migrations run while the
+     * preference store is loading, and the extension manager that parses those presets is only
+     * started afterwards, so the preset list was reliably empty at this moment and the pass added
+     * nothing at all while reporting itself done. That is why the picker still opened on a single
+     * language. These values are copied from the presets in org.florisboard.localization: Croatian
+     * is qwertz with the euro and the hr popup mapping, English is qwerty with the dollar and the en
+     * one.
      *
      * The dictation language list is narrowed to the same two, so the transcribe view's row and the
-     * badge in the suggestion strip offer exactly the same choice. Auto-detect goes: with two
-     * languages and one key to flip between them, guessing is slower and worse than saying.
+     * badge in the suggestion strip offer exactly the same choice.
      *
-     * Only ever adds. Anything already configured stays, because a subtype somebody added by hand is
-     * not ours to delete on an upgrade.
+     * Only ever adds. Anything already configured stays, because a subtype added by hand is not ours
+     * to delete on an upgrade, and addSubtype itself ignores an exact duplicate.
      */
     suspend fun applyLanguagesV16IfNeeded(context: Context) {
         val prefs by FlorisPreferenceStore
         if (prefs.dictate.maLanguagesV16Applied.get()) return
         val subtypeManager by context.subtypeManager()
-        val wanted = listOf(FlorisLocale.from("hr"), FlorisLocale.from("en", "US"))
-        for (locale in wanted) {
+        val wanted = listOf(
+            Subtype(
+                id = -1,
+                primaryLocale = FlorisLocale.from("hr"),
+                secondaryLocales = emptyList(),
+                composer = extCoreComposer("appender"),
+                currencySet = extCoreCurrencySet("euro"),
+                punctuationRule = extCorePunctuationRule("default"),
+                popupMapping = extCorePopupMapping("hr"),
+                layoutMap = SubtypeLayoutMap(characters = extCoreLayout("qwertz")),
+            ),
+            Subtype(
+                id = -1,
+                primaryLocale = FlorisLocale.from("en", "US"),
+                secondaryLocales = emptyList(),
+                composer = extCoreComposer("appender"),
+                currencySet = extCoreCurrencySet("dollar"),
+                punctuationRule = extCorePunctuationRule("default"),
+                popupMapping = extCorePopupMapping("en"),
+                layoutMap = SubtypeLayoutMap(characters = extCoreLayout("qwerty")),
+            ),
+        )
+        for (subtype in wanted) {
             val alreadyThere = subtypeManager.subtypes.any {
-                it.primaryLocale.language.equals(locale.language, ignoreCase = true)
+                it.primaryLocale.language.equals(subtype.primaryLocale.language, ignoreCase = true)
             }
-            if (alreadyThere) continue
-            val preset = subtypeManager.getSubtypePresetForLocale(locale) ?: continue
-            subtypeManager.addSubtype(preset.toSubtype())
+            if (!alreadyThere) subtypeManager.addSubtype(subtype)
         }
         // The two, in the order the toggle moves through them, and nothing else.
         prefs.dictate.inputLanguages.set("${MaLanguage.HR},${MaLanguage.EN}")

@@ -39,7 +39,6 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.UnfoldLess
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.runtime.Composable
@@ -84,7 +83,6 @@ import org.florisboard.lib.android.AndroidVersion
 import org.florisboard.lib.compose.horizontalTween
 import org.florisboard.lib.compose.verticalTween
 import org.florisboard.lib.snygg.ui.SnyggBox
-import org.florisboard.lib.snygg.ui.SnyggButton
 import org.florisboard.lib.snygg.ui.SnyggColumn
 import org.florisboard.lib.snygg.ui.SnyggIcon
 import org.florisboard.lib.snygg.ui.SnyggIconButton
@@ -224,35 +222,6 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
         dictatePromptsLayout == DictatePromptsLayout.PANEL &&
         hasDictateSelection &&
         dictatePrompts.isNotEmpty()
-
-    /**
-     * The Menu Macro dashboard, straight from the top row.
-     *
-     * This was the arrow that expanded a second row of quick actions over the suggestions. That row
-     * held select all, undo, redo and cut, all of which the copy and paste row below already carries,
-     * and the two row-set buttons, which belong in the dashboard with the other five. So it was a
-     * row of duplicates sitting on top of the one thing this strip is actually for.
-     *
-     * The button now opens the dashboard directly. That is where the row sets live, so it is also
-     * one tap shorter than it was: expand, then three dots, is now just this.
-     */
-    @Composable
-    fun MenuMacroToggle() {
-        SnyggIconButton(
-            elementName = FlorisImeUi.SmartbarSharedActionsToggle.elementName,
-            onClick = {
-                keyboardManager.activeState.isActionsOverflowVisible =
-                    !keyboardManager.activeState.isActionsOverflowVisible
-            },
-            modifier = Modifier.sizeIn(maxHeight = FlorisImeSizing.smartbarHeight).aspectRatio(1f)
-        ) {
-            val incognitoIcon = ImageVector.vectorResource(id = R.drawable.ic_incognito)
-            val isIncognitoMode = keyboardManager.activeState.isIncognitoMode
-            SnyggIcon(
-                imageVector = if (isIncognitoMode) incognitoIcon else Icons.Default.MoreHoriz,
-            )
-        }
-    }
 
     /**
      * The language, written like a suggestion.
@@ -435,17 +404,13 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
             }
 
             SmartbarLayout.SUGGESTIONS_ACTIONS_SHARED -> {
-                if (!flipToggles) {
-                    MenuMacroToggle()
-                    LanguageToggle()
-                    CenterContent()
-                    StickyAction()
-                } else {
-                    StickyAction()
-                    CenterContent()
-                    LanguageToggle()
-                    MenuMacroToggle()
-                }
+                // The language badge, then suggestions, and nothing else. The dashboard button and
+                // the microphone both left this row: the dashboard is a long press on the
+                // microphone now, and the microphone itself moved down into the copy and paste row,
+                // where it is the same size and colour as every other key. Both were spending the
+                // width of a suggestion each, on a strip whose whole job is showing suggestions.
+                LanguageToggle()
+                CenterContent()
             }
 
             SmartbarLayout.SUGGESTIONS_ACTIONS_EXTENDED -> {
