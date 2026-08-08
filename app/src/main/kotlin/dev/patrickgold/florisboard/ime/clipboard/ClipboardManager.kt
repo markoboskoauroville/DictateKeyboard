@@ -388,29 +388,36 @@ class ClipboardManager(
     }
 
     /**
-     * Saves [text] as a snippet: into the history, and pinned so it stays there.
+     * Saves [text] as a snippet: in the history, pinned, so it stays.
      *
      * A snippet is not a third kind of thing. It is a clipboard item that does not scroll away, and
-     * the clipboard already knows how to pin, how to store, and how to show pinned items first. A
-     * separate snippet store would mean a second list, a second screen and a second place to look,
-     * for something the panel already does.
+     * the clipboard already knows how to pin, how to store, and how to show pinned items first.
      *
-     * The item is looked up again after inserting rather than pinned directly, because insertion is
-     * what assigns its id, and pinning an item without its id updates nothing. Text that was already
-     * in the history is moved to the front and pinned where it stands, so saving the same thing
-     * twice keeps one entry rather than making two.
+     * Suspends and writes the row itself rather than going through [addNewPlaintext] and looking the
+     * item up afterwards. That was the first attempt and it silently did nothing: insertion happens
+     * on a background scope, so the lookup ran before the row existed, found nothing, and reported
+     * failure while the text was on its way into the history unpinned. Inserting already pinned
+     * removes the race rather than papering over it with a delay.
      *
-     * Returns false when there was nothing to save.
+     * Text already in the history is pinned where it stands, so saving the same thing twice keeps
+     * one entry rather than making two.
+     *
+     * Returns false only when there was nothing to save or no database to save it to.
      */
-    fun saveSnippet(text: String): Boolean {
+    suspend fun saveSnippet(text: String): Boolean = withContext(Dispatchers.IO) {
         val trimmed = text.trim()
-        if (trimmed.isEmpty()) return false
-        addNewPlaintext(trimmed)
-        val stored = currentHistory.all.firstOrNull { item ->
+        if (trimmed.isEmpty()) return@withContext false
+        val dao = clipHistoryDao ?: return@withContext false
+        val existing = currentHistory.all.firstOrNull { item ->
             item.type == ItemType.TEXT && item.text == trimmed
-        } ?: return false
-        if (!stored.isPinned) pinClip(stored)
-        return true
+        }
+        if (existing != null) {
+            if (!existing.isPinned) dao.update(existing.copy(isPinned = true))
+            return@withContext true
+        }
+        val item = ClipboardItem.text(trimmed).copy(isPinned = true)
+        item.id = dao.insert(item)
+        true
     }
 
     fun pinClip(item: ClipboardItem) {

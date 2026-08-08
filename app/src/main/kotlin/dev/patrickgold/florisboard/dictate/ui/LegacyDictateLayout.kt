@@ -510,11 +510,25 @@ private fun LegacyActionKey(
             // covers both ways somebody arrives at a piece of text worth keeping: they selected it,
             // or they just copied it.
             onLongClick = {
-                val text = snippetEditor.activeContent.selectedText.ifBlank {
-                    snippetClipboard.primaryClip?.text?.toString().orEmpty()
-                }
-                val saved = snippetClipboard.saveSnippet(text)
                 actionScope.launch {
+                    // Copy first, always, then save whatever the clipboard ends up holding.
+                    //
+                    // Reading the selection out of the input connection was the first attempt and it
+                    // does not work where it matters. A selection inside a web view, which is where
+                    // most of this text is selected, is the browser's selection and not the editor's,
+                    // so the input connection reports nothing at all. Asking the field to copy is a
+                    // request the browser understands, and it puts the words on the system clipboard
+                    // where they can actually be read.
+                    //
+                    // With nothing selected the copy is a no-op and the clipboard keeps what it had,
+                    // which pins the last thing copied. That is the right fallback rather than a
+                    // failure: it is still a piece of text deliberately put on the clipboard.
+                    snippetEditor.performClipboardCopy()
+                    // The clipboard is a system service and the copy travels through it, so the new
+                    // contents are not readable in the same breath.
+                    delay(150)
+                    val text = snippetClipboard.primaryClip?.text?.toString().orEmpty()
+                    val saved = snippetClipboard.saveSnippet(text)
                     context.showShortToast(
                         if (saved) {
                             R.string.dictate__snippet_saved
