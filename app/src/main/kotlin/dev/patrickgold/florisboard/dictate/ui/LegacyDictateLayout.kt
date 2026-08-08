@@ -117,6 +117,7 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateLanguages
+import dev.patrickgold.florisboard.clipboardManager
 import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.input.InputShiftState
@@ -130,6 +131,7 @@ import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyData
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionsOverflowPanel
 import dev.patrickgold.florisboard.keyboardManager
+import org.florisboard.lib.android.showShortToast
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -487,6 +489,10 @@ private fun LegacyActionKey(
     val context = LocalContext.current
     val label = stringRes(action.labelRes)
     val actionScope = rememberCoroutineScope()
+    // Named apart from the row's own locals: this composable is called per key and these two are
+    // only wanted by the snippet gesture.
+    val snippetClipboard by context.clipboardManager()
+    val snippetEditor by context.editorInstance()
     when (action) {
         // The clipboard panel: everything copied recently, to pick from rather than to guess at.
         // This is not the history key further along the row, which is past dictations. Two different
@@ -496,6 +502,28 @@ private fun LegacyActionKey(
             icon = action.icon,
             contentDescription = label,
             modifier = modifier,
+            // Hold to save a snippet, tap to get it back. One key, because saving and reusing are
+            // two ends of the same act and putting them anywhere but together means hunting for the
+            // second one.
+            //
+            // Saves the selection if there is one, otherwise whatever is on the clipboard, which
+            // covers both ways somebody arrives at a piece of text worth keeping: they selected it,
+            // or they just copied it.
+            onLongClick = {
+                val text = snippetEditor.activeContent.selectedText.ifBlank {
+                    snippetClipboard.primaryClip?.text?.toString().orEmpty()
+                }
+                val saved = snippetClipboard.saveSnippet(text)
+                actionScope.launch {
+                    context.showShortToast(
+                        if (saved) {
+                            R.string.dictate__snippet_saved
+                        } else {
+                            R.string.dictate__snippet_nothing
+                        },
+                    )
+                }
+            },
             onClick = { keyboardManager.tapKey(KeyCode.IME_UI_MODE_CLIPBOARD) },
         )
 

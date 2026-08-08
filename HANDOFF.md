@@ -207,6 +207,14 @@ passages away from good signal; a send that fails with no way back loses the wor
 - the braille spinner must never look frozen; it already blinks after six seconds, but the line
   beside it must always name what is being waited for
 
+### Snippets
+
+A snippet is a **pinned clipboard item**, not a third kind of thing. Hold the clipboard key in the
+copy row to save the selection (or the current clip); tap it to open the panel, where pinned items
+sit at the top. `ClipboardManager.saveSnippet` inserts then looks the item back up before pinning,
+because insertion is what assigns the id. Do not build a separate snippet store: it would mean a
+second list, a second screen and a second place to look, for something the clipboard already does.
+
 ### Smaller items, any order
 
 - The trailing space after a recased word

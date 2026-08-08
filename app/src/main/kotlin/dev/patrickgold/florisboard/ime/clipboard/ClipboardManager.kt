@@ -387,6 +387,32 @@ class ClipboardManager(
         }
     }
 
+    /**
+     * Saves [text] as a snippet: into the history, and pinned so it stays there.
+     *
+     * A snippet is not a third kind of thing. It is a clipboard item that does not scroll away, and
+     * the clipboard already knows how to pin, how to store, and how to show pinned items first. A
+     * separate snippet store would mean a second list, a second screen and a second place to look,
+     * for something the panel already does.
+     *
+     * The item is looked up again after inserting rather than pinned directly, because insertion is
+     * what assigns its id, and pinning an item without its id updates nothing. Text that was already
+     * in the history is moved to the front and pinned where it stands, so saving the same thing
+     * twice keeps one entry rather than making two.
+     *
+     * Returns false when there was nothing to save.
+     */
+    fun saveSnippet(text: String): Boolean {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return false
+        addNewPlaintext(trimmed)
+        val stored = currentHistory.all.firstOrNull { item ->
+            item.type == ItemType.TEXT && item.text == trimmed
+        } ?: return false
+        if (!stored.isPinned) pinClip(stored)
+        return true
+    }
+
     fun pinClip(item: ClipboardItem) {
         ioScope.launch {
             clipHistoryDao?.update(item.copy(isPinned = true))

@@ -2009,4 +2009,6 @@
   <string name="quick_actions_overflow__close" comment="Close the dashboard">Close</string>
   <string name="dictate__legacy_action_clipboard_history" comment="Open the clipboard panel">Clipboard history</string>
   <string name="dictate__legacy_action_all_paste" comment="Replace everything with the clipboard">Replace all with paste</string>
+  <string name="dictate__snippet_saved" comment="Toast after saving a snippet">Snippet saved. Tap the clipboard key to reuse it.</string>
+  <string name="dictate__snippet_nothing" comment="Toast when there was nothing to save">Nothing to save. Select some text, or copy it first.</string>
 </resources>
