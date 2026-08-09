@@ -47,6 +47,11 @@ include(":app")
 include(":lib:android")
 include(":lib:color")
 include(":lib:dictate-core")
+// The MA Reader engine, shared with the standalone reader app and living in its own
+// repository so neither copy can drift. A submodule points at a commit, so a change there
+// does not reach this app until the pointer is moved on purpose.
+include(":engine")
+project(":engine").projectDir = file("engine-repo/engine")
 include(":lib:compose")
 include(":lib:kotlin")
 include(":lib:snygg")

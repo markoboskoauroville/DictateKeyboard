@@ -272,6 +272,9 @@ dependencies {
     implementation(projects.lib.android)
     implementation(projects.lib.color)
     implementation(projects.lib.dictateCore)
+    // The MA Reader engine, from the engine-repo submodule. Plain Kotlin, no Android in it,
+    // which is what lets its speech protocol and timing maths be tested without a device.
+    implementation(projects.engine)
     implementation(projects.lib.compose)
 
     // Wearable Data Layer: settings sync + tethered transcription with the Wear OS app (#106).

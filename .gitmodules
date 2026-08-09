@@ -1,0 +1,3 @@
+[submodule "engine-repo"]
+	path = engine-repo
+	url = https://github.com/markoboskoauroville/MA_READER_ENGINE.git

@@ -12,9 +12,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # submodules: the reader engine is a separate repository mounted as a Gradle module.
+      # Without this the build fails on a module whose directory is empty, and the error
+      # points nowhere near the cause.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
 
       - uses: actions/setup-java@v4
         with:
