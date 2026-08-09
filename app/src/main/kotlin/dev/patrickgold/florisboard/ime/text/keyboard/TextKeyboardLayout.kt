@@ -608,11 +608,11 @@ private class TextKeyboardLayoutController(
                         }
                         KeyCode.SHIFT -> {
                             if (inputEventDispatcher.isUninterruptedEventSequence(key.computedData)) {
+                                // The lock buzz is NOT fired here. It lives on the state change in
+                                // KeyboardManager, which is the one place every route into a lock
+                                // passes through; firing it here as well would buzz twice for a
+                                // long press and not at all for a double tap.
                                 inputEventDispatcher.sendDownUp(TextKeyData.CAPS_LOCK)
-                                // A modifier locking gets its own buzz rather than the long press
-                                // one: the finger is covering the key, so the colour change under
-                                // it cannot be seen at the moment it happens.
-                                inputFeedbackController?.modifierLock(key.computedData)
                             }
                             // We always return false here to prevent blockade for the up touch event
                             false
@@ -623,7 +623,6 @@ private class TextKeyboardLayoutController(
                         KeyCode.CTRL -> {
                             if (inputEventDispatcher.isUninterruptedEventSequence(key.computedData)) {
                                 inputEventDispatcher.sendDownUp(TextKeyData.CTRL_LOCK)
-                                inputFeedbackController?.modifierLock(key.computedData)
                             }
                             false
                         }

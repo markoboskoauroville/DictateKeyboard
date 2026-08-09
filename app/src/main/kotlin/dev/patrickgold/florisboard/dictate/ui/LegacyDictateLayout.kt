@@ -374,9 +374,16 @@ fun LegacyDictateLayout(
                 // sentence. Putting it under those keeps the keys the hand uses constantly where
                 // the hand already expects them, and it collapses from its own left-hand key when
                 // the height is wanted back.
-                MaFeatureRow(
-                    modifier = Modifier.fillMaxWidth().height(EditRowHeight),
-                )
+                // Collapsed means gone, not blank. The whole point of folding it is to get the
+                // height back, so it must not leave an empty row behind holding the space it was
+                // asked to give up. The way to bring it back lives in the arrow strip above, which
+                // is always there.
+                val maFeatureRowShown by prefs.dictate.maFeatureRowShown.collectAsState()
+                if (maFeatureRowShown) {
+                    MaFeatureRow(
+                        modifier = Modifier.fillMaxWidth().height(EditRowHeight),
+                    )
+                }
             }
         }
     }

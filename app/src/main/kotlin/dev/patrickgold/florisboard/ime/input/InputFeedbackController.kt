@@ -81,8 +81,11 @@ class InputFeedbackController private constructor(private val ims: InputMethodSe
      * of and would feel like an ordinary tap.
      */
     fun modifierLock(data: KeyData = TextKeyData.UNSPECIFIED) {
-        if (prefs.inputFeedback.audioFeatKeyLongPress.get()) performAudioFeedback(data, 0.7)
-        if (!prefs.inputFeedback.hapticFeatKeyLongPress.get()) return
+        if (prefs.inputFeedback.audioFeatKeyPress.get()) performAudioFeedback(data, 0.7)
+        // Gated on haptics being on at all, and nothing narrower. It used to require the long press
+        // switch, which is wrong twice over: a lock reached by double tapping is not a long press,
+        // and somebody who turned long press buzz off did not thereby ask to stop being told when a
+        // modifier locks. This is a state change, not a gesture.
         if (vibrator == null) return
         if (!prefs.inputFeedback.hapticEnabled.get()) return
         if (prefs.inputFeedback.hapticActivationMode.get() ==

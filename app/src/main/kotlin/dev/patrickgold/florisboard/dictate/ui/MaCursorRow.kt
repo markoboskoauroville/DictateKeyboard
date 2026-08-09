@@ -57,7 +57,12 @@ import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaMacroSyntax
 import dev.patrickgold.florisboard.dictate.MaMacros
+import androidx.compose.material.icons.filled.UnfoldLess
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.runtime.rememberCoroutineScope
 import dev.patrickgold.florisboard.FlorisImeService
+import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import kotlinx.coroutines.launch
 import dev.patrickgold.florisboard.ime.input.InputShiftState
 import dev.patrickgold.florisboard.ime.input.LocalInputFeedbackController
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
@@ -99,6 +104,9 @@ private fun maKeyAttributes(code: Int) = mapOf(
 fun MaCursorRow(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val keyboardManager by context.keyboardManager()
+    val prefs by FlorisPreferenceStore
+    val scope = rememberCoroutineScope()
+    val featureRowShown by prefs.dictate.maFeatureRowShown.collectAsState()
 
     Row(
         modifier = modifier
@@ -126,6 +134,30 @@ fun MaCursorRow(modifier: Modifier = Modifier) {
             repeats = true,
             modifier = Modifier.weight(1f).fillMaxHeight(),
         ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Cursor right", fg) }
+
+        // The fifth glyph: fold the feature row away, or bring it back.
+        //
+        // It belongs in this strip and not in the row it controls, which is the whole point. A
+        // switch that lives inside the thing it hides has to keep a slot of that thing forever, so
+        // the row would permanently be nine features and a switch. Here it costs nothing: this strip
+        // was four glyphs spread across the full width with room to spare, and the feature row gets
+        // all ten of its slots back.
+        //
+        // Both arrowheads in one place, apart when the row is open and together when it is closed,
+        // because that is not a direction, it is a height. The same vocabulary as the four arrows
+        // beside it, saying compress and expand rather than up and down, the way a shelf pushes down
+        // and pulls back out.
+        MaFlatKey(
+            onFire = { scope.launch { prefs.dictate.maFeatureRowShown.set(!featureRowShown) } },
+            repeats = false,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg ->
+            MaGlyph(
+                if (featureRowShown) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
+                if (featureRowShown) "Collapse the feature row" else "Expand the feature row",
+                fg,
+            )
+        }
     }
 }
 

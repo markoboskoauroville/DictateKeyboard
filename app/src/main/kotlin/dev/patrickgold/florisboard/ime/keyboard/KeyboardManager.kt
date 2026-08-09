@@ -546,8 +546,10 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
      * Handles a [KeyCode.CTRL_LOCK] press, sent by a long press on the Ctrl key.
      */
     private fun handleCtrlLock() {
+        val wasLocked = activeState.maCtrlState == MaCtrlState.LOCKED
         activeState.maCtrlState = MaCtrlState.LOCKED
         maCtrlJustLocked = true
+        if (!wasLocked) maBuzzLock()
     }
 
     /**
@@ -612,7 +614,23 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         val isLocked = activeState.inputShiftState == InputShiftState.CAPS_LOCK
         if (isLocked != wasLocked) {
             activeState.isManualSelectionMode = isLocked
+            // The buzz that says shift locked, fired here rather than at the key that did it.
+            // This is the one place every route into caps lock passes through: long press, double
+            // tap, the cycle, and the caps lock key itself. Wiring it to the long press alone, which
+            // is how it used to be, meant anybody who locks by double tapping never felt a thing.
+            if (isLocked) maBuzzLock()
         }
+    }
+
+    /**
+     * The vibration that reports a modifier locking.
+     *
+     * A lock is the one state change on this keyboard that cannot be seen at the moment it happens:
+     * the finger that made it is sitting on the key, covering the colour underneath. So the buzz is
+     * not decoration here, it is the only channel left.
+     */
+    private fun maBuzzLock() {
+        FlorisImeService.inputFeedbackController()?.modifierLock()
     }
 
     private fun revertPreviouslyAcceptedCandidate() {

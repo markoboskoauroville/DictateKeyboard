@@ -17,15 +17,12 @@
 package dev.patrickgold.florisboard.dictate.ui
 
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Timer
@@ -99,35 +96,11 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     // already learned costs more than a slot held open.
     val notReadyInk = Color(0x55E8B15C)
 
-    val shown by prefs.dictate.maFeatureRowShown.collectAsState()
-
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
-
-        // The collapse key, at the far left, directly below the gear in the corner above. It is the
-        // one key here that never goes away: a control that hides a row has to stay reachable to
-        // bring the row back, and the same spot doing both means the thumb learns one place rather
-        // than one place to hide and another to find again.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = if (shown) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-            contentDescription = stringRes(
-                if (shown) R.string.ma__feature_collapse else R.string.ma__feature_expand,
-            ),
-            modifier = keyMod,
-        ) {
-            scope.launch { prefs.dictate.maFeatureRowShown.set(!shown) }
-        }
-
-        if (!shown) {
-            // Collapsed: the row keeps its height so the keyboard does not jump under the thumb, and
-            // holds nothing but the way back.
-            Spacer(modifier = Modifier.weight(10f))
-            return@Row
-        }
 
         // 1. The reader. Rendered but not yet wired: the LLL view does not exist, and a key that
         //    silently does nothing is worse than one that is visibly not ready. Its slot is held
