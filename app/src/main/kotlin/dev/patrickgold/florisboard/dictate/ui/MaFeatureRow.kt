@@ -58,15 +58,16 @@ import dev.patrickgold.florisboard.R
  * The feature row: one row, eight keys, drawn by both views and the last row standing when
  * everything above it is folded away.
  *
- * Three borrowed keys, three switches, then the reader and the view swap:
+ * Four borrowed keys, three switches, then the reader and the view swap:
  *
- * `AP · select-all · backspace · 1 2 3 · book · mic`
+ * `AP · select-all · backspace · enter · 1 2 3 · book · mic`
  *
  * The borrowed keys come first. They are used inside a sentence, while the switches are reached a
- * few times a session, so the busy end of the row is the end the thumb starts from. The three keys
+ * few times a session, so the busy end of the row is the end the thumb starts from. The four keys
  * are the ones that must survive a fold: AP and select-all are the copy row's most used pair, and
- * backspace is the only key from the keyboard proper with no substitute anywhere else once zone two
- * is shut. The numbers then read left to right as the parts of the keyboard they control.
+ * backspace and enter are the two keys from the keyboard proper with no substitute anywhere else
+ * once zone two is shut. The numbers then read left to right as the parts of the keyboard they
+ * control.
  *
  * The rule it exists to satisfy is Marko's, and it is a good one: a feature you have to enable in a
  * settings app before you can see it is a feature most people never find. The dictation view is not
@@ -161,6 +162,19 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             modifier = keyMod,
             keyboardManager = keyboardManager,
             hasSelection = hasSelection,
+        )
+
+        // Enter, beside backspace, and the same key the bottom row draws rather than a new one that
+        // types a newline. Tap for a newline, hold for the character popup from the settings screen.
+        //
+        // It is here for the same reason backspace is: with zone two folded away there is no enter
+        // key anywhere else, and a keyboard that cannot end a line is a keyboard that has to be
+        // unfolded to finish a sentence. Deleting and sending are the two things every field needs.
+        //
+        // No fold on long press, like the two before it. The hold already means the popup.
+        LegacyEnterKey(
+            keyboardManager = keyboardManager,
+            modifier = keyMod,
         )
 
         // 1, the number row. Digits, or whichever set the row is showing.

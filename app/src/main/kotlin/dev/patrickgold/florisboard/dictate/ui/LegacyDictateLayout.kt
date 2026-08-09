@@ -1042,9 +1042,13 @@ private fun LegacyBottomRow(
  * 8). While held, swiping left/right moves the highlight; releasing inserts the highlighted character.
  * This reproduces the character picker from the very first Dictate versions (issue #196). With no
  * characters configured the long-press falls back to a normal Enter.
+ *
+ * Internal, because the feature row draws this same key. Marko drew an arrow from the bottom row's
+ * Enter down to the feature row, and that is what he meant: this key, not a second one that types a
+ * newline. The popup opens leftward from the key, which works from either position.
  */
 @Composable
-private fun LegacyEnterKey(
+internal fun LegacyEnterKey(
     keyboardManager: KeyboardManager,
     modifier: Modifier,
 ) {

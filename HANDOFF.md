@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 139. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 140. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -299,7 +299,7 @@ Marko drew three lines across a screenshot of the keyboard and asked for the par
 to be switchable one by one. The row is now eight keys:
 
 ```
-AP  ·  select-all  ·  backspace  ·  1  2  3  ·  book  ·  mic
+AP  ·  select-all  ·  backspace  ·  enter  ·  1  2  3  ·  book  ·  mic
 ```
 
 **The order is Marko's and it was corrected once**, at build 139: the switches were on the left and
@@ -328,8 +328,10 @@ which is now `internal` rather than private for exactly the reason `tapKey` was:
 file could not call it. They are the same keys, not copies that look like them, so a fix to AP's
 timing or to backspace's swipe reaches both rows at once.
 
-Backspace is there because it is the one key from the keyboard proper with no substitute anywhere
-else: with zone two shut there is otherwise no way to delete a character. **These three keys do not
+Backspace and enter are there because they are the two keys from the keyboard proper with no
+substitute anywhere else: with zone two shut there is otherwise no way to delete a character or end
+a line. Enter is `LegacyEnterKey`, the bottom row's own key, so holding it still opens the character
+popup from the settings screen. **These three keys do not
 fold the row on a long press and must not**, because backspace holds to repeat and swipes to select,
 and a key that repeats cannot also mean something else when it is held. The other five still fold it.
 
