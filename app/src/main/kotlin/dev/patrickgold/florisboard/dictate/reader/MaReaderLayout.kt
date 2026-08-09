@@ -120,7 +120,11 @@ fun MaReaderLayout(modifier: Modifier = Modifier) {
             elementName = FlorisImeUi.ClipboardGrid.elementName,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(FlorisImeSizing.keyboardUiHeight() - FlorisImeSizing.smartbarHeight),
+                // panelUiHeight, not keyboardUiHeight. The keyboard's height now shrinks as parts
+                // are folded away, and a reader that shrank with it would end up a two line window
+                // because somebody had switched the letters off. A panel is as tall as the keyboard
+                // it replaces at full size.
+                .height(FlorisImeSizing.panelUiHeight() - FlorisImeSizing.smartbarHeight),
         ) {
             val scroll = rememberScrollState()
             if (text.isEmpty()) {
