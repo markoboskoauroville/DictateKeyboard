@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 134. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 136. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -293,6 +293,66 @@ the visible characters, moved again onto the real decoded waveform, and a highli
   stay faithful to the Python; presentation rules belong on the side that presents.
 - **Still to do on the reader**: nothing blocking. Worth watching on the device is whether the first
   sentence starts fast enough to feel like reading rather than loading.
+
+### Next: AssemblyAI Sync, fast dictation on one API
+
+Decided and researched, not yet built. One provider throughout: AssemblyAI, the same key and the
+same bill as now. No second vendor.
+
+**Speechify was investigated and rejected.** It has no speech-to-text API at all; the whole product
+is text to speech. Their "10 Best Speech to Text APIs" article recommends other companies and reads
+like a product page, which is where the confusion came from. Speechify IS worth revisiting for the
+LLL reader, because its TTS returns word-level timestamps, which is exactly what `MaAlign` needs and
+would replace an undocumented Microsoft endpoint with a contractual one.
+
+**The verified endpoint**, checked against the docs rather than remembered:
+
+```
+POST https://sync.assemblyai.com/transcribe
+Authorization: <raw key, no Bearer prefix>
+X-AAI-Model: universal-3-5-pro
+multipart/form-data, field "audio"
+-> { "text": ..., "confidence": ... }
+```
+
+About 134 ms at the median. **Hard limits: 2 minutes and 40 MB per request**, and oversized requests
+are rejected up front rather than failing partway. `language_codes` is accepted, so Croatian may
+work; do not assume either way, one recording answers it. Price is $0.45/hr against $0.15/hr for the
+async path in use today.
+
+**Why Sync rather than streaming.** A WebSocket is an open line billed by how long it is open, and it
+must be held, reconnected and closed. A single request is one envelope: the clip goes up whole and
+the finished text comes back in the same breath. Dictation already has a clean beginning and end
+because Marko presses and releases, so there is nothing streaming buys here that is worth a socket.
+AssemblyAI's own description of Sync names dictation and voice commands as its purpose.
+
+**Build in this order. Each step is useful alone.**
+
+1. **The Sync client and the fast/slow switch.** `TranscriptionApi.ASSEMBLYAI_SYNC` beside the
+   existing `ASSEMBLYAI_ASYNC` in `ProviderConfig.kt`, dispatched in `OpenAiCompatibleClient` around
+   line 161 where `ASSEMBLYAI_ASYNC` already is, and a preset in `ProviderRegistry`. Settings calls
+   them **fast** and **slow**, because those are the words that mean something. Anything over two
+   minutes falls back to the async path AUTOMATICALLY and silently, since a long recording is exactly
+   the one that took the most effort and must never be the one that fails.
+2. **Chunking with silence-aware cuts**, which makes long recordings fast as well. Cut at a silence
+   near the two minute mark, never at the mark itself, or a word is sliced in half and both halves are
+   misheard. **The silence detection already exists and is already tested**: `MaWaveform.silenceRuns`
+   in the reader engine, pure maths on decoded PCM, 126 tests behind it, already shipping in the APK.
+   The seams then need cleaning, since each chunk comes back capitalised as a fresh sentence and a
+   visible scar every two minutes is not acceptable.
+3. **Pipelining**, sending chunks while Marko is still speaking, so by the time he releases the key
+   everything but the last chunk is already transcribed. This is the step that makes a six minute
+   dictation land as fast as a twenty second one, and it is the closest thing to streaming that this
+   design needs.
+
+**Also asked for: a cost meter.** Build it locally rather than from a billing API. The app already
+knows the duration of every recording it sends and which path took it, so it can keep its own ledger:
+minutes and cost this week, this month and all time, per provider, against an editable rate. Works
+offline, needs no extra credentials, covers every provider, and cannot silently disagree with itself.
+Settings labels it something plain like "usage and cost".
+
+**And: long press on the microphone key opens the model chooser**, so fast and slow can be swapped
+without going into settings.
 
 ### Next: retranscribe
 
