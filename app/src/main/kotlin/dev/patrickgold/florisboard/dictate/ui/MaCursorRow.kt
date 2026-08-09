@@ -114,28 +114,7 @@ fun MaCursorRow(modifier: Modifier = Modifier) {
             .height(FlorisImeSizing.smartbarHeight * 0.8f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MaFlatKey(
-            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_UP) },
-            repeats = true,
-            modifier = Modifier.weight(1f).fillMaxHeight(),
-        ) { fg -> MaGlyph(Icons.Default.KeyboardArrowUp, "Cursor up", fg) }
-        MaFlatKey(
-            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_DOWN) },
-            repeats = true,
-            modifier = Modifier.weight(1f).fillMaxHeight(),
-        ) { fg -> MaGlyph(Icons.Default.KeyboardArrowDown, "Cursor down", fg) }
-        MaFlatKey(
-            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_LEFT) },
-            repeats = true,
-            modifier = Modifier.weight(1f).fillMaxHeight(),
-        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Cursor left", fg) }
-        MaFlatKey(
-            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_RIGHT) },
-            repeats = true,
-            modifier = Modifier.weight(1f).fillMaxHeight(),
-        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Cursor right", fg) }
-
-        // The fifth glyph: fold the feature row away, or bring it back.
+        // The fold, first in the strip: it hides and shows the feature row below.
         //
         // It belongs in this strip and not in the row it controls, which is the whole point. A
         // switch that lives inside the thing it hides has to keep a slot of that thing forever, so
@@ -158,6 +137,27 @@ fun MaCursorRow(modifier: Modifier = Modifier) {
                 fg,
             )
         }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_UP) },
+            repeats = true,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.Default.KeyboardArrowUp, "Cursor up", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_DOWN) },
+            repeats = true,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.Default.KeyboardArrowDown, "Cursor down", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_LEFT) },
+            repeats = true,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Cursor left", fg) }
+        MaFlatKey(
+            onFire = { keyboardManager.maTapKey(KeyCode.ARROW_RIGHT) },
+            repeats = true,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg -> MaGlyph(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Cursor right", fg) }
+
     }
 }
 
