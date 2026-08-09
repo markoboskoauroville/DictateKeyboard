@@ -848,6 +848,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_edit_row",
             default = true,
         )
+        // The feature row at the very bottom. Collapsible from its own left-hand key, and remembered,
+        // because a row folded away should stay folded until it is asked back rather than returning
+        // every time the keyboard opens.
+        val maFeatureRowShown = boolean(
+            key = "dictate__ma_feature_row_shown",
+            default = true,
+        )
         val maCursorRow = boolean(
             key = "dictate__ma_cursor_row",
             // On: the bars are the point, not an option to go looking for.

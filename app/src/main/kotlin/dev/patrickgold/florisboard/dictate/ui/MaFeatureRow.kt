@@ -17,14 +17,17 @@
 package dev.patrickgold.florisboard.dictate.ui
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.outlined.AudioFile
@@ -43,7 +46,6 @@ import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateLongformMode
-import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.keyboardManager
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import kotlinx.coroutines.launch
@@ -97,11 +99,35 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     // already learned costs more than a slot held open.
     val notReadyInk = Color(0x55E8B15C)
 
+    val shown by prefs.dictate.maFeatureRowShown.collectAsState()
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
+
+        // The collapse key, at the far left, directly below the gear in the corner above. It is the
+        // one key here that never goes away: a control that hides a row has to stay reachable to
+        // bring the row back, and the same spot doing both means the thumb learns one place rather
+        // than one place to hide and another to find again.
+        ThemedIconKey(
+            code = KeyCode.NOOP,
+            icon = if (shown) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+            contentDescription = stringRes(
+                if (shown) R.string.ma__feature_collapse else R.string.ma__feature_expand,
+            ),
+            modifier = keyMod,
+        ) {
+            scope.launch { prefs.dictate.maFeatureRowShown.set(!shown) }
+        }
+
+        if (!shown) {
+            // Collapsed: the row keeps its height so the keyboard does not jump under the thumb, and
+            // holds nothing but the way back.
+            Spacer(modifier = Modifier.weight(10f))
+            return@Row
+        }
 
         // 1. The reader. Rendered but not yet wired: the LLL view does not exist, and a key that
         //    silently does nothing is worse than one that is visibly not ready. Its slot is held
@@ -173,18 +199,31 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             DictateController.reinsertLastDictation(context)
         }
 
-        // 6. Past dictations. Not the clipboard, which is a different past and already has its own
-        //    key in the edit row above.
+        // 6 and 7. Undo and redo, as a pair, because they are one thought and separating them means
+        //    hunting for the second half of it.
+        //
+        //    Dictation history used to sit here and does not any more: the edit row directly above
+        //    already carries it. A key that repeats a key one row up spends a slot to teach the hand
+        //    two places for one action, which is worse than either place alone.
         ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Default.History,
-            contentDescription = stringRes(R.string.ma__feature_history),
+            code = KeyCode.UNDO,
+            icon = Icons.AutoMirrored.Filled.Undo,
+            contentDescription = stringRes(R.string.ma__feature_undo),
             modifier = keyMod,
         ) {
-            keyboardManager.activeState.imeUiMode = ImeUiMode.HISTORY
+            keyboardManager.tapKey(KeyCode.UNDO)
         }
 
-        // 7. The model. The quick row shows it too, but the quick row can be hidden, and which model
+        ThemedIconKey(
+            code = KeyCode.REDO,
+            icon = Icons.AutoMirrored.Filled.Redo,
+            contentDescription = stringRes(R.string.ma__feature_redo),
+            modifier = keyMod,
+        ) {
+            keyboardManager.tapKey(KeyCode.REDO)
+        }
+
+        // 8. The model. The quick row shows it too, but the quick row can be hidden, and which model
         //    is about to hear you is not something that should ever be unavailable.
         ThemedIconKey(
             code = KeyCode.NOOP,
@@ -195,7 +234,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             FlorisImeService.launchSettings("settings/dictate/providers")
         }
 
-        // 8. db, the dashboard of show and hide switches. The one key here that opens a list, and it
+        // 9. db, the dashboard of show and hide switches. The one key here that opens a list, and it
         //    earns that because its contents are settings rather than actions.
         ThemedIconKey(
             code = KeyCode.NOOP,
@@ -206,7 +245,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             FlorisImeService.launchSettings("settings/dictate/layout")
         }
 
-        // 9. API keys. When a key expires the whole app stops working, and the fix currently lives in
+        // 10. API keys. Last, on the far edge. When a key expires the whole app stops working, and the fix currently lives in
         //    another application entirely. Nothing else in the row can fail this completely.
         ThemedIconKey(
             code = KeyCode.NOOP,
@@ -217,14 +256,5 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             FlorisImeService.launchSettings("settings/dictate/keys")
         }
 
-        // 10. Settings, last, on the far edge. The way out to everything not worth a key.
-        ThemedIconKey(
-            code = KeyCode.SETTINGS,
-            icon = Icons.Default.Settings,
-            contentDescription = stringRes(R.string.ma__feature_settings),
-            modifier = keyMod,
-        ) {
-            FlorisImeService.launchSettings("settings/dictate")
-        }
     }
 }

@@ -341,12 +341,6 @@ fun LegacyDictateLayout(
                 // Row 1c: the flat command bar, matching the keyboard view so both look the same.
                 MaMacroBar()
 
-                // Row 1d: the feature row. Ten keys, everything the app can do, reachable from here
-                // without a trip to the settings application first. Deliberately NOT hideable: it is
-                // the row whose whole purpose is that nothing is hidden.
-                MaFeatureRow(
-                    modifier = Modifier.fillMaxWidth().height(EditRowHeight),
-                )
 
                 // Row 2: editing actions (select-all first, so it sits in the row below the strip).
                 LegacyEditRow(
@@ -369,8 +363,20 @@ fun LegacyDictateLayout(
                     onExitToKeyboard = onExitToKeyboard,
                 )
 
-                // Row 5: the arrow strip, along the very bottom, same as the keyboard view.
+                // Row 5: the arrow strip, same as the keyboard view.
                 MaCursorRow()
+
+                // Row 6: the feature row, along the very bottom. Ten keys, everything the app can
+                // do, reachable without a trip to the settings application first.
+                //
+                // Last on purpose. It is reference rather than rhythm: reached deliberately, a few
+                // times a session, unlike the arrows and the space bar which are used inside every
+                // sentence. Putting it under those keeps the keys the hand uses constantly where
+                // the hand already expects them, and it collapses from its own left-hand key when
+                // the height is wanted back.
+                MaFeatureRow(
+                    modifier = Modifier.fillMaxWidth().height(EditRowHeight),
+                )
             }
         }
     }
