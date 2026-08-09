@@ -1,6 +1,6 @@
-# Talk to Type — handoff and development plan
+# TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 116, when the voice client landed. Read this first, then
+Written at build 88, updated at build 118, when the app took the name TTT&LLL. Read this first, then
 `git log --oneline -20` to see anything newer.
 
 ---
@@ -27,8 +27,23 @@ with `sed "s/$(tr -d ' \t\n\r' < /mnt/user-data/uploads/github_token.txt)/***RED
 
 ## 2. Rules that are not negotiable
 
-**The name.** The app is **Talk to Type**, short form **TTT**. Renamed from Mantra Voice Type at
-build 109. The **package id stays `com.mantraproductions.voicetype`** and must not be changed:
+**The name.** The app is **TTT&LLL**. That is what it is called everywhere: the launcher, the
+keyboard switcher, the settings title, the release title. It stands for **Talk to Type** and
+**Look, Listen, Learn**, the two halves of what it does, and About is the one place the initials
+are spelled out, under the short name, so somebody meeting them for the first time can work out
+what they mean without asking. Mantra Voice Type became Talk to Type at build 109, and Talk to
+Type became TTT&LLL at build 118 when the reader gained a name of its own.
+
+The APK filename is `ttt-lll-build-N.apk` with no ampersand in it. An ampersand is only legal in
+a URL escaped, and a download link that needs escaping is one that breaks when it is pasted into
+a chat.
+
+**The name must never be translated.** Forty locale files inherited from the fork still carried
+`app_name` as `Dictate`, so a phone set to Croatian or German showed the old fork name on the
+launcher no matter what the default said. Those overrides are removed and `app_name` is marked
+`translatable="false"`, so a future translation import cannot bring them back. If the launcher
+ever shows the wrong name again, look for a `values-xx/strings.xml` that has grown an `app_name`
+back. The **package id stays `com.mantraproductions.voicetype`** and must not be changed:
 Android treats a new package as a different app, so changing it would install alongside the old one
 and abandon every API key, preference and the learned n-gram model rather than upgrading. The
 package id is not visible to Marko; the launcher name and the APK filename are, and those are what
@@ -210,7 +225,8 @@ Read the commit messages for the reasoning; each one says why, not just what.
   signal was merely poor. The status line says *waiting to retry*, not *retrying*.
 - **The scheme is baked in.** Sunrise always, no picker, see the rule above.
 - **Snippets**, see below.
-- **Renamed to Talk to Type (TTT)** at build 109. Package id unchanged, see the rule above.
+- **Renamed to Talk to Type (TTT)** at build 109, then to **TTT&LLL** at build 118. Package id
+  unchanged through both, see the rule above.
 
 ### Next: retranscribe
 

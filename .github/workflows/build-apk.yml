@@ -1,4 +1,4 @@
-name: Build Talk to Type APK
+name: Build TTT&LLL APK
 
 on:
   workflow_dispatch:
@@ -61,8 +61,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          cp "$APK" ttt-talk-to-type-build-${{ github.run_number }}.apk
-          gh release create "build-${{ github.run_number }}" ttt-talk-to-type-build-${{ github.run_number }}.apk --title "Talk to Type build ${{ github.run_number }}" --notes "Talk to Type (TTT), by Mantra Productions. Installs over the previous build."
+          # No ampersand in the file name. It is legal in a URL only when escaped, and a download
+          # link that needs escaping is a link that breaks when it is pasted into a chat.
+          cp "$APK" ttt-lll-build-${{ github.run_number }}.apk
+          gh release create "build-${{ github.run_number }}" ttt-lll-build-${{ github.run_number }}.apk --title "TTT&LLL build ${{ github.run_number }}" --notes "TTT&LLL, Talk to Type and Look, Listen, Learn, by Mantra Productions. Installs over the previous build."
 
       # The two newest releases stay, everything older goes. One was too few: a link handed over
       # is dead the moment the next push publishes, and a one line change to a document is enough

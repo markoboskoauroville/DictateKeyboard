@@ -55,7 +55,7 @@ import org.florisboard.lib.compose.FlorisCanvasIcon
 import org.florisboard.lib.compose.stringRes
 
 /**
- * About, rebuilt for Talk to Type.
+ * About, rebuilt for TTT&LLL.
  *
  * The header carries Marko Bosko's own name and build number rather than the upstream author's, and
  * the row list is trimmed to what this build actually has: the repository, the release list, the two
@@ -103,6 +103,17 @@ fun AboutScreen() = FlorisScreen {
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 16.dp),
+            )
+            // The app is called by its initials everywhere else, on the launcher, in the keyboard
+            // switcher and in the settings title. This is the one place they are spelled out, so
+            // somebody meeting TTT&LLL for the first time can find out what it stands for without
+            // having to ask. Quieter than the name above it on purpose: it explains, it does not
+            // compete.
+            Text(
+                text = stringRes(R.string.app_name_expanded),
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 6.dp, start = 24.dp, end = 24.dp),
             )
             Text(
                 text = stringRes(R.string.about__made_by),

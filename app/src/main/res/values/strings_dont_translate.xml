@@ -1,7 +1,11 @@
 <resources>
     <item name="floris_app_name" translatable="false" type="string">@string/app_name</item>
     <!-- Full product name for prose/About/Setup. -->
-    <string name="app_name_full" translatable="false">Talk to Type</string>
+    <string name="app_name_full" translatable="false">TTT&amp;LLL</string>
+    <!-- Shown under the short name in About. The short name is what the app is called
+         everywhere; this is the one place it is spelled out, so somebody meeting the
+         initials for the first time can work out what they stand for. -->
+    <string name="app_name_expanded" translatable="false">Talk to Type &amp; Look, Listen, Learn</string>
 
     <!--
         Talk to Type URLs. Keys keep the historic `florisboard__` prefix so the many references in
