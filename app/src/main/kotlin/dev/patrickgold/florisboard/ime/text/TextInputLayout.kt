@@ -35,6 +35,7 @@ import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.dictate.gif.GifSearchPanel
 import dev.patrickgold.florisboard.dictate.ui.MaMacroBar
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
+import dev.patrickgold.florisboard.dictate.ui.MaFeatureRow
 import dev.patrickgold.florisboard.dictate.ui.MaExtraRow
 import dev.patrickgold.florisboard.dictate.ui.LegacyEditRow
 import dev.patrickgold.florisboard.ime.clipboard.ClipboardEditorPanel
@@ -160,6 +161,24 @@ fun TextInputLayout(
             val maEditingRowShown = maExtraRowOn && maExtraRowMode == "editing"
             if (maCursorRowEnabled && !maEditingRowShown) {
                 MaCursorRow()
+            }
+            // The feature row, along the very bottom, the same one the transcribe view draws and
+            // from the same code, so the two views cannot drift apart.
+            //
+            // It has to be here. The fold key that controls it lives in the arrow strip above, and
+            // that strip is shared between both views, so without this row the key was drawn in the
+            // keyboard view too and folded something that was not there. A control that does nothing
+            // is worse than a missing one, because it teaches that pressing things has no effect.
+            //
+            // Folded away it is not composed at all, so the height is genuinely returned rather than
+            // left as an empty strip holding the space it was asked to give up.
+            val maFeatureRowShown by prefs.dictate.maFeatureRowShown.collectAsState()
+            if (maFeatureRowShown) {
+                MaFeatureRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(FlorisImeSizing.smartbarHeight),
+                )
             }
         }
     }
