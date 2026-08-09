@@ -1,6 +1,7 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 118, when the app took the name TTT&LLL. Read this first, then
+Written at build 88, updated at build 134. Sixteen builds went by without an update once, so
+check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
 ---
@@ -138,6 +139,12 @@ drawn by both views.
 **Commit messages go through a file.** `git commit -m` with an apostrophe in the text breaks shell
 quoting and the commit is lost. Write the message to `/tmp/msg.txt` and use `-F`.
 
+**The handoff rule was broken for sixteen builds** between 118 and 134, and it was only caught
+because Marko asked. Nothing warns you: the APK builds green, the feature works, and the document
+quietly describes an app that no longer exists. It is worse than no document, because the next
+session reads it and believes it. Update it in the SAME push as the code, every time, and if you
+find yourself several builds behind, write the gap up honestly rather than only the newest change.
+
 **Before pushing**, run the brace balance check (`/home/claude/kbal.py`, rewrite it if the sandbox has
 reset), a sweep for `R.string.*` references with no definition (they live in `strings.xml` *and*
 `strings_dont_translate.xml`), a JSON parse of any edited asset, and the key code collision check.
@@ -227,6 +234,63 @@ Read the commit messages for the reasoning; each one says why, not just what.
 - **Snippets**, see below.
 - **Renamed to Talk to Type (TTT)** at build 109, then to **TTT&LLL** at build 118. Package id
   unchanged through both, see the rule above.
+
+### Shipped since (builds 119 to 134)
+
+Sixteen builds landed before this section was written, which is itself the lesson: the handoff rule
+was broken quietly and nobody noticed until Marko asked. Check `git log -- HANDOFF.md` against
+`git log` before believing this document is current.
+
+- **The clipboard became a note keeper.** Long-press an entry offers **Edit**, which rewrites it in
+  place keeping the same id and pin and taking a fresh timestamp. An **X** closes the panel and a
+  **plus** under it writes an entry by hand. The editor has no caret and no selection: text is added
+  and removed at the end only, because a caret needs hit testing, a selection model and cursor keys
+  rerouted away from the app.
+- **The feature row**, along the very bottom of both views, then rebuilt twice. It is now four keys:
+  **1** folds the edit strip, **2** folds the entire keyboard, **book** opens the reader, **mic**
+  switches between the keyboard and dictation views. Long press any of them to fold the row away.
+- **Zone two is not composed at all** rather than filtered row by row. The first attempt removed rows
+  from the keyboard arrangement, which made the keys vanish while `keyboardUiHeight` went on
+  counting four rows, so the space stayed. Two pieces of arithmetic had to agree and did not. Not
+  composing the keyboard returns its height exactly, with no arithmetic to disagree.
+- **The mic is what makes closing the keyboard safe.** With zone two shut, no key anywhere else
+  reaches the dictation screen, so the way between views must live in the row that always survives.
+- **The fold key lives in the arrow strip**, at the left end, and is the fifth glyph there. Opening
+  is a **one second hold with a buzz**; closing is a tap. `MaFlatKey` fired on touch *down*, which is
+  right for a repeating arrow and wrong for anything that changes the shape of the keyboard.
+- **Modifier locks buzz.** The haptic existed but was wired to the long press in `TextKeyboardLayout`,
+  so locking caps by double tap or by the cycle felt nothing. It now fires on the state change in
+  `KeyboardManager`, the single point every route into a lock passes through, and is gated only on
+  haptics being on at all rather than on the long-press switch.
+- **AP waits twice, half a second each**, where it waited once for a third of a second and not at all
+  after the select. It was failing silently in some apps. The input connection is also refetched at
+  every step, since a field can be replaced underneath a macro that now runs for a full second.
+- **The app name is never translated.** Forty locale files still carried `app_name` as `Dictate`, so
+  a phone set to Croatian or German showed the old fork name on the launcher whatever the default
+  said. All removed, and `app_name` is now `translatable="false"`.
+
+### LLL, the reader: shipped at build 128
+
+The whole chain works end to end and is in the APK. Clipboard text is cleaned of Markdown and
+addresses, cut into sentences, spoken by one of four Edge voices, the word boundaries are mapped onto
+the visible characters, moved again onto the real decoded waveform, and a highlight position ticks at
+40 ms against the player.
+
+- **The engine lives in `markoboskoauroville/MA_READER_ENGINE`**, package
+  `dev.mantraproductions.reader.engine`, mounted as the `:engine` Gradle module from the `engine-repo`
+  submodule. CI checks out submodules. 126 tests, one of which speaks a real Croatian sentence to
+  Microsoft on every push and once a night.
+- `MaEdgeVoice` speaks, `MaAlign` maps boundaries to characters, `MaText` cleans and splits,
+  `MaWaveform` moves every word onto where it is actually spoken.
+- **App side**: `MaPcm` decodes with MediaCodec, which is the one piece that cannot live in the
+  engine, and `MaReader` orchestrates one sentence at a time with a disk cache keyed by text and
+  voice. `MaReaderLayout` is the view, reached by `ImeUiMode.READER`.
+- **The zero-duration fix is in the app, not the engine.** The engine merges a number with the word
+  after it, so `8. mjesec` arrives as one boundary and the number ends up lit for zero seconds.
+  Adjacent words sharing a start now split the span between them, in `MaReader.spread`. The ports
+  stay faithful to the Python; presentation rules belong on the side that presents.
+- **Still to do on the reader**: nothing blocking. Worth watching on the device is whether the first
+  sentence starts fast enough to feel like reading rather than loading.
 
 ### Next: retranscribe
 
