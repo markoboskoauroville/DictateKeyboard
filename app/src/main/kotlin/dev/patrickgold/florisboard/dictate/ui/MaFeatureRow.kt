@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.Redo
-import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Timer
@@ -30,6 +28,9 @@ import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.outlined.Psychology
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import dev.patrickgold.jetpref.datastore.model.collectAsState
@@ -84,18 +85,19 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
 
-    val longform by prefs.dictate.longformMode.collectAsState()
-    val rewording by prefs.dictate.rewordingEnabled.collectAsState()
+    // The five parts of the keyboard, top to bottom, each with its own numbered key.
+    val part1 by prefs.dictate.maEditRow.collectAsState()
+    val part2 by prefs.dictate.maExtraRow.collectAsState()
+    val part3 by prefs.dictate.maPartLetters.collectAsState()
+    val part4 by prefs.dictate.maPartShiftRow.collectAsState()
+    val part5 by prefs.dictate.maPartBottomRow.collectAsState()
 
-    // The one green in this app that means "on", matching the locked-modifier green on the keyboard
-    // so the same colour never means two different things.
+    // Green when the part is showing, dark when it is folded away, so the row is a map of the
+    // keyboard above it and can be read without pressing anything.
     val onGreen = Color(0xFF6FA85A)
 
-
-    // Long press on any key here folds the row away. The chevron in the arrow strip above is the
-    // deliberate way to do it and stays; this is the one that costs nothing to reach, because the
-    // finger is already on the row it wants gone. Ten keys all agreeing on one gesture means it does
-    // not matter which one is under the thumb at the time.
+    // Long press anywhere here folds the whole row away. The finger is already on the row it wants
+    // gone, which costs nothing, and the unfold key in the arrow strip brings it back.
     val fold: () -> kotlin.Unit = { scope.launch { prefs.dictate.maFeatureRowShown.set(false) } }
 
     Row(
@@ -104,71 +106,23 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
 
-        // 2. Transcribe an audio file. Until now this lived only on a long press of the microphone,
-        //    which is not a place anybody looks. The single most hidden feature in the app.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Outlined.AudioFile,
-            contentDescription = stringRes(R.string.ma__feature_file),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            DictateController.startFileTranscription(context)
+        // 1, the edit strip. Copy, paste, cut, select, history.
+        ThemedTextKey("1", keyMod, if (part1) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maEditRow.set(!part1) }
+        }
+        // 2, the number row.
+        ThemedTextKey("2", keyMod, if (part2) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maExtraRow.set(!part2) }
+        }
+        // 3, the letters, both rows of them. The largest single piece of height on the keyboard and
+        // the one a voice-first keyboard needs least often.
+        ThemedTextKey("3", keyMod, if (part3) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maPartLetters.set(!part3) }
         }
 
-        // 3. Longform, cycling off → manual → auto. It decides what happens to speech longer than a
-        //    breath, which is exactly the thing worth knowing before speaking rather than after.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Default.Timer,
-            contentDescription = stringRes(R.string.ma__feature_longform),
-            modifier = keyMod,
-            tint = if (longform.isEnabled) onGreen else null,
-            onLongClick = fold,
-        ) {
-            scope.launch {
-                prefs.dictate.longformMode.set(
-                    when (longform) {
-                        DictateLongformMode.OFF -> DictateLongformMode.MANUAL
-                        DictateLongformMode.MANUAL -> DictateLongformMode.AUTO
-                        DictateLongformMode.AUTO -> DictateLongformMode.OFF
-                        else -> DictateLongformMode.OFF
-                    },
-                )
-            }
-        }
-
-        // 4. Rewording. The master switch for the prompt strip and everything an LLM does to a
-        //    transcript afterwards. Green when the text will be touched, dark when it will not,
-        //    which is the difference between what was said and what was written.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Outlined.AutoFixHigh,
-            contentDescription = stringRes(R.string.ma__feature_rewording),
-            modifier = keyMod,
-            tint = if (rewording) onGreen else null,
-            onLongClick = fold,
-        ) {
-            scope.launch { prefs.dictate.rewordingEnabled.set(!rewording) }
-        }
-
-        // 5. Put the last dictation back. The recovery when a send lands in the wrong field or gets
-        //    swallowed, and the reason it belongs next to the switches rather than buried.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Default.Replay,
-            contentDescription = stringRes(R.string.ma__feature_reinsert),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            DictateController.reinsertLastDictation(context)
-        }
-
-        // The reader, in the middle of the row on purpose. It is the most important key here,
-        // and the middle is the one place a thumb reaches from either side without the hand
-        // shifting its grip. The corners are for what is used rarely; the centre is for what a
-        // hand goes to without looking.
-        // LLL: it speaks the clipboard and lights each word as it is said.
+        // The reader, in the middle, the only key from the old row that stays. It is the most
+        // important key here and the middle is the one place a thumb reaches from either side
+        // without the hand shifting its grip.
         ThemedIconKey(
             code = KeyCode.NOOP,
             icon = Icons.AutoMirrored.Filled.MenuBook,
@@ -179,67 +133,37 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             keyboardManager.activeState.imeUiMode = ImeUiMode.READER
         }
 
-        // 6 and 7. Undo and redo, as a pair, because they are one thought and separating them means
-        //    hunting for the second half of it.
-        //
-        //    Dictation history used to sit here and does not any more: the edit row directly above
-        //    already carries it. A key that repeats a key one row up spends a slot to teach the hand
-        //    two places for one action, which is worse than either place alone.
-        ThemedIconKey(
-            code = KeyCode.UNDO,
-            icon = Icons.AutoMirrored.Filled.Undo,
-            contentDescription = stringRes(R.string.ma__feature_undo),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            keyboardManager.tapKey(KeyCode.UNDO)
+        // 4, the shift row.
+        ThemedTextKey("4", keyMod, if (part4) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maPartShiftRow.set(!part4) }
         }
-
-        ThemedIconKey(
-            code = KeyCode.REDO,
-            icon = Icons.AutoMirrored.Filled.Redo,
-            contentDescription = stringRes(R.string.ma__feature_redo),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            keyboardManager.tapKey(KeyCode.REDO)
+        // 5, the bottom row, ctrl through enter.
+        ThemedTextKey("5", keyMod, if (part5) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maPartBottomRow.set(!part5) }
         }
+    }
+}
 
-        // 8. The model. The quick row shows it too, but the quick row can be hidden, and which model
-        //    is about to hear you is not something that should ever be unavailable.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Outlined.Psychology,
-            contentDescription = stringRes(R.string.ma__feature_model),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            FlorisImeService.launchSettings("settings/dictate/providers")
-        }
-
-        // 9. db, the dashboard of show and hide switches. The one key here that opens a list, and it
-        //    earns that because its contents are settings rather than actions.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Default.Dashboard,
-            contentDescription = stringRes(R.string.ma__feature_db),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            FlorisImeService.launchSettings("settings/dictate/layout")
-        }
-
-        // 10. API keys. Last, on the far edge. When a key expires the whole app stops working, and the fix currently lives in
-        //    another application entirely. Nothing else in the row can fail this completely.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.Default.VpnKey,
-            contentDescription = stringRes(R.string.ma__feature_keys),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            FlorisImeService.launchSettings("settings/dictate/keys")
-        }
-
+/** A round key carrying a numeral, styled exactly as every other key in the row. */
+@Composable
+private fun ThemedTextKey(
+    label: String,
+    modifier: Modifier,
+    tint: Color?,
+    onLongClick: () -> kotlin.Unit,
+    onClick: () -> kotlin.Unit,
+) {
+    ThemedKey(
+        code = KeyCode.NOOP,
+        modifier = modifier,
+        onLongClick = onLongClick,
+        onClick = onClick,
+    ) { fg ->
+        Text(
+            text = label,
+            color = tint ?: fg,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Medium,
+        )
     }
 }

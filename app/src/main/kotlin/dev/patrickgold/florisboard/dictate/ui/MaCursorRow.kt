@@ -77,6 +77,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.florisboard.lib.snygg.ui.rememberSnyggThemeQuery
 
 /** Hold-to-repeat timings for the arrows. */
+/** How long a shape-changing key must be held. One second: deliberate, but not a wait. */
+private const val MA_HOLD_MS = 1000L
+
 private const val MA_REPEAT_DELAY_MS = 380L
 private const val MA_REPEAT_INTERVAL_MS = 55L
 
@@ -107,6 +110,7 @@ fun MaCursorRow(modifier: Modifier = Modifier) {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
     val featureRowShown by prefs.dictate.maFeatureRowShown.collectAsState()
+    val feedbackController = LocalInputFeedbackController.current
 
     Row(
         modifier = modifier
@@ -126,8 +130,25 @@ fun MaCursorRow(modifier: Modifier = Modifier) {
         // because that is not a direction, it is a height. The same vocabulary as the four arrows
         // beside it, saying compress and expand rather than up and down, the way a shelf pushes down
         // and pulls back out.
+        // Collapsing is a tap. Opening is a HOLD of one second, and the two are deliberately not
+        // symmetrical. This key sits in the corner where a thumb rests, and a brush against it was
+        // opening the row and taking back the height that had just been given up. The costs are not
+        // equal either: an accidental collapse hides a row that is one press away, while an
+        // accidental expansion steals screen from whatever is being typed into. So the direction
+        // that costs something has to be asked for on purpose, and the phone buzzes the moment the
+        // hold is long enough, so the finger knows before the eye does.
         MaFlatKey(
-            onFire = { scope.launch { prefs.dictate.maFeatureRowShown.set(!featureRowShown) } },
+            onFire = {
+                if (featureRowShown) scope.launch { prefs.dictate.maFeatureRowShown.set(false) }
+            },
+            onHold = if (featureRowShown) {
+                null
+            } else {
+                {
+                    feedbackController?.modifierLock()
+                    scope.launch { prefs.dictate.maFeatureRowShown.set(true) }
+                }
+            },
             repeats = false,
             modifier = Modifier.weight(1f).fillMaxHeight(),
         ) { fg ->
@@ -262,15 +283,35 @@ internal fun MaFlatKey(
     onFire: () -> Unit,
     modifier: Modifier,
     repeats: Boolean = false,
+    onHold: (() -> Unit)? = null,
     content: @Composable (Color) -> Unit,
 ) {
     val style = rememberSnyggThemeQuery(FlorisImeUi.Key.elementName, maKeyAttributes(KeyCode.NOOP))
     val foreground = style.foreground(default = Color.White)
     val feedback = LocalInputFeedbackController.current
 
-    val gesture = Modifier.pointerInput(repeats) {
+    val gesture = Modifier.pointerInput(repeats, onHold != null) {
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false)
+
+            // With a hold action set, this key does nothing at all on touch. These keys fire on the
+            // way DOWN rather than on release, which is right for an arrow that has to repeat and
+            // wrong for anything that changes the shape of the keyboard, because a thumb resting in
+            // the corner is enough to trigger it.
+            if (onHold != null) {
+                val released = withTimeoutOrNull(MA_HOLD_MS) {
+                    waitForUpOrCancellation()
+                    true
+                }
+                if (released == null) {
+                    onHold()
+                    // The buzz lands at the moment the hold is long enough, so the finger knows
+                    // before the eye does and can be lifted with confidence.
+                    waitForUpOrCancellation()
+                }
+                return@awaitEachGesture
+            }
+
             onFire()
             feedback.keyPress()
             if (repeats) {
