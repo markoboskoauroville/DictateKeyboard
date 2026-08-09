@@ -55,11 +55,13 @@ import dev.mantraproductions.reader.engine.MaEdgeVoice
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.clipboardManager
 import dev.patrickgold.florisboard.ime.ImeUiMode
+import dev.patrickgold.florisboard.ime.clipboard.provider.ItemType
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
 import dev.patrickgold.florisboard.subtypeManager
+import org.florisboard.lib.android.showShortToastSync
 import org.florisboard.lib.compose.stringRes
 import org.florisboard.lib.snygg.ui.SnyggBox
 import org.florisboard.lib.snygg.ui.SnyggColumn
@@ -102,7 +104,7 @@ fun MaReaderLayout(modifier: Modifier = Modifier) {
     // to be told what to do. Coming back to a reading already in progress leaves it alone.
     LaunchedEffect(Unit) {
         if (text.isEmpty()) {
-            loadFromClipboard(context, clipboardManager.primaryClip?.text?.toString())
+            loadFromClipboard(context, clipboardManager, announceEmpty = false)
         }
     }
 
@@ -180,15 +182,13 @@ fun MaReaderLayout(modifier: Modifier = Modifier) {
                 keyMod,
             ) { MaReader.step(context, -1) }
 
-            // Play and pause share a key, because they are one control and two would mean looking
-            // for the right one while listening.
-            ReaderKey(
-                if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                stringRes(if (playing) R.string.lll__pause else R.string.lll__play),
-                keyMod,
-            ) {
-                if (playing) MaReader.pause() else MaReader.play(context)
+            // Paste, in the middle. It is the key this view is entered to press, and the middle is
+            // the one place a thumb reaches from either side without the hand shifting its grip.
+            // Reading starts on its own from here, so this is usually the only key touched at all.
+            ReaderKey(Icons.Default.ContentPaste, stringRes(R.string.lll__load), keyMod) {
+                loadFromClipboard(context, clipboardManager, announceEmpty = true)
             }
+
             ReaderKey(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 stringRes(R.string.lll__next),
@@ -203,9 +203,18 @@ fun MaReaderLayout(modifier: Modifier = Modifier) {
                 MaReader.reload(context)
             }
 
-            // Load whatever is on the clipboard now, for reading a second thing without leaving.
-            ReaderKey(Icons.Default.ContentPaste, stringRes(R.string.lll__load), keyMod) {
-                loadFromClipboard(context, clipboardManager.primaryClip?.text?.toString())
+            // Play and pause share a key, because they are one control and two would mean looking
+            // for the right one while listening.
+            //
+            // Out at the edge rather than in the middle, because reading starts by itself the
+            // moment something is pasted. This is the key for stopping and picking back up, which
+            // is a thing done occasionally and deliberately, not the way in.
+            ReaderKey(
+                if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                stringRes(if (playing) R.string.lll__pause else R.string.lll__play),
+                keyMod,
+            ) {
+                if (playing) MaReader.pause() else MaReader.play(context)
             }
         }
 
@@ -225,9 +234,46 @@ fun MaReaderLayout(modifier: Modifier = Modifier) {
     }
 }
 
-private fun loadFromClipboard(context: Context, clip: String?) {
-    val raw = clip?.trim().orEmpty()
-    if (raw.isNotEmpty()) MaReader.load(context, raw)
+/**
+ * Whatever text is on the clipboard, asked for in three ways because one is not enough.
+ *
+ * `primaryClip` only holds what arrived through a change callback while the keyboard was running, so
+ * anything copied before the keyboard opened is invisible to it. That is the ordinary case and it is
+ * why the paste key did nothing: the user copies a paragraph in a browser, then opens the keyboard,
+ * and by then the moment this was listening for has passed.
+ *
+ * So: the live clip first, then the newest text in the app's own history, then the system clipboard
+ * read directly. The last one is the only source that is true at the instant the key is pressed.
+ */
+private fun clipboardText(
+    context: Context,
+    clipboardManager: dev.patrickgold.florisboard.ime.clipboard.ClipboardManager,
+): String? {
+    clipboardManager.primaryClip?.text?.takeIf { it.isNotBlank() }?.let { return it }
+    clipboardManager.currentHistory.all
+        .firstOrNull { it.type == ItemType.TEXT && !it.text.isNullOrBlank() }
+        ?.text?.let { return it }
+    val system = context.getSystemService(android.content.ClipboardManager::class.java)
+    val item = system?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)
+    return item?.coerceToText(context)?.toString()?.takeIf { it.isNotBlank() }
+}
+
+/**
+ * Loads the clipboard and starts reading. Reading begins on its own: pressing paste is already the
+ * decision to have it read, and a second press to start would only be a second press.
+ */
+private fun loadFromClipboard(
+    context: Context,
+    clipboardManager: dev.patrickgold.florisboard.ime.clipboard.ClipboardManager,
+    announceEmpty: Boolean,
+) {
+    val raw = clipboardText(context, clipboardManager)?.trim().orEmpty()
+    if (raw.isNotEmpty()) {
+        MaReader.load(context, raw)
+    } else if (announceEmpty) {
+        // Silence here reads as a broken key. Say the clipboard is empty instead.
+        context.showShortToastSync(R.string.lll__nothing_to_read)
+    }
 }
 
 @Composable

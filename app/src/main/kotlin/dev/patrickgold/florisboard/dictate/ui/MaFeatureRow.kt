@@ -92,21 +92,17 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     val onGreen = Color(0xFF6FA85A)
 
 
+    // Long press on any key here folds the row away. The chevron in the arrow strip above is the
+    // deliberate way to do it and stays; this is the one that costs nothing to reach, because the
+    // finger is already on the row it wants gone. Ten keys all agreeing on one gesture means it does
+    // not matter which one is under the thumb at the time.
+    val fold: () -> kotlin.Unit = { scope.launch { prefs.dictate.maFeatureRowShown.set(false) } }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
-
-        // 1. The reader. LLL: it speaks the clipboard and lights each word as it is said.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.AutoMirrored.Filled.MenuBook,
-            contentDescription = stringRes(R.string.ma__feature_lll),
-            modifier = keyMod,
-        ) {
-            keyboardManager.activeState.imeUiMode = ImeUiMode.READER
-        }
 
         // 2. Transcribe an audio file. Until now this lived only on a long press of the microphone,
         //    which is not a place anybody looks. The single most hidden feature in the app.
@@ -115,6 +111,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             icon = Icons.Outlined.AudioFile,
             contentDescription = stringRes(R.string.ma__feature_file),
             modifier = keyMod,
+            onLongClick = fold,
         ) {
             DictateController.startFileTranscription(context)
         }
@@ -127,6 +124,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             contentDescription = stringRes(R.string.ma__feature_longform),
             modifier = keyMod,
             tint = if (longform.isEnabled) onGreen else null,
+            onLongClick = fold,
         ) {
             scope.launch {
                 prefs.dictate.longformMode.set(
@@ -149,6 +147,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             contentDescription = stringRes(R.string.ma__feature_rewording),
             modifier = keyMod,
             tint = if (rewording) onGreen else null,
+            onLongClick = fold,
         ) {
             scope.launch { prefs.dictate.rewordingEnabled.set(!rewording) }
         }
@@ -160,8 +159,24 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             icon = Icons.Default.Replay,
             contentDescription = stringRes(R.string.ma__feature_reinsert),
             modifier = keyMod,
+            onLongClick = fold,
         ) {
             DictateController.reinsertLastDictation(context)
+        }
+
+        // The reader, in the middle of the row on purpose. It is the most important key here,
+        // and the middle is the one place a thumb reaches from either side without the hand
+        // shifting its grip. The corners are for what is used rarely; the centre is for what a
+        // hand goes to without looking.
+        // LLL: it speaks the clipboard and lights each word as it is said.
+        ThemedIconKey(
+            code = KeyCode.NOOP,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
+            contentDescription = stringRes(R.string.ma__feature_lll),
+            modifier = keyMod,
+            onLongClick = fold,
+        ) {
+            keyboardManager.activeState.imeUiMode = ImeUiMode.READER
         }
 
         // 6 and 7. Undo and redo, as a pair, because they are one thought and separating them means
@@ -175,6 +190,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             icon = Icons.AutoMirrored.Filled.Undo,
             contentDescription = stringRes(R.string.ma__feature_undo),
             modifier = keyMod,
+            onLongClick = fold,
         ) {
             keyboardManager.tapKey(KeyCode.UNDO)
         }
@@ -184,6 +200,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             icon = Icons.AutoMirrored.Filled.Redo,
             contentDescription = stringRes(R.string.ma__feature_redo),
             modifier = keyMod,
+            onLongClick = fold,
         ) {
             keyboardManager.tapKey(KeyCode.REDO)
         }
@@ -195,6 +212,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             icon = Icons.Outlined.Psychology,
             contentDescription = stringRes(R.string.ma__feature_model),
             modifier = keyMod,
+            onLongClick = fold,
         ) {
             FlorisImeService.launchSettings("settings/dictate/providers")
         }
@@ -206,6 +224,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             icon = Icons.Default.Dashboard,
             contentDescription = stringRes(R.string.ma__feature_db),
             modifier = keyMod,
+            onLongClick = fold,
         ) {
             FlorisImeService.launchSettings("settings/dictate/layout")
         }
@@ -217,6 +236,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             icon = Icons.Default.VpnKey,
             contentDescription = stringRes(R.string.ma__feature_keys),
             modifier = keyMod,
+            onLongClick = fold,
         ) {
             FlorisImeService.launchSettings("settings/dictate/keys")
         }
