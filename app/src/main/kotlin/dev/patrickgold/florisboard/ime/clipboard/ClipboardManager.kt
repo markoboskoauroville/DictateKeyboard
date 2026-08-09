@@ -420,6 +420,31 @@ class ClipboardManager(
         true
     }
 
+    /**
+     * Saves an edited or hand-written note. With [old] set the entry is rewritten in place, keeping
+     * its id and its pinned state, so editing a note leaves one note rather than the new text plus
+     * the stale copy it was meant to replace. With [old] null the text is inserted as a new entry.
+     *
+     * The rewritten entry is given a fresh timestamp, because an edit is the moment it last mattered
+     * and the history is ordered by exactly that. An entry that kept its original time would sink
+     * back down the list the instant it was changed, which is the opposite of what editing means.
+     */
+    fun replaceOrInsertText(old: ClipboardItem?, text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        ioScope.launch {
+            val dao = clipHistoryDao ?: return@launch
+            if (old != null && old.type == ItemType.TEXT) {
+                // copy() carries the id, which is a constructor property, so this updates the same
+                // row rather than writing a second one.
+                dao.update(old.copy(text = trimmed, creationTimestampMs = System.currentTimeMillis()))
+            } else {
+                val item = ClipboardItem.text(trimmed)
+                item.id = dao.insert(item)
+            }
+        }
+    }
+
     fun pinClip(item: ClipboardItem) {
         ioScope.launch {
             clipHistoryDao?.update(item.copy(isPinned = true))

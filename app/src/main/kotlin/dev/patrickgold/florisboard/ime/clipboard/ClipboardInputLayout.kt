@@ -49,7 +49,9 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
@@ -190,13 +192,16 @@ fun ClipboardInputLayout(
             val sizeModifier = Modifier
                 .sizeIn(maxHeight = FlorisImeSizing.smartbarHeight)
                 .aspectRatio(1f)
+            // An X rather than a back arrow: this panel is a place you close, not a step you go
+            // back from, and the plus sits directly under it so the two note controls are together
+            // in the same corner.
             SnyggIconButton(
                 elementName = FlorisImeUi.ClipboardHeaderButton.elementName,
                 onClick = { keyboardManager.activeState.imeUiMode = ImeUiMode.TEXT },
                 modifier = sizeModifier,
             ) {
                 SnyggIcon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.Default.Close,
                 )
             }
             SnyggText(
@@ -466,6 +471,36 @@ fun ClipboardInputLayout(
                         state = gridState,
                         columns = staggeredGridCells,
                     ) {
+                        // The plus, directly under the X in the corner. It writes a new entry by
+                        // hand rather than waiting for something to be copied, which is what turns
+                        // the history into somewhere notes can be kept.
+                        //
+                        // It lives in the grid rather than in the header row because the header is
+                        // already five buttons wide and a keyboard-height panel has no room for a
+                        // second row of controls. Being the first cell puts it exactly where it was
+                        // asked to be, and it scrolls away with the list instead of taking space
+                        // from it permanently.
+                        item("add-note", span = StaggeredGridItemSpan.FullLine) {
+                            SnyggRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                SnyggIconButton(
+                                    elementName = FlorisImeUi.ClipboardHeaderButton.elementName,
+                                    onClick = { keyboardManager.activateClipboardEditor(null) },
+                                    modifier = Modifier
+                                        .sizeIn(maxHeight = FlorisImeSizing.smartbarHeight)
+                                        .aspectRatio(1f),
+                                    enabled = !deviceLocked && !isPopupSurfaceActive(),
+                                ) {
+                                    SnyggIcon(imageVector = Icons.Default.Add)
+                                }
+                                SnyggText(
+                                    elementName = FlorisImeUi.ClipboardHeaderText.elementName,
+                                    text = stringRes(R.string.clipboard__add_note),
+                                )
+                            }
+                        }
                         clipboardItems(
                             items = filteredHistory.pinned,
                             key = "pinned-header",
@@ -514,6 +549,19 @@ fun ClipboardInputLayout(
                     }
                     SnyggColumn(modifier = Modifier.weight(0.5f)) {
                         SnyggColumn(FlorisImeUi.ClipboardItemActions.elementName) {
+                            // Edit first: it is the action this panel gained a note editor for, and
+                            // the one most likely to be wanted on a text entry. Only text can be
+                            // edited, so an image or video entry simply does not offer it.
+                            if (popupItem!!.type == ItemType.TEXT) {
+                                PopupAction(
+                                    icon = Icons.Outlined.EditNote,
+                                    text = stringRes(R.string.clip__edit_item),
+                                ) {
+                                    val item = popupItem!!
+                                    popupItem = null
+                                    keyboardManager.activateClipboardEditor(item)
+                                }
+                            }
                             PopupAction(
                                 icon = Icons.Outlined.PushPin,
                                 text = stringRes(if (popupItem!!.isPinned) {

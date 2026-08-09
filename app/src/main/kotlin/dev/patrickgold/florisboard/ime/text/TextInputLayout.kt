@@ -37,6 +37,7 @@ import dev.patrickgold.florisboard.dictate.ui.MaMacroBar
 import dev.patrickgold.florisboard.dictate.ui.MaCursorRow
 import dev.patrickgold.florisboard.dictate.ui.MaExtraRow
 import dev.patrickgold.florisboard.dictate.ui.LegacyEditRow
+import dev.patrickgold.florisboard.ime.clipboard.ClipboardEditorPanel
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchPanel
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.smartbar.IncognitoDisplayMode
@@ -60,6 +61,7 @@ fun TextInputLayout(
 
     val state by keyboardManager.activeState.collectAsState()
     val evaluator by keyboardManager.activeEvaluator.collectAsState()
+    val clipboardEditorActive by keyboardManager.clipboardEditorText.collectAsState()
     val emojiSearchActive by keyboardManager.emojiSearchQuery.collectAsState()
     val gifSearchActive by keyboardManager.gifSearchQuery.collectAsState()
 
@@ -72,7 +74,18 @@ fun TextInputLayout(
     ) {
         // While an emoji search is running (issue #110), the search panel takes the Smartbar's slot so the
         // keyboard layout below stays available for typing the query.
-        if (emojiSearchActive != null) {
+        if (clipboardEditorActive != null) {
+            // Writing or rewriting a clipboard note. Same arrangement as the two searches: the editor
+            // takes the Smartbar's slot and the keyboard below it does the typing, because an input
+            // method has no way to type into a field of its own.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(FlorisImeSizing.smartbarHeight),
+            ) {
+                ClipboardEditorPanel()
+            }
+        } else if (emojiSearchActive != null) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

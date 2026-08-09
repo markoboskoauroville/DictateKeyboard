@@ -29,6 +29,7 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.appContext
 import dev.patrickgold.florisboard.clipboardManager
+import dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem
 import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.extensionManager
 import dev.patrickgold.florisboard.ime.ImeUiMode
@@ -120,6 +121,17 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
      * intercepted in [onInputKeyUp] and folded into this query instead of being committed to the editor.
      */
     val emojiSearchQuery = MutableStateFlow<String?>(null)
+
+    // Clipboard note editing (Marko). Non-null while a clipboard entry is being written or rewritten:
+    // the clipboard panel closes, the text keyboard comes back, and the editor takes the Smartbar's
+    // slot exactly as emoji search does, because that is the only way to type inside an input method.
+    // An IME cannot type into a field of its own — the app on the other side holds the input
+    // connection — so the "field" is this string and keystrokes are folded into it in [onInputKeyUp].
+    val clipboardEditorText = MutableStateFlow<String?>(null)
+
+    // The entry being rewritten, or null when the editor was opened by the plus to write a new one.
+    // Saving with this set replaces that entry rather than adding a second copy of nearly the same text.
+    val clipboardEditorSource = MutableStateFlow<ClipboardItem?>(null)
 
     // GIF search (KLIPY). [gifSearchQuery] is non-null while the user is TYPING a query (keyboard shown,
     // keystrokes folded into it instead of the editor; a search bar shows above the keyboard). Pressing
@@ -987,6 +999,80 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
         return true
     }
 
+    /**
+     * Opens the clipboard note editor. [item] is the entry being rewritten, or null to write a new
+     * one from the plus button.
+     *
+     * Switches to the text keyboard, because the whole point is to type and the clipboard panel
+     * occupies the space the keyboard needs. The editor itself appears in the Smartbar's slot.
+     */
+    fun activateClipboardEditor(item: ClipboardItem?) {
+        clipboardEditorSource.value = item
+        clipboardEditorText.value = item?.text ?: ""
+        activeState.imeUiMode = ImeUiMode.TEXT
+    }
+
+    /** Closes the editor without saving, back to the clipboard, which is where it was opened from. */
+    fun closeClipboardEditor(returnToClipboard: Boolean = true) {
+        if (clipboardEditorText.value == null) return
+        clipboardEditorText.value = null
+        clipboardEditorSource.value = null
+        if (returnToClipboard) activeState.imeUiMode = ImeUiMode.CLIPBOARD
+    }
+
+    /**
+     * Saves what is in the editor. Rewriting an entry replaces it rather than leaving the old text
+     * behind as a near duplicate, which is what makes this feel like editing a note instead of
+     * copying it twice.
+     *
+     * Blank text saves nothing and simply closes: an empty note is not worth a row in the history,
+     * and clearing the text is the obvious way to ask for an edit to be abandoned.
+     */
+    fun saveClipboardEditor() {
+        val text = clipboardEditorText.value ?: return
+        val source = clipboardEditorSource.value
+        if (text.isNotBlank()) {
+            clipboardManager.replaceOrInsertText(source, text)
+        }
+        closeClipboardEditor()
+    }
+
+    /**
+     * While the note editor is open, folds typing keys into the note instead of the app's editor.
+     * Unlike the two searches, Enter inserts a real newline: this is a note, and notes have lines.
+     * Backspace on empty text closes the editor, matching how the searches back out.
+     */
+    private fun handleClipboardEditorKey(data: KeyData): Boolean {
+        val current = clipboardEditorText.value ?: return false
+        when (data.code) {
+            KeyCode.SPACE -> clipboardEditorText.value = "$current "
+            KeyCode.ENTER -> clipboardEditorText.value = "$current\n"
+            KeyCode.DELETE -> {
+                if (current.isEmpty()) {
+                    closeClipboardEditor()
+                } else {
+                    clipboardEditorText.value = current.dropLast(1)
+                }
+            }
+            KeyCode.DELETE_WORD -> {
+                if (current.isEmpty()) {
+                    closeClipboardEditor()
+                } else {
+                    // Trailing whitespace goes first, then the word before it, so delete-word at the
+                    // end of "one two " removes "two" rather than only the space.
+                    val trimmed = current.trimEnd()
+                    val cut = trimmed.lastIndexOfAny(charArrayOf(' ', '\n', '\t'))
+                    clipboardEditorText.value = if (cut < 0) "" else trimmed.substring(0, cut + 1)
+                }
+            }
+            else -> {
+                if (data.type != KeyType.CHARACTER) return false
+                clipboardEditorText.value = current + data.asString(isForDisplay = false)
+            }
+        }
+        return true
+    }
+
     /** Starts a GIF search: shows the text keyboard so the user can type the query. */
     fun activateGifSearch() {
         gifSearchQuery.value = ""
@@ -1058,6 +1144,11 @@ class KeyboardManager(context: Context) : InputKeyEventReceiver {
 
     override fun onInputKeyUp(data: KeyData) = activeState.batchEdit {
         val windowController = FlorisImeService.windowControllerOrNull() ?: return@batchEdit
+        // The note editor comes first: while it is open every keystroke belongs to the note, not to
+        // the app on the other side of the input connection.
+        if (clipboardEditorText.value != null && handleClipboardEditorKey(data)) {
+            return@batchEdit
+        }
         if (emojiSearchQuery.value != null && handleEmojiSearchKey(data)) {
             return@batchEdit
         }
