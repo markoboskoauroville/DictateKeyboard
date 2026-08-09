@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import dev.patrickgold.jetpref.datastore.model.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -42,9 +43,9 @@ import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateLongformMode
-import dev.patrickgold.florisboard.ime.keyboard.ImeUiMode
+import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.keyboardManager
-import dev.patrickgold.florisboard.ime.keyboard.KeyCode
+import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import kotlinx.coroutines.launch
 import org.florisboard.lib.compose.stringRes
 import dev.patrickgold.florisboard.R
@@ -142,6 +143,7 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
                         DictateLongformMode.OFF -> DictateLongformMode.MANUAL
                         DictateLongformMode.MANUAL -> DictateLongformMode.AUTO
                         DictateLongformMode.AUTO -> DictateLongformMode.OFF
+                        else -> DictateLongformMode.OFF
                     },
                 )
             }
