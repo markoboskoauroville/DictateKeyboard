@@ -389,6 +389,9 @@ fun LegacyDictateLayout(
     }
 }
 
+/** The pause between steps of a field-driven macro. See ALL_PASTE for why it is this long. */
+private const val MA_MACRO_STEP_MS = 500L
+
 /**
  * A single legacy key: the active theme's `key` colours for the given [code] (so special keys such as
  * enter keep their accent), rendered with the uniform [LegacyKeyShape] and a pressed/ripple state. The
@@ -568,10 +571,20 @@ private fun LegacyActionKey(
         // a selection differently from a paste into an empty field, and clearing first makes the
         // result the same everywhere.
         //
-        // The wait is the reason this is a macro and not three key presses. Deleting a selection and
-        // pasting are both handled by the field being typed into, not by this keyboard, and a field
-        // that is still settling after a delete can drop the paste entirely. A third of a second is
-        // long enough for anything to catch up and short enough not to be felt as a delay.
+        // The waits are the reason this is a macro and not three key presses. Selecting, deleting and
+        // pasting are all handled by the field being typed into rather than by this keyboard, and a
+        // field still settling from the last step can drop the next one entirely and silently.
+        //
+        // There are now TWO half second waits, one after the select and one after the delete, where
+        // there used to be a single third of a second and nothing at all after the select. It failed
+        // in some apps, and the pattern of the failures says timing rather than permissions: the same
+        // field that swallows it once accepts it when the phone is not busy. A rich text editor
+        // reflowing a document, or a web view rebuilding its selection, takes longer to settle than
+        // a plain text box, and it never reports that it was not ready.
+        //
+        // A full second is a real cost and it is deliberate. A macro that works everywhere and feels
+        // slightly slow is worth more than one that feels instant and quietly does nothing in the
+        // apps somebody happens to use most.
         //
         // Drawn as two letters because there is no picture of this. Every clipboard glyph already
         // means one of the four keys beside it.
@@ -581,11 +594,14 @@ private fun LegacyActionKey(
             onClick = {
                 actionScope.launch {
                     keyboardManager.activeState.isManualSelectionMode = false
-                    FlorisImeService.currentInputConnection()?.let { ic ->
-                        ic.performContextMenuAction(android.R.id.selectAll)
-                        ic.commitText("", 1)
-                    }
-                    delay(333L)
+                    FlorisImeService.currentInputConnection()
+                        ?.performContextMenuAction(android.R.id.selectAll)
+                    delay(MA_MACRO_STEP_MS)
+                    // The connection is fetched again at every step rather than held. A second is a
+                    // long time in an input method and the field can be replaced underneath a macro,
+                    // at which point a stale connection writes into nothing at all.
+                    FlorisImeService.currentInputConnection()?.commitText("", 1)
+                    delay(MA_MACRO_STEP_MS)
                     FlorisImeService.currentInputConnection()
                         ?.performContextMenuAction(android.R.id.paste)
                 }
