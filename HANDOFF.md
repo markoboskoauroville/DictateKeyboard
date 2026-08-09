@@ -262,9 +262,11 @@ was broken quietly and nobody noticed until Marko asked. Check `git log -- HANDO
   so locking caps by double tap or by the cycle felt nothing. It now fires on the state change in
   `KeyboardManager`, the single point every route into a lock passes through, and is gated only on
   haptics being on at all rather than on the long-press switch.
-- **AP waits twice, half a second each**, where it waited once for a third of a second and not at all
-  after the select. It was failing silently in some apps. The input connection is also refetched at
-  every step, since a field can be replaced underneath a macro that now runs for a full second.
+- **AP is timed 100, 100, 500**: a short lead before the select and before the delete, then half a
+  second before the paste. It originally waited once, for a third of a second, and not at all after
+  the select, and it failed silently in some apps. The waits are deliberately unequal, because only
+  the paste was being dropped; the first two steps just need the field to have noticed. The input
+  connection is refetched at every step, since a field can be replaced underneath a macro.
 - **The app name is never translated.** Forty locale files still carried `app_name` as `Dictate`, so
   a phone set to Croatian or German showed the old fork name on the launcher whatever the default
   said. All removed, and `app_name` is now `translatable="false"`.

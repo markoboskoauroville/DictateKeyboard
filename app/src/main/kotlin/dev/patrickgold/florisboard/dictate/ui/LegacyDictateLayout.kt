@@ -389,8 +389,11 @@ fun LegacyDictateLayout(
     }
 }
 
-/** The pause between steps of a field-driven macro. See ALL_PASTE for why it is this long. */
-private const val MA_MACRO_STEP_MS = 500L
+/** Lead-in before a macro step the field only has to notice. See ALL_PASTE. */
+private const val MA_MACRO_LEAD_MS = 100L
+
+/** The wait before a paste, which is the step that actually gets dropped. See ALL_PASTE. */
+private const val MA_MACRO_PASTE_MS = 500L
 
 /**
  * A single legacy key: the active theme's `key` colours for the given [code] (so special keys such as
@@ -575,16 +578,16 @@ private fun LegacyActionKey(
         // pasting are all handled by the field being typed into rather than by this keyboard, and a
         // field still settling from the last step can drop the next one entirely and silently.
         //
-        // There are now TWO half second waits, one after the select and one after the delete, where
-        // there used to be a single third of a second and nothing at all after the select. It failed
-        // in some apps, and the pattern of the failures says timing rather than permissions: the same
-        // field that swallows it once accepts it when the phone is not busy. A rich text editor
-        // reflowing a document, or a web view rebuilding its selection, takes longer to settle than
-        // a plain text box, and it never reports that it was not ready.
+        // The three waits are NOT equal, and that is the whole design. A short lead before the select
+        // and before the delete is enough, because those two only need the field to have noticed the
+        // last thing that happened. The paste is the step that actually failed in some apps, so it
+        // gets five times as long: a rich text editor reflowing a document, or a web view rebuilding
+        // its selection after a delete, takes far longer to settle than a plain text box and never
+        // reports that it was not ready.
         //
-        // A full second is a real cost and it is deliberate. A macro that works everywhere and feels
-        // slightly slow is worth more than one that feels instant and quietly does nothing in the
-        // apps somebody happens to use most.
+        // Half a second of that is spent on one step for a reason. Spreading the same total evenly
+        // would make the macro feel slower and fix less, because the two cheap steps do not need it
+        // and the expensive one would get less.
         //
         // Drawn as two letters because there is no picture of this. Every clipboard glyph already
         // means one of the four keys beside it.
@@ -594,14 +597,15 @@ private fun LegacyActionKey(
             onClick = {
                 actionScope.launch {
                     keyboardManager.activeState.isManualSelectionMode = false
+                    delay(MA_MACRO_LEAD_MS)
                     FlorisImeService.currentInputConnection()
                         ?.performContextMenuAction(android.R.id.selectAll)
-                    delay(MA_MACRO_STEP_MS)
-                    // The connection is fetched again at every step rather than held. A second is a
-                    // long time in an input method and the field can be replaced underneath a macro,
-                    // at which point a stale connection writes into nothing at all.
+                    delay(MA_MACRO_LEAD_MS)
+                    // The connection is fetched again at every step rather than held. Most of a
+                    // second is a long time in an input method and the field can be replaced
+                    // underneath a macro, at which point a stale connection writes into nothing.
                     FlorisImeService.currentInputConnection()?.commitText("", 1)
-                    delay(MA_MACRO_STEP_MS)
+                    delay(MA_MACRO_PASTE_MS)
                     FlorisImeService.currentInputConnection()
                         ?.performContextMenuAction(android.R.id.paste)
                 }
