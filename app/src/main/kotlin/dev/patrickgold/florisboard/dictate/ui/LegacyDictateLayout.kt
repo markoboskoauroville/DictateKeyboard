@@ -183,7 +183,7 @@ private val EditRowHeight = 46.dp
 private fun ic(): InputConnection? = FlorisImeService.currentInputConnection()
 
 /** Dispatch a single key code through the normal input pipeline (down + up). */
-private fun KeyboardManager.tapKey(code: Int) = inputEventDispatcher.sendDownUp(TextKeyData(code = code))
+internal fun KeyboardManager.tapKey(code: Int) = inputEventDispatcher.sendDownUp(TextKeyData(code = code))
 
 /** Query attributes that make the theme resolve its `key` styling for the given key [code]. */
 private fun keyAttributes(code: Int) = mapOf(
