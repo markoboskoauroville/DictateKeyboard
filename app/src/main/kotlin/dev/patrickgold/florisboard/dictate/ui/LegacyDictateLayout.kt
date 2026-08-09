@@ -341,6 +341,13 @@ fun LegacyDictateLayout(
                 // Row 1c: the flat command bar, matching the keyboard view so both look the same.
                 MaMacroBar()
 
+                // Row 1d: the feature row. Ten keys, everything the app can do, reachable from here
+                // without a trip to the settings application first. Deliberately NOT hideable: it is
+                // the row whose whole purpose is that nothing is hidden.
+                MaFeatureRow(
+                    modifier = Modifier.fillMaxWidth().height(EditRowHeight),
+                )
+
                 // Row 2: editing actions (select-all first, so it sits in the row below the strip).
                 LegacyEditRow(
                     keyboardManager = keyboardManager,
@@ -376,7 +383,7 @@ fun LegacyDictateLayout(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ThemedKey(
+internal fun ThemedKey(
     code: Int,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
@@ -412,7 +419,7 @@ private fun ThemedKey(
 
 /** Convenience: a themed key showing a single icon. [tint] overrides the themed foreground (e.g. red). */
 @Composable
-private fun ThemedIconKey(
+internal fun ThemedIconKey(
     code: Int,
     icon: ImageVector,
     contentDescription: String,
