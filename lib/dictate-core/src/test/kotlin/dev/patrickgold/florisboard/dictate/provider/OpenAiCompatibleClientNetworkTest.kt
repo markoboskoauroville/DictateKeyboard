@@ -215,6 +215,136 @@ class OpenAiCompatibleClientNetworkTest : FunSpec({
         }
     }
 
+    test("AssemblyAI sync sends one request with a raw key and the model in a header") {
+        val audio = createTempFile(suffix = ".wav").toFile().apply {
+            writeBytes("RIFF-test-audio".encodeToByteArray())
+        }
+        try {
+            MockWebServer().use { server ->
+                server.enqueue(
+                    MockResponse().setResponseCode(200)
+                        .setBody("""{"text":"Hello there","confidence":0.91,"audio_duration_ms":1200}"""),
+                )
+                val client = OpenAiCompatibleClient(
+                    ProviderConfig(
+                        baseUrl = server.url("/").toString(),
+                        apiKey = "secret-key",
+                        transcriptionApi = TranscriptionApi.ASSEMBLYAI_SYNC,
+                    ),
+                )
+
+                val result = client.transcribe(
+                    TranscriptionRequest(
+                        audioFile = audio,
+                        model = OpenAiCompatibleClient.SYNC_MODEL,
+                        language = "en",
+                    ),
+                )
+                val recorded = server.takeRequest()
+                val body = recorded.body.readUtf8()
+
+                result.text shouldBe "Hello there"
+                recorded.method shouldBe "POST"
+                recorded.path shouldBe "/transcribe"
+                // No Bearer prefix: the async endpoints take the key raw and so does this one.
+                recorded.getHeader("Authorization") shouldBe "secret-key"
+                recorded.getHeader("X-AAI-Model") shouldBe OpenAiCompatibleClient.SYNC_MODEL
+                recorded.getHeader("Content-Type").orEmpty() shouldStartWith "multipart/form-data; boundary="
+                body shouldContain "name=\"audio\"; filename=\"${audio.name}\""
+                body shouldContain "name=\"config\""
+                body shouldContain "\"language_code\":\"en\""
+                // One request, and no upload/create/poll anywhere near it.
+                server.requestCount shouldBe 1
+            }
+        } finally {
+            audio.delete()
+        }
+    }
+
+    test("AssemblyAI sync names Croatian in a prompt because language_code cannot carry it") {
+        val audio = createTempFile(suffix = ".wav").toFile().apply { writeBytes(ByteArray(32)) }
+        try {
+            MockWebServer().use { server ->
+                server.enqueue(MockResponse().setResponseCode(200).setBody("""{"text":"Dobar dan"}"""))
+                val client = OpenAiCompatibleClient(
+                    ProviderConfig(
+                        baseUrl = server.url("/").toString(),
+                        apiKey = "secret-key",
+                        transcriptionApi = TranscriptionApi.ASSEMBLYAI_SYNC,
+                    ),
+                )
+
+                client.transcribe(
+                    TranscriptionRequest(audioFile = audio, model = "", language = "hr"),
+                ).text shouldBe "Dobar dan"
+                val body = server.takeRequest().body.readUtf8()
+
+                // hr is not in the accepted set, so it must not reach the field that would reject it.
+                body shouldNotContain "language_code"
+                body shouldContain "\"prompt\""
+                body shouldContain "Croatian"
+            }
+        } finally {
+            audio.delete()
+        }
+    }
+
+    test("AssemblyAI sync sends no config at all when no language is chosen") {
+        val audio = createTempFile(suffix = ".wav").toFile().apply { writeBytes(ByteArray(32)) }
+        try {
+            MockWebServer().use { server ->
+                server.enqueue(MockResponse().setResponseCode(200).setBody("""{"text":"ok"}"""))
+                val client = OpenAiCompatibleClient(
+                    ProviderConfig(
+                        baseUrl = server.url("/").toString(),
+                        apiKey = "secret-key",
+                        transcriptionApi = TranscriptionApi.ASSEMBLYAI_SYNC,
+                    ),
+                )
+
+                client.transcribe(
+                    TranscriptionRequest(audioFile = audio, model = "", language = "detect"),
+                )
+                val body = server.takeRequest().body.readUtf8()
+
+                body shouldNotContain "name=\"config\""
+                body shouldContain "name=\"audio\""
+            }
+        } finally {
+            audio.delete()
+        }
+    }
+
+    test("AssemblyAI sync tries twice at most, then hands the failure back") {
+        val audio = createTempFile(suffix = ".wav").toFile().apply { writeBytes(ByteArray(32)) }
+        try {
+            MockWebServer().use { server ->
+                repeat(4) {
+                    server.enqueue(
+                        MockResponse().setResponseCode(503)
+                            .setBody("""{"error_code":"capacity_exceeded","message":"cold start"}"""),
+                    )
+                }
+                val client = OpenAiCompatibleClient(
+                    ProviderConfig(
+                        baseUrl = server.url("/").toString(),
+                        apiKey = "secret-key",
+                        transcriptionApi = TranscriptionApi.ASSEMBLYAI_SYNC,
+                    ),
+                )
+
+                shouldThrow<DictateApiException> {
+                    client.transcribe(TranscriptionRequest(audioFile = audio, model = ""))
+                }
+                // Every attempt is separately billed against a service whose promise is an immediate
+                // answer, so it gives up early and lets the slow path have it.
+                server.requestCount shouldBe 2
+            }
+        } finally {
+            audio.delete()
+        }
+    }
+
     test("OpenRouter does not fall back for semantic client errors") {
         val audio = createTempFile(suffix = ".wav").toFile().apply { writeBytes(ByteArray(32)) }
         try {

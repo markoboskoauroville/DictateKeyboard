@@ -104,6 +104,20 @@ enum class TranscriptionApi {
     ASSEMBLYAI_ASYNC,
 
     /**
+     * AssemblyAI Sync: one `multipart/form-data` POST to `sync.assemblyai.com/transcribe` that answers
+     * with the finished transcript in the same response, about 134 ms at the median. Same provider, same
+     * key and same bill as [ASSEMBLYAI_ASYNC]; only the wire format and the price differ ($0.45/hr against
+     * $0.15/hr). See [OpenAiCompatibleClient.transcribeAssemblyAiSync].
+     *
+     * Two limits are hard and are enforced by the caller, not discovered here: **2 minutes** and **40 MB**
+     * per request, both rejected up front by the service. Anything longer belongs on the async path.
+     *
+     * The audio part must be `audio/wav` or `audio/pcm`; there is no compressed format at all, so the fast
+     * path sends the 16 kHz WAV and skips the AAC encode the async path uses.
+     */
+    ASSEMBLYAI_SYNC,
+
+    /**
      * On-device transcription (issue #104): no network call at all. Handled by
      * [dev.patrickgold.florisboard.dictate.provider.LocalTranscriptionProvider] (sherpa-onnx), not by
      * [OpenAiCompatibleClient]; this value only marks a provider preset as local so the dictation flow

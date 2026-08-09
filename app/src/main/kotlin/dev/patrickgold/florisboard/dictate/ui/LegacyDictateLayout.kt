@@ -343,11 +343,19 @@ fun LegacyDictateLayout(
 
 
                 // Row 2: editing actions (select-all first, so it sits in the row below the strip).
-                LegacyEditRow(
-                    keyboardManager = keyboardManager,
-                    onEmoji = { keyboardManager.activeState.imeUiMode = ImeUiMode.MEDIA },
-                    onNumbers = { overlay = LegacyOverlay.NUMBERS },
-                )
+                //
+                // Zone three, and gated here as well as in the keyboard view. Key 3 in the feature
+                // row switches this row, and a switch that works in one view and not the other is a
+                // switch that looks broken from whichever view it was pressed in. Same row, same
+                // code, same switch.
+                val maZoneEditRow by prefs.dictate.maEditRow.collectAsState()
+                if (maZoneEditRow) {
+                    LegacyEditRow(
+                        keyboardManager = keyboardManager,
+                        onEmoji = { keyboardManager.activeState.imeUiMode = ImeUiMode.MEDIA },
+                        onNumbers = { overlay = LegacyOverlay.NUMBERS },
+                    )
+                }
 
                 // Row 3: the record row.
                 LegacyRecordRow(
@@ -502,15 +510,22 @@ internal fun LegacyEditRow(
     }
 }
 
-/** Renders a single [LegacyEditAction] as a themed key with the right icon and behaviour. */
+/**
+ * Renders a single [LegacyEditAction] as a themed key with the right icon and behaviour.
+ *
+ * Internal rather than private because the feature row draws three of these keys itself (AP,
+ * select-all and backspace). It is the same key from the same code, not a copy that looks like it,
+ * so a fix to AP's timing or to backspace's swipe reaches both rows at once. This is the same
+ * mistake `tapKey` made when it was private to its file and the new row could not send a key.
+ */
 @Composable
-private fun LegacyActionKey(
+internal fun LegacyActionKey(
     action: LegacyEditAction,
     modifier: Modifier,
     keyboardManager: KeyboardManager,
     hasSelection: Boolean,
-    onEmoji: () -> Unit,
-    onNumbers: () -> Unit,
+    onEmoji: () -> Unit = { keyboardManager.activeState.imeUiMode = ImeUiMode.MEDIA },
+    onNumbers: () -> Unit = { keyboardManager.activeState.keyboardMode = KeyboardMode.NUMERIC_ADVANCED },
 ) {
     val context = LocalContext.current
     val label = stringRes(action.labelRes)

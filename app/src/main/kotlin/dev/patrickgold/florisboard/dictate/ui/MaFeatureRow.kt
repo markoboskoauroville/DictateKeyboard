@@ -46,6 +46,7 @@ import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateLongformMode
+import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.keyboardManager
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
@@ -54,8 +55,17 @@ import org.florisboard.lib.compose.stringRes
 import dev.patrickgold.florisboard.R
 
 /**
- * The feature row: one row, ten keys, everything this app can do reachable from the dictation view
- * without going to settings first.
+ * The feature row: one row, eight keys, drawn by both views and the last row standing when
+ * everything above it is folded away.
+ *
+ * Three switches, three borrowed keys, then the reader and the view swap:
+ *
+ * `1 2 3 · AP · select-all · backspace · book · mic`
+ *
+ * The switches come first because they are what the row is for, and the numbers read left to right
+ * as the parts of the keyboard they control. The three keys after them are the ones that must
+ * survive a fold: AP and select-all are the copy row's most used pair, and backspace is the only
+ * key from the keyboard proper with no substitute anywhere else once zone two is shut.
  *
  * The rule it exists to satisfy is Marko's, and it is a good one: a feature you have to enable in a
  * settings app before you can see it is a feature most people never find. The dictation view is not
@@ -78,7 +88,7 @@ import dev.patrickgold.florisboard.R
  *   The precedent is not theoretical, it is one row up.
  *
  * Colour is state only, as everywhere else in this app: gold ink on the near-black key, and green
- * on the two keys that are switches so their position is readable without pressing them.
+ * on the three keys that are switches so their positions are readable without pressing them.
  */
 @Composable
 fun MaFeatureRow(modifier: Modifier = Modifier) {
@@ -87,17 +97,33 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
 
-    // Two zones, and that is the whole keyboard. Zone one is the edit strip along the top, zone two
-    // is everything from the number row down to the bottom row.
-    val zone1 by prefs.dictate.maEditRow.collectAsState()
+    // Three zones, and that is the whole keyboard, numbered as they are stacked on screen from the
+    // keys outwards: 1 the number row, 2 the keys themselves, 3 the copy and paste row along the
+    // top. Each has one switch and each switch has one key here.
+    //
+    // The numbering is Marko's and it is the arrangement, not a naming: he drew the three dividing
+    // lines on the keyboard and these are the three parts they cut it into.
+    val zone1 by prefs.dictate.maExtraRow.collectAsState()
     val zone2 by prefs.dictate.maZoneKeyboard.collectAsState()
+    val zone3 by prefs.dictate.maEditRow.collectAsState()
 
     // Green when the zone is showing, dark when it is folded away, so the row is a map of what is
     // above it and can be read without pressing anything.
+    //
+    // Each key shows its own switch rather than what is actually on screen. Folding the keys away
+    // with 2 takes the number row with them, since the number row sits inside that zone, but it
+    // must not erase the decision about whether the number row should be there when the keys come
+    // back. So 1 can be green while nothing is visible, and that is the truth about the switch.
     val onGreen = Color(0xFF6FA85A)
 
     // Long press anywhere here folds the row away. The finger is already on the row it wants gone.
     val fold: () -> kotlin.Unit = { scope.launch { prefs.dictate.maFeatureRowShown.set(false) } }
+
+    // Select-all becomes deselect when there is a selection, so the key it draws has to know. Read
+    // once here and handed down, exactly as the copy row reads it.
+    val editorInstance by context.editorInstance()
+    val editorContent by editorInstance.activeContentFlow.collectAsState()
+    val hasSelection = editorContent.selection.isSelectionMode
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -105,9 +131,9 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
 
-        // 1, the edit strip. Paste, copy, history and the rest of the top row.
+        // 1, the number row. Digits, or whichever set the row is showing.
         ThemedTextKey("1", keyMod, if (zone1) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maEditRow.set(!zone1) }
+            scope.launch { prefs.dictate.maExtraRow.set(!zone1) }
         }
 
         // 2, the keyboard itself, all of it at once. This is the one that gives back real estate,
@@ -115,6 +141,38 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
         ThemedTextKey("2", keyMod, if (zone2) onGreen else null, fold) {
             scope.launch { prefs.dictate.maZoneKeyboard.set(!zone2) }
         }
+
+        // 3, the copy and paste row along the top. Paste, copy, history and the rest of it.
+        ThemedTextKey("3", keyMod, if (zone3) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maEditRow.set(!zone3) }
+        }
+
+        // The three keys worth keeping when the row above them is folded away, drawn by the copy
+        // row's own code rather than rebuilt here. AP and select-all are the two most used keys in
+        // that row, and backspace is the one key from the keyboard proper that nothing else can
+        // stand in for: with zone two closed there is no other way to delete a character.
+        //
+        // These three do not fold the row on a long press, and must not. Backspace holds to repeat
+        // and swipes to select, which is the behaviour it has everywhere else in this app, and a
+        // key that repeats cannot also mean something else when it is held.
+        LegacyActionKey(
+            action = LegacyEditAction.ALL_PASTE,
+            modifier = keyMod,
+            keyboardManager = keyboardManager,
+            hasSelection = hasSelection,
+        )
+        LegacyActionKey(
+            action = LegacyEditAction.SELECT_ALL,
+            modifier = keyMod,
+            keyboardManager = keyboardManager,
+            hasSelection = hasSelection,
+        )
+        LegacyActionKey(
+            action = LegacyEditAction.BACKSPACE,
+            modifier = keyMod,
+            keyboardManager = keyboardManager,
+            hasSelection = hasSelection,
+        )
 
         // The reader. LLL: it speaks the clipboard and lights each word as it is said.
         ThemedIconKey(

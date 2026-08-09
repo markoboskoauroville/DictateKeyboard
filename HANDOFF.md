@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 136. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 137. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -246,9 +246,8 @@ was broken quietly and nobody noticed until Marko asked. Check `git log -- HANDO
   **plus** under it writes an entry by hand. The editor has no caret and no selection: text is added
   and removed at the end only, because a caret needs hit testing, a selection model and cursor keys
   rerouted away from the app.
-- **The feature row**, along the very bottom of both views, then rebuilt twice. It is now four keys:
-  **1** folds the edit strip, **2** folds the entire keyboard, **book** opens the reader, **mic**
-  switches between the keyboard and dictation views. Long press any of them to fold the row away.
+- **The feature row**, along the very bottom of both views, then rebuilt three times. See *Three
+  zones* below for what it is now.
 - **Zone two is not composed at all** rather than filtered row by row. The first attempt removed rows
   from the keyboard arrangement, which made the keys vanish while `keyboardUiHeight` went on
   counting four rows, so the space stayed. Two pieces of arithmetic had to agree and did not. Not
@@ -294,6 +293,41 @@ the visible characters, moved again onto the real decoded waveform, and a highli
 - **Still to do on the reader**: nothing blocking. Worth watching on the device is whether the first
   sentence starts fast enough to feel like reading rather than loading.
 
+### Three zones, and the keys that survive a fold: shipped at build 137
+
+Marko drew three lines across a screenshot of the keyboard and asked for the parts they cut it into
+to be switchable one by one. The row is now eight keys:
+
+```
+1  2  3  ·  AP  ·  select-all  ·  backspace  ·  book  ·  mic
+```
+
+- **1 is the number row** (`maExtraRow`). It was the edit strip before; that meaning moved to 3.
+- **2 is the keys themselves** (`maZoneKeyboard`), all of them at once, unchanged.
+- **3 is the copy and paste row** along the top (`maEditRow`).
+
+Each key is green while its own switch is on, dark when it is off. **A key shows its switch, not
+what is on screen.** Folding the keys away with 2 takes the number row with them, because the number
+row sits inside that zone, but it must not erase the decision about whether the number row belongs
+there when the keys come back, so 1 can be green while nothing is visible. That is the truth about
+the switch and it is deliberate; do not "fix" it by tinting on visibility, because then 1 could be
+pressed with no effect anywhere and a key that cannot change colour reads as broken.
+
+**1 and 2 act on the keyboard view only**, since the transcribe view has neither a number row nor a
+key grid to fold. 3 acts on both, and had to be gated in the transcribe view as well as in the
+keyboard view: it is the same row from the same code, and a switch that works in one view and not
+the other looks broken from whichever view it was pressed in.
+
+**AP, select-all and backspace are drawn by `LegacyActionKey`**, the copy row's own key renderer,
+which is now `internal` rather than private for exactly the reason `tapKey` was: a row in another
+file could not call it. They are the same keys, not copies that look like them, so a fix to AP's
+timing or to backspace's swipe reaches both rows at once.
+
+Backspace is there because it is the one key from the keyboard proper with no substitute anywhere
+else: with zone two shut there is otherwise no way to delete a character. **These three keys do not
+fold the row on a long press and must not**, because backspace holds to repeat and swipes to select,
+and a key that repeats cannot also mean something else when it is held. The other five still fold it.
+
 ### Next: AssemblyAI Sync, fast dictation on one API
 
 Decided and researched, not yet built. One provider throughout: AssemblyAI, the same key and the
@@ -316,9 +350,37 @@ multipart/form-data, field "audio"
 ```
 
 About 134 ms at the median. **Hard limits: 2 minutes and 40 MB per request**, and oversized requests
-are rejected up front rather than failing partway. `language_codes` is accepted, so Croatian may
-work; do not assume either way, one recording answers it. Price is $0.45/hr against $0.15/hr for the
-async path in use today.
+are rejected up front rather than failing partway. Price is $0.45/hr against $0.15/hr for the async
+path in use today.
+
+**Three things read off the OpenAPI spec at `/docs/api-reference/sync-api/transcribe`, none of them
+guessable and two of them corrections to what this document said before.**
+
+1. **It takes WAV or PCM only.** The `audio` part's content type must be `audio/wav` or
+   `audio/pcm`, and there is a 415 `unsupported_media_type` for anything else. Our pipeline ends in
+   AAC, so **the fast path has to send the 16 kHz WAV and skip the encode step**. Size is not the
+   problem: two minutes of 16 kHz mono is about 3.8 MB against a 40 MB cap. Bytes on the wire are:
+   it is roughly fifteen times what the AAC would have been, so fast is fast on a decent connection
+   and is not automatically fast on a poor one. That is a second reason for the automatic fallback,
+   not only the two minute limit.
+2. **Croatian cannot be named.** `language_code` takes nineteen codes and `hr` is not one of them
+   (en es de fr it pt tr nl sv no da fi hi vi ar he ja ur zh). It also only steers the default
+   prompt, and is **ignored entirely when a custom `prompt` is set**. The documented route for a
+   language outside that list is to state it inside a contextual prompt instead. Whether
+   Universal-3.5 Pro actually reads Croatian well is still open and still answered by one recording.
+   Note also that the async prompting guide says to keep universal-2 as a fallback for anything
+   outside Universal-3 Pro's core six, and Sync has no model choice at all.
+3. **There is a `GET /warm`.** Unauthenticated, idempotent, and it opens DNS, TCP and TLS ahead of
+   the transcribe call so the handshake is off the critical path. It only helps if the same OkHttp
+   connection pool and base URL are used, and idle connections are evicted within seconds to
+   minutes, so it is called when recording starts, not at app start. This is most of what the
+   median figure means in practice and belongs in step 1.
+
+Other details worth having: the style/punctuation prompt this app sends elsewhere is the wrong thing
+to send here, since `prompt` on this model is a description of what the audio *is* and formatting
+instructions are documented as ignored. Errors carry a machine-readable `error_code`
+(`audio_too_short`, `audio_too_large`, `capacity_exceeded`, …), the minimum length is 80 ms, and
+there is a 30 s per-request deadline answered with 504.
 
 **Why Sync rather than streaming.** A WebSocket is an open line billed by how long it is open, and it
 must be held, reconnected and closed. A single request is one envelope: the clip goes up whole and

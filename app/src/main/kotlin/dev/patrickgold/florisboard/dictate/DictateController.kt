@@ -63,6 +63,7 @@ import dev.patrickgold.florisboard.dictate.provider.ProviderPreset
 import dev.patrickgold.florisboard.dictate.provider.ProviderRegistry
 import dev.patrickgold.florisboard.dictate.provider.TranscriptionApi
 import dev.patrickgold.florisboard.dictate.provider.TranscriptionRequest
+import dev.patrickgold.florisboard.dictate.provider.TranscriptionResult
 import dev.patrickgold.florisboard.dictate.overlay.AccessibilitySink
 import dev.patrickgold.florisboard.dictate.recognition.RecognitionSink
 import dev.patrickgold.florisboard.ime.text.key.KeyVariation
@@ -487,6 +488,11 @@ object DictateController {
     // Realtime (#128): after finish(), how long to wait for the provider to flush the last words before we
     // commit the already-streamed text. Short — the text is already on screen; we only wait for the tail.
     private const val REALTIME_FINALIZE_TIMEOUT_MS = 1_200L
+    // AssemblyAI Sync bounds, both sides. The endpoint rejects anything under 80 ms as too short, so half
+    // a second is a comfortable floor for something that is meant to be speech at all. The margin keeps a
+    // calculated duration from arguing with the service's own measurement at the two minute ceiling.
+    private const val MIN_SYNC_SECONDS = 0.5
+    private const val SYNC_SECONDS_MARGIN = 2.0
 
     /** 20 Hz is responsive for a voice indicator while avoiding a display-rate UI loop. */
     private const val AUDIO_LEVEL_SAMPLE_MS = 50L
@@ -1021,6 +1027,7 @@ object DictateController {
                     // Hide the one-time native VAD/session setup behind the user's recording time.
                     scope.launch { SpeechGate.prewarm(appContext) }
                 }
+                maWarmSyncPath()
                 _state.value = UiState.Recording(SystemClock.elapsedRealtime(), accumulatedMs = seedAccumulatedMs)
                 startAudioLevelSampling()
                 // Highlight the live-prompt chip for the duration of a live-prompt recording.
@@ -1348,19 +1355,27 @@ object DictateController {
                 // The on-device engine is skipped: it is handed the audio locally and decodes it
                 // itself, so encoding would only give it something to undo.
                 var maEncoded = false
+                // Fast or slow, decided here rather than earlier, because here the resample has already
+                // happened and the length and the size are facts about a file instead of intentions.
+                var maFast = false
                 if (preset.transcriptionApi != TranscriptionApi.LOCAL_ONDEVICE) {
                     val resampled = MaResample.toTargetRate(uploadFile)
                     if (resampled != null) {
                         if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
                         uploadFile = resampled
                     }
-                    MaEncoder.encode(uploadFile)?.let { aac ->
-                        if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
-                        uploadFile = aac
-                        maEncoded = true
+                    maFast = maUseSyncPath(preset, chatAudio, uploadFile)
+                    // The AAC encode is for the async path only: Sync accepts WAV and PCM and nothing
+                    // else, so encoding first would guarantee a rejection.
+                    if (!maFast) {
+                        MaEncoder.encode(uploadFile)?.let { aac ->
+                            if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
+                            uploadFile = aac
+                            maEncoded = true
+                        }
                     }
                 }
-                val maFormatTag = if (maEncoded) MaEncoder.TAG else "wav"
+                var maFormatTag = if (maEncoded) MaEncoder.TAG else "wav"
                 // Timed across encoding, upload, the service's queue and the answer, because that
                 // whole span is what "slow" means to someone waiting for their words to appear.
                 val maSendStartedAt = System.currentTimeMillis()
@@ -1393,7 +1408,14 @@ object DictateController {
                     LocalTranscriptionProvider(LocalTranscriptionProvider.modelDir(appContext, model))
                         .transcribe(request)
                 } else {
-                    try {
+                    // One send, against whichever preset and model the path calls for. Written once and
+                    // called twice, because the fast path may hand the same audio to the slow one.
+                    suspend fun maSend(
+                        sendPreset: ProviderPreset,
+                        sendModel: String,
+                        sendFile: File,
+                        fast: Boolean,
+                    ): TranscriptionResult {
                         // MA TWIST: the key field may hold several keys, one per line. A rejected or
                         // exhausted key rolls to the next one; anything else fails straight away.
                         val maKeys = MaKeys.split(apiKey)
@@ -1401,9 +1423,12 @@ object DictateController {
                         // it was there to prove compression was happening, which is settled now, and
                         // it crowded out the one number that means something while waiting, which is
                         // how much of the recording there is.
-                        val maSentKb = uploadFile.length() / 1024L
+                        val maSentKb = sendFile.length() / 1024L
                         val maLen = "%d:%02d".format(recordedSeconds / 60, recordedSeconds % 60)
-                        val maSize = "$maLen, $maSentKb kB $maFormatTag"
+                        // The path is in the line because it is the thing being judged: fast is three
+                        // times the price and only worth it if the number beside it is smaller.
+                        val maPath = if (fast) "fast" else "slow"
+                        val maSize = "$maLen, $maSentKb kB $maFormatTag $maPath"
                         // "K1_6" rather than "key 1 of 6". The status line is one narrow strip above a
                         // keyboard and every word spent on wording is a word not spent on the numbers.
                         _maStatus.value = if (maKeys.size > 1) {
@@ -1411,21 +1436,23 @@ object DictateController {
                         } else {
                             "sending $maSize"
                         }
-                        maWithKeyFallback(
+                        return maWithKeyFallback(
                             maKeys,
                             onKeyRejected = { index, total, reason ->
                                 _maStatus.value = "K${index}_$total $reason, K${index + 1}"
                             },
                         ) { maKey ->
                             OpenAiCompatibleClient.from(
-                                preset, maKey,
-                                baseUrlOverride = baseUrlOverrideFor(account),
+                                sendPreset, maKey,
+                                // Sync has its own host and is never user-editable, so an override
+                                // belonging to the account would point it at the wrong one.
+                                baseUrlOverride = if (fast) null else baseUrlOverrideFor(account),
                                 proxy = prefs.dictate.dictateProxyConfig(),
                                 // Single-call multimodal (issue #130): route audio through chat/completions.
                                 useChatAudio = chatAudio,
                                 trustUserCerts = prefs.dictate.trustUserCertificates.get(),
                             ).transcribe(
-                                request,
+                                request.copy(audioFile = sendFile, model = sendModel),
                                 onRetry = { attempt ->
                                     // Named as waiting rather than as retrying, because that is what
                                     // is actually happening for the next several seconds and a line
@@ -1435,6 +1462,33 @@ object DictateController {
                                 },
                             )
                         }
+                    }
+
+                    try {
+                        try {
+                            if (maFast) {
+                                maSend(ProviderRegistry.ASSEMBLYAI_SYNC, OpenAiCompatibleClient.SYNC_MODEL, uploadFile, true)
+                            } else {
+                                maSend(preset, model, uploadFile, false)
+                            }
+                        } catch (e: DictateApiException) {
+                            // The fast path did not answer. The audio is still here and the slow path is
+                            // the same provider and the same key, so hand it over rather than hand back
+                            // an error: a dictation that arrives late is worth incomparably more than one
+                            // that has to be spoken again. Said out loud in the status line rather than
+                            // done silently, because otherwise "fast" would look simply slow.
+                            if (!maFast) throw e
+                            maFast = false
+                            _maStatus.value = "fast did not answer, sending slow"
+                            _state.value = UiState.Transcribing()
+                            MaEncoder.encode(uploadFile)?.let { aac ->
+                                if (uploadFile !== audioFile) runCatching { uploadFile.delete() }
+                                uploadFile = aac
+                                maEncoded = true
+                                maFormatTag = MaEncoder.TAG
+                            }
+                            maSend(preset, model, uploadFile, false)
+                        }
                     } catch (e: DictateApiException) {
                         // Offline fallback (#104): the cloud call failed because we're offline (after its
                         // retries) — transcribe on-device with the downloaded model instead of erroring.
@@ -1443,7 +1497,9 @@ object DictateController {
                         LocalTranscriptionProvider.setIdleUnloadMillis(
                             prefs.dictate.localModelUnloadMinutes.get() * 60_000L,
                         )
-                        fallback.transcribe(request)
+                        // The current file, not the one the request was built with: a fast path that
+                        // handed over to the slow one re-encoded and deleted its WAV on the way.
+                        fallback.transcribe(request.copy(audioFile = uploadFile))
                     }
                 }
                 logLatency(latencyTrace, "providerCompleted", providerStartedNanos)
@@ -3373,6 +3429,58 @@ object DictateController {
     private fun presetFor(account: ProviderAccount): ProviderPreset = when {
         account.isCustom -> ProviderRegistry.custom(account.customBaseUrl)
         else -> ProviderRegistry.byId(account.providerId) ?: ProviderRegistry.OPENAI
+    }
+
+    /**
+     * Whether this particular recording goes up the AssemblyAI Sync path.
+     *
+     * Every condition here is a reason to say no, and that asymmetry is deliberate. Fast is a
+     * preference; arriving is not. A recording that cannot take the fast path takes the slow one and
+     * nobody is told, because from where Marko sits the only difference is how long the words take,
+     * and the long recording, the one that took the most effort to speak, must never be the one that
+     * fails.
+     *
+     * [file] must already be the resampled WAV, so the length and the size below are measured rather
+     * than assumed.
+     */
+    /**
+     * Opens the connection to the Sync endpoint the moment recording starts, so the DNS lookup and the
+     * handshakes happen behind the recording instead of in front of the transcript. The whole promise of
+     * the fast path is a round trip of about 134 ms, and a cold TLS handshake on a phone is several times
+     * that, so without this the first dictation of a session would never feel like the number.
+     *
+     * Fire and forget, and deliberately unconditional on length: at this point nobody knows how long the
+     * recording will be, and a warm that goes unused has cost one unauthenticated GET.
+     */
+    private fun maWarmSyncPath() {
+        if (prefs.dictate.maSpeed.get() != MaSpeed.FAST) return
+        val account = transcriptionAccount()
+        if (presetFor(account).transcriptionApi != TranscriptionApi.ASSEMBLYAI_ASYNC) return
+        scope.launch {
+            runCatching {
+                OpenAiCompatibleClient.from(
+                    ProviderRegistry.ASSEMBLYAI_SYNC,
+                    account.apiKey,
+                    proxy = prefs.dictate.dictateProxyConfig(),
+                    trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+                ).warmSync()
+            }
+        }
+    }
+
+    private fun maUseSyncPath(preset: ProviderPreset, chatAudio: Boolean, file: File): Boolean {
+        if (prefs.dictate.maSpeed.get() != MaSpeed.FAST) return false
+        // Sync belongs to AssemblyAI and to no other account. Anything else keeps its own path.
+        if (preset.transcriptionApi != TranscriptionApi.ASSEMBLYAI_ASYNC) return false
+        // Chat-audio transcribes and formats in one chat request; Sync does transcription only.
+        if (chatAudio) return false
+        if (file.length() > OpenAiCompatibleClient.SYNC_MAX_BYTES) return false
+        // Not knowing how long the audio is counts as too long. A header that will not parse is not a
+        // thing to gamble a dictation on.
+        val seconds = MaResample.durationSeconds(file) ?: return false
+        // A margin under the real limit: the service rejects at 120 s and this reading is a
+        // calculation, so the last two seconds are left as room for the two to disagree.
+        return seconds >= MIN_SYNC_SECONDS && seconds <= OpenAiCompatibleClient.SYNC_MAX_SECONDS - SYNC_SECONDS_MARGIN
     }
 
     /**

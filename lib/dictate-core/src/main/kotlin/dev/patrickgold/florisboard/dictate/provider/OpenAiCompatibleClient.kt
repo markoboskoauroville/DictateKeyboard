@@ -18,6 +18,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Credentials
@@ -159,6 +162,7 @@ class OpenAiCompatibleClient(
         TranscriptionApi.ELEVENLABS_MULTIPART -> transcribeElevenLabs(request, onRetry)
         TranscriptionApi.DEEPGRAM -> transcribeDeepgram(request, onRetry)
         TranscriptionApi.ASSEMBLYAI_ASYNC -> transcribeAssemblyAi(request, onRetry)
+        TranscriptionApi.ASSEMBLYAI_SYNC -> transcribeAssemblyAiSync(request, onRetry)
         // On-device transcription never uses this HTTP client; the dictation flow routes local providers
         // to LocalTranscriptionProvider before one is ever constructed.
         TranscriptionApi.LOCAL_ONDEVICE -> error("LOCAL_ONDEVICE is handled by LocalTranscriptionProvider")
@@ -601,6 +605,117 @@ class OpenAiCompatibleClient(
     }
 
     /**
+     * AssemblyAI Sync: the whole transcription in one request. The clip goes up as `multipart/form-data`
+     * and the finished text comes back in the same response, with no upload step, no job id and nothing to
+     * poll. Same provider, same key and same bill as [transcribeAssemblyAi]; see
+     * [TranscriptionApi.ASSEMBLYAI_SYNC] for the limits, which the caller enforces before choosing this
+     * path at all.
+     *
+     * Retries are held to one. Every attempt is a separately billed request against a service whose whole
+     * promise is that it answers immediately, so when it does not, the honest move is to hand back to the
+     * async path rather than to pay twice more waiting.
+     */
+    private suspend fun transcribeAssemblyAiSync(
+        request: TranscriptionRequest,
+        onRetry: (attempt: Int) -> Unit,
+    ): TranscriptionResult {
+        val model = request.model.takeIf { it.isNotBlank() } ?: SYNC_MODEL
+        val audioBody = request.audioFile.asRequestBody(guessAudioMediaType(request.audioFile))
+        val multipart = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("audio", request.audioFile.name, audioBody)
+            .apply {
+                // The config part is optional, so it is only attached when there is something to say.
+                buildSyncConfig(request)?.let { config ->
+                    addFormDataPart("config", null, config.toRequestBody(JSON_MEDIA_TYPE))
+                }
+            }
+            .build()
+        val label = "AssemblyAI sync model=${sanitizeForLog(model)} audioBytes=${request.audioFile.length()}"
+        val httpRequest = Request.Builder()
+            .url(config.normalizedBaseUrl + "transcribe")
+            // Raw key, no Bearer prefix, exactly as the async endpoints take it.
+            .header("Authorization", config.apiKey)
+            .header(SYNC_MODEL_HEADER, model)
+            .tag(HttpCallDiagnostics::class.java, HttpCallDiagnostics(label))
+            .post(multipart)
+            .build()
+        val body = executeForBody(
+            request = httpRequest,
+            maxRetries = SYNC_MAX_RETRIES,
+            onRetry = onRetry,
+            diagnosticLabel = label,
+        )
+        val response = json.decodeFromString(AssemblySyncDto.serializer(), body)
+        return TranscriptionResult(response.text.orEmpty().trim())
+    }
+
+    /**
+     * The `config` part of a Sync request, or null when there is nothing worth sending.
+     *
+     * Two things are deliberately not done here, both because the documentation is explicit about them:
+     *
+     * The **style prompt is not forwarded.** Sync's `prompt` is contextual, a description of what the
+     * audio *is*, and formatting instructions in it are ignored. Worse, setting it makes the service
+     * ignore `language_code` entirely. The Whisper-style hint this app carries would therefore buy
+     * nothing and cost the language.
+     *
+     * **`language_code` takes nineteen codes and Croatian is not one of them.** Sending `hr` is a
+     * rejected request, not a quietly ignored field. So a language the endpoint knows goes in the
+     * documented field, and a language it does not know is named in a contextual prompt instead, which
+     * is what AssemblyAI's own language-selection page recommends for exactly this case.
+     */
+    private fun buildSyncConfig(request: TranscriptionRequest): String? {
+        // An explicit choice, or the shortlist when the user is on auto-detect. "detect" itself is not a
+        // language and never reaches the wire.
+        val wanted = request.language
+            ?.takeIf { it.isNotEmpty() && it != "detect" }
+            ?.let { listOf(it) }
+            ?: request.languageCandidates.filter { it.isNotEmpty() && it != "detect" }
+        val codes = wanted.map { it.lowercase().substringBefore('-') }.distinct()
+        if (codes.isEmpty()) return null
+        val known = codes.filter { it in SYNC_LANGUAGES }
+        return if (known.size == codes.size) {
+            // Every language is one the endpoint knows: use the documented field. A single code goes as a
+            // string and several as an array, which is what the schema accepts.
+            val dto = if (codes.size == 1) {
+                AssemblySyncConfigDto(languageCode = JsonPrimitive(codes.first()))
+            } else {
+                AssemblySyncConfigDto(languageCode = JsonArray(codes.map { JsonPrimitive(it) }))
+            }
+            json.encodeToString(AssemblySyncConfigDto.serializer(), dto)
+        } else {
+            val names = codes.map { SYNC_LANGUAGE_NAMES[it] ?: it }
+            val spoken = if (names.size == 1) names.first() else names.joinToString(" or ")
+            json.encodeToString(
+                AssemblySyncConfigDto.serializer(),
+                AssemblySyncConfigDto(prompt = "The audio is a person dictating in $spoken."),
+            )
+        }
+    }
+
+    /**
+     * Opens the connection to the Sync endpoint before there is anything to send, so the DNS lookup and
+     * the TCP and TLS handshakes happen while the phone is still recording instead of in front of the
+     * transcript. `GET /warm` is unauthenticated, idempotent and safe to call repeatedly; the connection
+     * it leaves behind is only reused by requests through the same client pool and base URL, which is why
+     * this lives on the client rather than anywhere more convenient.
+     *
+     * Never throws. A warm that fails has cost the user nothing: the next request simply pays for its own
+     * handshake, exactly as it would have without this.
+     */
+    suspend fun warmSync() {
+        runCatching {
+            val httpRequest = Request.Builder()
+                .url(config.normalizedBaseUrl + "warm")
+                .header(SYNC_MODEL_HEADER, SYNC_MODEL)
+                .get()
+                .build()
+            executeForBody(httpRequest, maxRetries = 0)
+        }
+    }
+
+    /**
      * Google Gemini transcription. Gemini exposes no speech-to-text endpoint; its multimodal models
      * transcribe audio sent as base64 `inline_data` to the native `generateContent` endpoint (the
      * OpenAI-compatible layer used for chat does not accept audio). We give the model a strict instruction
@@ -804,9 +919,20 @@ class OpenAiCompatibleClient(
         if (config.apiKey.isBlank()) {
             throw DictateApiException(DictateApiException.Kind.INVALID_API_KEY, "No key")
         }
-        if (config.transcriptionApi == TranscriptionApi.ASSEMBLYAI_ASYNC) {
+        if (config.transcriptionApi == TranscriptionApi.ASSEMBLYAI_ASYNC ||
+            config.transcriptionApi == TranscriptionApi.ASSEMBLYAI_SYNC
+        ) {
+            // Sync has no cheap authenticated GET of its own: /warm is unauthenticated, so it answers 200
+            // to a key that does not exist. The key is the same key either way, so ask the host that can
+            // actually be asked. Without this, a wrong key would look healthy here exactly as it did
+            // before this check existed.
+            val base = if (config.transcriptionApi == TranscriptionApi.ASSEMBLYAI_SYNC) {
+                ProviderRegistry.ASSEMBLYAI.baseUrl
+            } else {
+                config.normalizedBaseUrl
+            }
             val request = Request.Builder()
-                .url(config.normalizedBaseUrl + "v2/transcript?limit=1")
+                .url(base + "v2/transcript?limit=1")
                 .header("authorization", config.apiKey)
                 .get()
                 .build()
@@ -1174,6 +1300,28 @@ class OpenAiCompatibleClient(
         val error: String? = null,
     )
 
+    /**
+     * The Sync answer. Only [text] is used; [confidence] and [audioDurationMs] are kept because they are
+     * the two numbers worth having when Croatian turns out to be readable or not, and reading them costs
+     * nothing. `words`, `session_id` and `request_time_ms` are ignored by the lenient decoder.
+     */
+    @Serializable
+    private data class AssemblySyncDto(
+        val text: String? = null,
+        val confidence: Double? = null,
+        @SerialName("audio_duration_ms") val audioDurationMs: Long? = null,
+    )
+
+    /**
+     * The optional `config` part of a Sync request. `language_code` is a string or an array of strings
+     * depending on how many languages are named, hence [JsonElement] rather than a fixed type.
+     */
+    @Serializable
+    private data class AssemblySyncConfigDto(
+        @SerialName("language_code") val languageCode: JsonElement? = null,
+        val prompt: String? = null,
+    )
+
     // --- Gemini native generateContent DTOs (see transcribeGeminiGenerateContent) ---
 
     @Serializable
@@ -1376,6 +1524,37 @@ class OpenAiCompatibleClient(
         private val NO_MODELS_CATALOG_APIS = setOf(
             TranscriptionApi.ELEVENLABS_MULTIPART,
             TranscriptionApi.ASSEMBLYAI_ASYNC,
+            TranscriptionApi.ASSEMBLYAI_SYNC,
+        )
+
+        /**
+         * AssemblyAI Sync routes on a header rather than a body field, and the header is required. The
+         * canonical value is `universal-3-5-pro`; `u3-sync-pro` and `u3-pro` are accepted as legacy
+         * aliases, and nothing else is.
+         */
+        private const val SYNC_MODEL_HEADER = "X-AAI-Model"
+        const val SYNC_MODEL = "universal-3-5-pro"
+
+        /** One retry, not three: see [transcribeAssemblyAiSync]. */
+        private const val SYNC_MAX_RETRIES = 1
+
+        /** Longest clip and largest body the Sync endpoint accepts, both rejected up front. */
+        const val SYNC_MAX_SECONDS = 120L
+        const val SYNC_MAX_BYTES = 40L * 1024L * 1024L
+
+        /**
+         * Every language `language_code` accepts. Croatian is not among them, which is the fact that
+         * shapes [buildSyncConfig]; keep this list in step with the schema rather than assuming it grew.
+         */
+        private val SYNC_LANGUAGES = setOf(
+            "en", "es", "de", "fr", "it", "pt", "tr", "nl", "sv", "no",
+            "da", "fi", "hi", "vi", "ar", "he", "ja", "ur", "zh",
+        )
+
+        /** Readable names for the languages this app offers, for the contextual-prompt route. */
+        private val SYNC_LANGUAGE_NAMES = mapOf(
+            "hr" to "Croatian",
+            "en" to "English",
         )
 
         /** Builds a client from a registry [preset] plus the user's key/proxy. */

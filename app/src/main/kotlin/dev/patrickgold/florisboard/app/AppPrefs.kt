@@ -26,6 +26,7 @@ import dev.patrickgold.florisboard.app.setup.NotificationPermissionState
 import dev.patrickgold.florisboard.dictate.DictateFloatingButtonDesign
 import dev.patrickgold.florisboard.dictate.DictateLongformMode
 import dev.patrickgold.florisboard.dictate.MaNumericSecondary
+import dev.patrickgold.florisboard.dictate.MaSpeed
 import dev.patrickgold.florisboard.dictate.audio.DictateAudioSource
 import dev.patrickgold.florisboard.dictate.DictateFloatingButtonSize
 import dev.patrickgold.florisboard.dictate.DictateLegacyLayout
@@ -939,6 +940,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val maLastSendMs = long(
             key = "dictate__ma_last_send_ms",
             default = 0L,
+        )
+        // Fast or slow, the two AssemblyAI paths. Default SLOW: fast is three times the price per hour,
+        // so it is a thing to turn on deliberately rather than a thing to discover on a bill. It applies
+        // only to AssemblyAI and only under two minutes; everything else falls back on its own.
+        val maSpeed = enum(
+            key = "dictate__ma_speed",
+            default = MaSpeed.SLOW,
         )
         val maLastSendFormat = string(
             key = "dictate__ma_last_send_format",

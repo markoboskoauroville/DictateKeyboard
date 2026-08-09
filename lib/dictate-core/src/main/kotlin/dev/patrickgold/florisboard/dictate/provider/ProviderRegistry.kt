@@ -330,6 +330,31 @@ object ProviderRegistry {
         curatedRealtimeModels = listOf("universal-streaming"),
     )
 
+    /**
+     * AssemblyAI Sync: the fast path, and **not a second provider**.
+     *
+     * It is the same company, the same key and the same bill as [ASSEMBLYAI]; only the wire format and the
+     * price differ. So it is deliberately absent from [presets] and can never become an account of its
+     * own: an account means a key slot, and a second key slot for a key that is already stored is a way
+     * for the two to drift apart and for one of them to be wrong. The fast/slow switch resolves to this
+     * preset at call time and keeps using the AssemblyAI account's key.
+     *
+     * A different host from the async endpoint (`sync.` rather than `api.`), and a model id that is a
+     * routing header rather than a body field. Both are verified against the OpenAPI schema, not
+     * remembered.
+     */
+    val ASSEMBLYAI_SYNC = ProviderPreset(
+        id = "assemblyai-sync",
+        displayName = "AssemblyAI (fast)",
+        baseUrl = "https://sync.assemblyai.com/",
+        capabilities = STT_ONLY,
+        transcriptionApi = TranscriptionApi.ASSEMBLYAI_SYNC,
+        supportsDynamicModels = false,
+        apiKeyUrl = "https://www.assemblyai.com/app/api-keys",
+        defaultTranscriptionModel = OpenAiCompatibleClient.SYNC_MODEL,
+        curatedTranscriptionModels = listOf(OpenAiCompatibleClient.SYNC_MODEL),
+    )
+
     val XAI = ProviderPreset(
         id = "xai",
         displayName = "xAI (Grok)",

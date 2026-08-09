@@ -170,6 +170,26 @@ object MaResample {
         file.writeBytes(bytes)
     }
 
+    /**
+     * How many seconds of audio a WAV holds, or null when the file cannot be read as one.
+     *
+     * Here because this object already owns the header layout; a second place that knows where the
+     * sample rate lives is a second place to get it wrong. Null rather than a guess, because the one
+     * caller (the fast/slow decision) treats not knowing as a reason to take the safe path.
+     */
+    fun durationSeconds(file: File): Double? = runCatching {
+        if (!file.exists() || file.length() <= WAV_HEADER) return null
+        val header = ByteArray(WAV_HEADER)
+        RandomAccessFile(file, "r").use { it.readFully(header) }
+        val rate = le32(header, 24)
+        val channels = le16(header, 22)
+        val bits = le16(header, 34)
+        if (rate <= 0 || channels <= 0 || bits <= 0) return null
+        val bytesPerSecond = rate.toLong() * channels * (bits / 8)
+        if (bytesPerSecond <= 0L) return null
+        (file.length() - WAV_HEADER).toDouble() / bytesPerSecond
+    }.getOrNull()
+
     private fun le16(b: ByteArray, at: Int): Int =
         (b[at].toInt() and 0xFF) or ((b[at + 1].toInt() and 0xFF) shl 8)
 
