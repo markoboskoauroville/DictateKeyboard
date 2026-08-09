@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 137. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 139. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -293,14 +293,19 @@ the visible characters, moved again onto the real decoded waveform, and a highli
 - **Still to do on the reader**: nothing blocking. Worth watching on the device is whether the first
   sentence starts fast enough to feel like reading rather than loading.
 
-### Three zones, and the keys that survive a fold: shipped at build 137
+### Three zones, and the keys that survive a fold: shipped at build 138, reordered at 139
 
 Marko drew three lines across a screenshot of the keyboard and asked for the parts they cut it into
 to be switchable one by one. The row is now eight keys:
 
 ```
-1  2  3  ·  AP  ·  select-all  ·  backspace  ·  book  ·  mic
+AP  ·  select-all  ·  backspace  ·  1  2  3  ·  book  ·  mic
 ```
+
+**The order is Marko's and it was corrected once**, at build 139: the switches were on the left and
+the borrowed keys on the right, and he swapped them. The reason holds generally, so keep it in mind
+before arranging anything else here. The borrowed keys are used inside a sentence and the switches
+a few times a session, so the busy group belongs at the end the thumb starts from.
 
 - **1 is the number row** (`maExtraRow`). It was the edit strip before; that meaning moved to 3.
 - **2 is the keys themselves** (`maZoneKeyboard`), all of them at once, unchanged.

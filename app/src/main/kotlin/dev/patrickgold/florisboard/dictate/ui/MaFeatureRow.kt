@@ -58,14 +58,15 @@ import dev.patrickgold.florisboard.R
  * The feature row: one row, eight keys, drawn by both views and the last row standing when
  * everything above it is folded away.
  *
- * Three switches, three borrowed keys, then the reader and the view swap:
+ * Three borrowed keys, three switches, then the reader and the view swap:
  *
- * `1 2 3 · AP · select-all · backspace · book · mic`
+ * `AP · select-all · backspace · 1 2 3 · book · mic`
  *
- * The switches come first because they are what the row is for, and the numbers read left to right
- * as the parts of the keyboard they control. The three keys after them are the ones that must
- * survive a fold: AP and select-all are the copy row's most used pair, and backspace is the only
- * key from the keyboard proper with no substitute anywhere else once zone two is shut.
+ * The borrowed keys come first. They are used inside a sentence, while the switches are reached a
+ * few times a session, so the busy end of the row is the end the thumb starts from. The three keys
+ * are the ones that must survive a fold: AP and select-all are the copy row's most used pair, and
+ * backspace is the only key from the keyboard proper with no substitute anywhere else once zone two
+ * is shut. The numbers then read left to right as the parts of the keyboard they control.
  *
  * The rule it exists to satisfy is Marko's, and it is a good one: a feature you have to enable in a
  * settings app before you can see it is a feature most people never find. The dictation view is not
@@ -131,26 +132,14 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
 
-        // 1, the number row. Digits, or whichever set the row is showing.
-        ThemedTextKey("1", keyMod, if (zone1) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maExtraRow.set(!zone1) }
-        }
-
-        // 2, the keyboard itself, all of it at once. This is the one that gives back real estate,
-        // and on a keyboard driven by voice it is off more often than it is on.
-        ThemedTextKey("2", keyMod, if (zone2) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maZoneKeyboard.set(!zone2) }
-        }
-
-        // 3, the copy and paste row along the top. Paste, copy, history and the rest of it.
-        ThemedTextKey("3", keyMod, if (zone3) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maEditRow.set(!zone3) }
-        }
-
         // The three keys worth keeping when the row above them is folded away, drawn by the copy
         // row's own code rather than rebuilt here. AP and select-all are the two most used keys in
         // that row, and backspace is the one key from the keyboard proper that nothing else can
         // stand in for: with zone two closed there is no other way to delete a character.
+        //
+        // First in the row, on Marko's instruction. These are the keys used inside a sentence; the
+        // three switches after them are reached a few times a session. The hand that reaches most
+        // often gets the end of the row it starts from.
         //
         // These three do not fold the row on a long press, and must not. Backspace holds to repeat
         // and swipes to select, which is the behaviour it has everywhere else in this app, and a
@@ -173,6 +162,22 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             keyboardManager = keyboardManager,
             hasSelection = hasSelection,
         )
+
+        // 1, the number row. Digits, or whichever set the row is showing.
+        ThemedTextKey("1", keyMod, if (zone1) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maExtraRow.set(!zone1) }
+        }
+
+        // 2, the keyboard itself, all of it at once. This is the one that gives back real estate,
+        // and on a keyboard driven by voice it is off more often than it is on.
+        ThemedTextKey("2", keyMod, if (zone2) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maZoneKeyboard.set(!zone2) }
+        }
+
+        // 3, the copy and paste row along the top. Paste, copy, history and the rest of it.
+        ThemedTextKey("3", keyMod, if (zone3) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maEditRow.set(!zone3) }
+        }
 
         // The reader. LLL: it speaks the clipboard and lights each word as it is said.
         ThemedIconKey(
