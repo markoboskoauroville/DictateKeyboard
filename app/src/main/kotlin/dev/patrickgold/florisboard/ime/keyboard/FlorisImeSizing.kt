@@ -68,26 +68,7 @@ object FlorisImeSizing {
             KeyboardMode.SYMBOLS2 -> lastCharactersEvaluator.keyboard as TextKeyboard
             else -> evaluator.keyboard as TextKeyboard
         }.rowCount.coerceAtLeast(4)
-
-        // The five parts, and the whole reason they exist: folding a part away has to give the
-        // height back. Removing rows from the arrangement alone was not enough, because this is
-        // what decides how tall the keyboard is drawn, and it was still counting four rows and
-        // handing over the space for keys that were no longer there.
-        //
-        // The subtraction matches the filter in TextKeyboardLayout exactly: letters are two rows,
-        // the shift row and the bottom row are one each. If the two ever disagree the keyboard
-        // either clips its own keys or leaves a dead band under them.
-        val prefs by FlorisPreferenceStore
-        val maPartLetters by prefs.dictate.maPartLetters.collectAsState()
-        val maPartShiftRow by prefs.dictate.maPartShiftRow.collectAsState()
-        val maPartBottomRow by prefs.dictate.maPartBottomRow.collectAsState()
-        var visibleRows = rowCount
-        if (!maPartLetters) visibleRows -= 2
-        if (!maPartShiftRow) visibleRows -= 1
-        if (!maPartBottomRow) visibleRows -= 1
-        // One row is the floor. The filter keeps the bottom row when everything is switched off, so
-        // the keyboard is never a zero height strip with no way back into it.
-        return (keyboardRowBaseHeight * visibleRows.coerceAtLeast(1))
+        return (keyboardRowBaseHeight * rowCount)
     }
 
     @Composable

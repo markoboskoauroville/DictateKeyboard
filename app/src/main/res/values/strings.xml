@@ -910,6 +910,8 @@
     <string name="clip__unpin_item">Unpin item</string>
     <string name="clip__edit_item">Edit</string>
     <string name="ma__feature_lll">Reader</string>
+    <string name="ma__feature_mic">Dictation view</string>
+    <string name="ma__feature_keyboard">Keyboard view</string>
     <string name="lll__empty">Copy some text, then press the clipboard key below. Reading starts on its own.</string>
     <string name="lll__close">Close the reader</string>
     <string name="lll__previous">Previous sentence</string>

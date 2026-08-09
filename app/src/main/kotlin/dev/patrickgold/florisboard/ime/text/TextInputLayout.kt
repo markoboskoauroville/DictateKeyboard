@@ -129,13 +129,27 @@ fun TextInputLayout(
         }
         // The extra row sits directly above the keys, where a number row belongs, and renders
         // nothing at all when switched off.
-        if (!state.isActionsOverflowVisible) {
+        // Zone two, part one: the number row. Gated on the zone as well as on its own switch, so
+        // folding the keyboard away takes the number row with it without erasing the decision about
+        // whether it should be there when the keyboard comes back.
+        val maZoneKeyboard by prefs.dictate.maZoneKeyboard.collectAsState()
+        if (!state.isActionsOverflowVisible && maZoneKeyboard) {
             MaExtraRow()
         }
         if (state.isActionsOverflowVisible) {
             QuickActionsOverflowPanel()
         } else {
-            Box {
+            // Zone two, part two: the keys themselves, from the letters to the bottom row.
+            //
+            // Not composed at all rather than filtered row by row. The keyboard sets its own height,
+            // so leaving it out returns that height exactly, with no arithmetic anywhere that could
+            // fall out of step and leave a band of nothing where the keys used to be. That is what
+            // went wrong when this was done by removing rows.
+            //
+            // Nothing is stranded by this. The arrow strip and the feature row always survive, the
+            // feature row carries the way back, and it carries the microphone so the dictation view
+            // is still one key away with the whole keyboard closed.
+            if (maZoneKeyboard) Box {
                 val incognitoDisplayMode by prefs.keyboard.incognitoDisplayMode.collectAsState()
                 val showIncognitoIcon = evaluator.state.isIncognitoMode &&
                     incognitoDisplayMode == IncognitoDisplayMode.DISPLAY_BEHIND_KEYBOARD

@@ -855,22 +855,15 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_feature_row_shown",
             default = true,
         )
-        // The five parts of the keyboard, each switched from a numbered key in the feature row.
-        // Marko's own division, top to bottom: the edit strip, the number row, the letters, the
-        // shift row and the bottom row. Turning parts off is how the keyboard is compressed to the
-        // size the moment actually needs, which for a voice-first keyboard is often no letters at
-        // all. Parts one and two ride on the switches that already existed rather than growing a
-        // second set that could disagree with them.
-        val maPartLetters = boolean(
-            key = "dictate__ma_part_letters",
-            default = true,
-        )
-        val maPartShiftRow = boolean(
-            key = "dictate__ma_part_shift_row",
-            default = true,
-        )
-        val maPartBottomRow = boolean(
-            key = "dictate__ma_part_bottom_row",
+        // Zone two: the keyboard itself, everything from the number row down to the bottom row,
+        // switched as one from the feature row. Zone one is the edit strip and rides on maEditRow,
+        // which already existed, so there is one switch for it rather than two that could disagree.
+        //
+        // Kept separate from maExtraRow rather than overwriting it. Folding the keyboard away for a
+        // minute must not silently erase somebody's decision about whether they want a number row
+        // when it comes back.
+        val maZoneKeyboard = boolean(
+            key = "dictate__ma_zone_keyboard",
             default = true,
         )
         val maCursorRow = boolean(

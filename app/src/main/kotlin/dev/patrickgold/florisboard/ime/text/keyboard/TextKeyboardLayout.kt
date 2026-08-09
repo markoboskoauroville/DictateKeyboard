@@ -116,37 +116,7 @@ fun TextKeyboardLayout(
     val configuration = LocalConfiguration.current
     val glideTypingManager by context.glideTypingManager()
 
-    // The keyboard, with whole rows removed when the numbered keys in the feature row have switched
-    // them off. Rows are dropped from the arrangement rather than hidden, so the layout engine
-    // measures only what is drawn and the keyboard genuinely gets shorter instead of leaving a gap.
-    //
-    // Only the standard four row character arrangement is touched, letters, letters, shift row,
-    // bottom row. Symbol and other modes have a different shape, and applying row numbers meant for
-    // one layout to another is how a keyboard loses its space bar for reasons nobody can trace.
-    val baseKeyboard = evaluator.keyboard as TextKeyboard
-    val maPartLetters by prefs.dictate.maPartLetters.collectAsState()
-    val maPartShiftRow by prefs.dictate.maPartShiftRow.collectAsState()
-    val maPartBottomRow by prefs.dictate.maPartBottomRow.collectAsState()
-    val keyboard = remember(baseKeyboard, maPartLetters, maPartShiftRow, maPartBottomRow) {
-        val a = baseKeyboard.arrangement
-        if (a.size != 4 || (maPartLetters && maPartShiftRow && maPartBottomRow)) {
-            baseKeyboard
-        } else {
-            val kept = ArrayList<Array<TextKey>>(4)
-            if (maPartLetters) { kept.add(a[0]); kept.add(a[1]) }
-            if (maPartShiftRow) kept.add(a[2])
-            if (maPartBottomRow) kept.add(a[3])
-            // Never hand back nothing. An arrangement with no rows has no height and no keys, and a
-            // keyboard that has vanished entirely cannot be brought back from itself.
-            if (kept.isEmpty()) kept.add(a[3])
-            TextKeyboard(
-                arrangement = kept.toTypedArray(),
-                mode = baseKeyboard.mode,
-                extendedPopupMapping = baseKeyboard.extendedPopupMapping,
-                extendedPopupMappingDefault = baseKeyboard.extendedPopupMappingDefault,
-            )
-        }
-    }
+    val keyboard = evaluator.keyboard as TextKeyboard
     val glideEnabledInternal by prefs.glide.enabled.collectAsState()
     // Suppressed while the modern keyboard is reached via the legacy swipe gesture (issue #125), so a
     // horizontal glide doesn't swallow the swipe-back that returns to the dictation UI.

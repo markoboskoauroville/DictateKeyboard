@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Timer
@@ -85,19 +87,16 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
 
-    // The five parts of the keyboard, top to bottom, each with its own numbered key.
-    val part1 by prefs.dictate.maEditRow.collectAsState()
-    val part2 by prefs.dictate.maExtraRow.collectAsState()
-    val part3 by prefs.dictate.maPartLetters.collectAsState()
-    val part4 by prefs.dictate.maPartShiftRow.collectAsState()
-    val part5 by prefs.dictate.maPartBottomRow.collectAsState()
+    // Two zones, and that is the whole keyboard. Zone one is the edit strip along the top, zone two
+    // is everything from the number row down to the bottom row.
+    val zone1 by prefs.dictate.maEditRow.collectAsState()
+    val zone2 by prefs.dictate.maZoneKeyboard.collectAsState()
 
-    // Green when the part is showing, dark when it is folded away, so the row is a map of the
-    // keyboard above it and can be read without pressing anything.
+    // Green when the zone is showing, dark when it is folded away, so the row is a map of what is
+    // above it and can be read without pressing anything.
     val onGreen = Color(0xFF6FA85A)
 
-    // Long press anywhere here folds the whole row away. The finger is already on the row it wants
-    // gone, which costs nothing, and the unfold key in the arrow strip brings it back.
+    // Long press anywhere here folds the row away. The finger is already on the row it wants gone.
     val fold: () -> kotlin.Unit = { scope.launch { prefs.dictate.maFeatureRowShown.set(false) } }
 
     Row(
@@ -106,23 +105,18 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
 
-        // 1, the edit strip. Copy, paste, cut, select, history.
-        ThemedTextKey("1", keyMod, if (part1) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maEditRow.set(!part1) }
-        }
-        // 2, the number row.
-        ThemedTextKey("2", keyMod, if (part2) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maExtraRow.set(!part2) }
-        }
-        // 3, the letters, both rows of them. The largest single piece of height on the keyboard and
-        // the one a voice-first keyboard needs least often.
-        ThemedTextKey("3", keyMod, if (part3) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maPartLetters.set(!part3) }
+        // 1, the edit strip. Paste, copy, history and the rest of the top row.
+        ThemedTextKey("1", keyMod, if (zone1) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maEditRow.set(!zone1) }
         }
 
-        // The reader, in the middle, the only key from the old row that stays. It is the most
-        // important key here and the middle is the one place a thumb reaches from either side
-        // without the hand shifting its grip.
+        // 2, the keyboard itself, all of it at once. This is the one that gives back real estate,
+        // and on a keyboard driven by voice it is off more often than it is on.
+        ThemedTextKey("2", keyMod, if (zone2) onGreen else null, fold) {
+            scope.launch { prefs.dictate.maZoneKeyboard.set(!zone2) }
+        }
+
+        // The reader. LLL: it speaks the clipboard and lights each word as it is said.
         ThemedIconKey(
             code = KeyCode.NOOP,
             icon = Icons.AutoMirrored.Filled.MenuBook,
@@ -133,13 +127,21 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             keyboardManager.activeState.imeUiMode = ImeUiMode.READER
         }
 
-        // 4, the shift row.
-        ThemedTextKey("4", keyMod, if (part4) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maPartShiftRow.set(!part4) }
-        }
-        // 5, the bottom row, ctrl through enter.
-        ThemedTextKey("5", keyMod, if (part5) onGreen else null, fold) {
-            scope.launch { prefs.dictate.maPartBottomRow.set(!part5) }
+        // The microphone, last, and the reason the keyboard can be folded away entirely. With zone
+        // two closed there is no key left that reaches the dictation screen, so the way between the
+        // two views has to live in the row that always survives.
+        val inTranscribe = keyboardManager.activeState.imeUiMode == ImeUiMode.TRANSCRIBE
+        ThemedIconKey(
+            code = KeyCode.NOOP,
+            icon = if (inTranscribe) Icons.Default.Keyboard else Icons.Default.Mic,
+            contentDescription = stringRes(
+                if (inTranscribe) R.string.ma__feature_keyboard else R.string.ma__feature_mic,
+            ),
+            modifier = keyMod,
+            onLongClick = fold,
+        ) {
+            keyboardManager.activeState.imeUiMode =
+                if (inTranscribe) ImeUiMode.TEXT else ImeUiMode.TRANSCRIBE
         }
     }
 }
