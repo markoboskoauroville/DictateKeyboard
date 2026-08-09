@@ -92,6 +92,19 @@ object MaReader {
     }
 
     /**
+     * Re-reads the loaded text from the current sentence, after a voice change.
+     *
+     * The clips are cached per voice, so switching back to a voice already heard costs nothing, and
+     * the position is kept: changing voice mid-paragraph should not send anybody back to the top.
+     */
+    fun reload(context: Context) {
+        if (_text.value.isEmpty()) return
+        job?.cancel()
+        releasePlayer()
+        job = scope.launch { readFrom(context, cursor) }
+    }
+
+    /**
      * Loads [raw] and starts reading from the beginning. Cleaning happens here, once, so every
      * character offset the highlight uses refers to the text the view is actually showing.
      */

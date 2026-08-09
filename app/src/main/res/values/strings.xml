@@ -910,7 +910,15 @@
     <string name="clip__unpin_item">Unpin item</string>
     <string name="clip__edit_item">Edit</string>
     <string name="ma__feature_lll">Reader</string>
-    <string name="ma__feature_lll_not_ready">Reader is not built yet</string>
+    <string name="lll__empty">Copy something, then press paste below to have it read.</string>
+    <string name="lll__close">Close the reader</string>
+    <string name="lll__previous">Previous sentence</string>
+    <string name="lll__next">Next sentence</string>
+    <string name="lll__play">Read</string>
+    <string name="lll__pause">Pause</string>
+    <string name="lll__voice">Change voice</string>
+    <string name="lll__load">Read what is on the clipboard</string>
+    <string name="lll__preparing">Preparing the voice…</string>
     <string name="ma__feature_file">Transcribe an audio file</string>
     <string name="ma__feature_longform">Long recordings</string>
     <string name="ma__feature_rewording">Rewording</string>

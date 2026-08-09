@@ -44,11 +44,11 @@ import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateLongformMode
 import dev.patrickgold.florisboard.keyboardManager
+import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import kotlinx.coroutines.launch
 import org.florisboard.lib.compose.stringRes
 import dev.patrickgold.florisboard.R
-import org.florisboard.lib.android.showShortToastSync
 
 /**
  * The feature row: one row, ten keys, everything this app can do reachable from the dictation view
@@ -91,10 +91,6 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     // so the same colour never means two different things.
     val onGreen = Color(0xFF6FA85A)
 
-    // The reader key is drawn faint rather than bright, so the row shows at a glance that one of its
-    // ten is not live yet. Dimmed, not hidden: a control that appears later in a row people have
-    // already learned costs more than a slot held open.
-    val notReadyInk = Color(0x55E8B15C)
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -102,18 +98,14 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
     ) {
         val keyMod = Modifier.weight(1f).fillMaxHeight()
 
-        // 1. The reader. Rendered but not yet wired: the LLL view does not exist, and a key that
-        //    silently does nothing is worse than one that is visibly not ready. Its slot is held
-        //    here so the row does not get rearranged the day the reader lands, because a control
-        //    that moves after people have learned where it is costs more than it gains.
+        // 1. The reader. LLL: it speaks the clipboard and lights each word as it is said.
         ThemedIconKey(
             code = KeyCode.NOOP,
             icon = Icons.AutoMirrored.Filled.MenuBook,
             contentDescription = stringRes(R.string.ma__feature_lll),
             modifier = keyMod,
-            tint = notReadyInk,
         ) {
-            context.showShortToastSync(R.string.ma__feature_lll_not_ready)
+            keyboardManager.activeState.imeUiMode = ImeUiMode.READER
         }
 
         // 2. Transcribe an audio file. Until now this lived only on a long press of the microphone,
