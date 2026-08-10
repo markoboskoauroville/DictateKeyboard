@@ -119,6 +119,13 @@ attempts at editing the stylesheet because `rememberSnyggTheme(..., accentColor)
 `--primary` at load time. Rules that must not be repainted use literal colours, not `var(--primary)`.
 When editing the obvious place has no effect twice, find what is overwriting it.
 
+**A nullable property from another module will not smart-cast.** `if (probe.kind != null)` then
+using `probe.kind` fails to compile with *"Smart cast is impossible, because kind is a public API
+property declared in different module"*. It looks like ordinary null-checking and it is the only
+error in an otherwise clean build, so it reads as something exotic. `dictate-core` is a separate
+Gradle module from `app`, so every nullable property crossing that line needs pulling into a local
+first. Cost builds 143 and 144.
+
 **Icon imports.** `Icons.Default.X` needs `...icons.filled.X`; `Icons.Outlined.X` needs
 `...icons.outlined.X`. Importing both `filled.X` and `outlined.X` is a name clash and will not
 compile. Use `/home/claude/iconcheck.py <files>` — it checks both. Also verify any icon name is

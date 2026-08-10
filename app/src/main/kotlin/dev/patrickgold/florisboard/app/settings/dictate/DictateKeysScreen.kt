@@ -255,9 +255,14 @@ fun DictateKeysScreen() = FlorisScreen {
                         // holding two opinions about the same key is how a green light ends up
                         // above a key nothing will ever use.
                         val ring = MaKeyRingStore.load(context, preset.id)
+                        // Pulled into a local first. Kotlin will not smart-cast a nullable property
+                        // that lives in another module, because that module could in principle
+                        // change it between the check and the use, and dictate-core is a separate
+                        // module. A null check on probe.kind alone therefore does not compile.
+                        val probeKind = probe.kind
                         val updated = when {
                             probe.ok -> MaKeyRing.onSuccess(ring, key, probe.detail)
-                            probe.kind != null -> MaKeyRing.onFailure(ring, key, probe.kind, probe.detail)
+                            probeKind != null -> MaKeyRing.onFailure(ring, key, probeKind, probe.detail)
                             else -> ring
                         }
                         if (updated !== ring) MaKeyRingStore.save(context, preset.id, updated)
