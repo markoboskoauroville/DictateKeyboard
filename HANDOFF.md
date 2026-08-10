@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 141. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 142. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -542,6 +542,29 @@ URL is a broken value.
 
 This is one of the two halves of the old "trailing space" item. **The other half, the trailing space
 after a recased word, is still open** and is listed below.
+
+### Sixty keys: what broke at that number, fixed at build 142
+
+Marko asked whether the key manager really holds fifty or more keys. It did not, quite, and the
+failures only appear past about a dozen. Measured with a sixty key file, a year of ledger entries.
+
+- **The parser was already fine**: 60 of 60 lifted out of a messy file in 53 ms, in every layout
+  (bare, labelled, quoted, `KEY=`, trailing comment), no foreign keys taken, and re-importing the
+  same file still changes nothing.
+- **The usage lines were O(keys x entries).** `describeKey` walks the whole ledger, so sixty keys
+  meant sixty walks: **161 ms on the main thread on every recomposition**, which is a stutter while
+  scrolling the screen. `MaUsage.totalsByKey` and `describeAll` now bucket in one pass: **23 ms**,
+  identical answers, asserted by a test so it cannot quietly come back.
+- **The ledger file is read off the main thread now.** At that size it is over a megabyte and took
+  223 ms to parse. It is read once, in a `LaunchedEffect` on IO, and the lines appear when they land.
+- **TEST ALL fired every key at once**, which at sixty keys is the most reliable way to trip a rate
+  limit. A 429 was then classified QUOTA_EXCEEDED and painted a **healthy key amber**, inviting it to
+  be deleted. Two changes: the bulk run is sequential with a progress count, and `MaSpeechify.probe`
+  backs off once on a 429 and then reports **not checked** rather than a verdict. A light must never
+  say something about a key that is really about the burst it arrived in.
+
+**The lights say what happened, and there is no light for credit remaining**, because no provider
+here will say. See the usage section above: the numbers are what this phone counted.
 
 ### Next: retranscribe
 

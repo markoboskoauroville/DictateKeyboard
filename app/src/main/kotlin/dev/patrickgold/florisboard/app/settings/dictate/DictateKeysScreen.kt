@@ -80,6 +80,7 @@ import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 import dev.patrickgold.florisboard.lib.util.launchUrl
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -215,12 +216,17 @@ fun DictateKeysScreen() = FlorisScreen {
             }
         }
 
-        /** Runs one key against the live service and records what came back. */
-        fun testKey(preset: ProviderPreset, key: String) {
+        /**
+         * Runs one key against the live service and records what came back.
+         *
+         * Returns its Job so a bulk run can wait for each before starting the next. A fire and
+         * forget version cannot be sequenced, and sequencing is the whole point at sixty keys.
+         */
+        fun testKey(preset: ProviderPreset, key: String): Job {
             val slot = preset.id + "\u0000" + key
             statuses[slot] = KeyStatus(KeyHealth.TESTING)
             val account = accounts.accounts[preset.id]
-            scope.launch {
+            return scope.launch {
                 val status = withContext(Dispatchers.IO) {
                     // Speechify speaks rather than listens, so there is no model list to count and
                     // nothing in OpenAiCompatibleClient that fits. It is probed by synthesising two
@@ -330,10 +336,24 @@ fun DictateKeysScreen() = FlorisScreen {
                 modifier = Modifier.weight(1f),
                 enabled = !busy,
                 onClick = {
-                    shown.forEach { preset ->
-                        MaKeys.split(accounts.accounts[preset.id]?.apiKey.orEmpty())
-                            .filter { it.isNotBlank() }
-                            .forEach { testKey(preset, it) }
+                    // ONE AT A TIME, not all at once. Firing sixty keys simultaneously is the
+                    // fastest way to trip a per-workspace rate limit, and the answer that comes back
+                    // then is about the burst rather than about any key. Sequential is slower and it
+                    // is the only version whose lights mean what they say. The note line counts up
+                    // so a long run does not look like a frozen screen.
+                    busy = true
+                    scope.launch {
+                        val work = shown.flatMap { preset ->
+                            MaKeys.split(accounts.accounts[preset.id]?.apiKey.orEmpty())
+                                .filter { it.isNotBlank() }
+                                .map { preset to it }
+                        }
+                        work.forEachIndexed { index, (preset, key) ->
+                            note = "Testing ${index + 1} of ${work.size}"
+                            testKey(preset, key).join()
+                        }
+                        note = "Tested ${work.size} key" + (if (work.size == 1) "" else "s")
+                        busy = false
                     }
                 },
             ) {
@@ -459,7 +479,22 @@ fun DictateKeysScreen() = FlorisScreen {
         // The ledger is read once here rather than per row. It is recomputed whenever a test writes
         // to it, which is what `statuses.size` is doing in the key: a test finishing is the only
         // thing on this screen that can change the numbers, so it is the right thing to watch.
-        val ledger = remember(statuses.size) { MaUsageStore.load(context) }
+        // Read off the main thread. At sixty keys and a year of history the file is over a megabyte
+        // and parsing it took 204 ms in a measured run, which is a dropped frame on the way into the
+        // screen. It is read once, in the background, and the lines simply appear when it lands.
+        var usage by remember { mutableStateOf<Map<String, Map<String, String>>>(emptyMap()) }
+        LaunchedEffect(statuses.size, shown.size) {
+            usage = withContext(Dispatchers.IO) {
+                val ledger = MaUsageStore.load(context)
+                shown.associate { preset ->
+                    preset.id to MaUsage.describeAll(
+                        ledger = ledger,
+                        providerId = preset.id,
+                        rate = MaUsage.DEFAULT_RATES[preset.id] ?: 0.0,
+                    )
+                }
+            }
+        }
 
         shown.forEach { preset ->
             ProviderSection(
@@ -470,14 +505,9 @@ fun DictateKeysScreen() = FlorisScreen {
                 isRewording = preset.id == activeRewordingId,
                 onTest = { key -> testKey(preset, key) },
                 onSave = ::save,
-                usageOf = { key ->
-                    MaUsage.describeKey(
-                        ledger = ledger,
-                        providerId = preset.id,
-                        key = key,
-                        rate = MaUsage.DEFAULT_RATES[preset.id] ?: 0.0,
-                    )
-                },
+                // Looked up, not computed. The map was built once above in a single pass over the
+                // ledger, so adding keys no longer costs anything per row.
+                usageOf = { key -> usage[preset.id]?.get(MaUsage.tail(key)).orEmpty() },
             )
         }
 

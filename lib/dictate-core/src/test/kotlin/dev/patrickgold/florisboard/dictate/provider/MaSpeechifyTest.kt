@@ -217,6 +217,32 @@ class MaUsageTest {
     }
 
     /**
+     * Sixty keys is a real number for Marko, and the per-key path did not survive it: at sixty keys
+     * and a year of entries it took 161 ms to draw the lines, on the main thread, on every
+     * recomposition. [MaUsage.describeAll] walks the ledger twice instead of twice per key and came
+     * back in 23 ms with identical answers. This asserts the identical part; the speed is what it is
+     * as long as the shape stays a single pass.
+     */
+    @Test
+    fun sixtyKeysGetTheSameAnswersFromTheSinglePass() {
+        val keys = (1..60).map { "sk_" + "abcdefghijklmnopqrstuvwxyz".take(20) + "%04d".format(it) }
+        var l = MaUsage.Ledger()
+        keys.forEachIndexed { i, key ->
+            repeat(5) { l = MaUsage.record(l, "speechify", key, (100L + i), MaUsage.Unit.CHARACTER) }
+        }
+        val map = MaUsage.describeAll(l, "speechify", 0.0)
+        assertEquals(60, map.size)
+        for (key in keys) {
+            assertEquals(
+                MaUsage.describeKey(l, "speechify", key, 0.0),
+                map[MaUsage.tail(key)],
+            )
+        }
+        // Tails must not collide, or two keys share one line and both are wrong.
+        assertEquals(60, keys.map { MaUsage.tail(it) }.toSet().size)
+    }
+
+    /**
      * The Sunday case. Calendar numbers Sunday as 1, so the obvious subtraction sends Sunday back to
      * the week that has not started yet and the figure is wrong one day in seven, which is exactly
      * often enough never to be noticed.

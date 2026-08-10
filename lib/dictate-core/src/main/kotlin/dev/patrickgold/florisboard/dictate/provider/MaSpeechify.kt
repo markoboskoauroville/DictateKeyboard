@@ -214,25 +214,51 @@ object MaSpeechify {
      * voices would answer the first and quietly pass a key whose balance is gone.
      */
     fun probe(key: String, client: OkHttpClient = defaultClient): Probe {
-        return try {
-            val spoken = synthesize(key = key, text = "ok", client = client)
-            Probe(
-                ok = true,
-                kind = null,
-                detail = "works, spoke " + spoken.marks.size + " word" +
-                    (if (spoken.marks.size == 1) "" else "s"),
-                billableCharacters = spoken.billableCharacters,
-            )
-        } catch (e: DictateApiException) {
-            Probe(ok = false, kind = e.kind, detail = MaKeys.tidyError(e.message, "could not be checked"))
-        } catch (e: Exception) {
-            Probe(
-                ok = false,
-                kind = DictateApiException.Kind.NETWORK,
-                detail = MaKeys.tidyError(e.message, "could not be checked"),
-            )
+        var attempt = 0
+        while (true) {
+            attempt++
+            try {
+                val spoken = synthesize(key = key, text = "ok", client = client)
+                return Probe(
+                    ok = true,
+                    kind = null,
+                    detail = "works, spoke " + spoken.marks.size + " word" +
+                        (if (spoken.marks.size == 1) "" else "s"),
+                    billableCharacters = spoken.billableCharacters,
+                )
+            } catch (e: DictateApiException) {
+                // A 429 during a bulk test is about how fast the requests arrived, not about this
+                // key. Testing fifty keys is exactly what provokes it, and reporting it as "no
+                // quota" paints a healthy key amber and invites Marko to delete it. So: back off
+                // once, then report it as NOT CHECKED rather than as a verdict.
+                if (e.httpStatus == 429 && attempt == 1) {
+                    Thread.sleep(RATE_LIMIT_BACKOFF_MS)
+                    continue
+                }
+                if (e.httpStatus == 429) {
+                    return Probe(
+                        ok = false,
+                        kind = DictateApiException.Kind.TIMEOUT,
+                        detail = "too many tests at once, this key was not checked",
+                    )
+                }
+                return Probe(
+                    ok = false,
+                    kind = e.kind,
+                    detail = MaKeys.tidyError(e.message, "could not be checked"),
+                )
+            } catch (e: Exception) {
+                return Probe(
+                    ok = false,
+                    kind = DictateApiException.Kind.NETWORK,
+                    detail = MaKeys.tidyError(e.message, "could not be checked"),
+                )
+            }
         }
     }
+
+    /** Long enough to clear a per-second window, short enough not to stall a long test run. */
+    private const val RATE_LIMIT_BACKOFF_MS = 1500L
 
     /**
      * Flattens the nested speech-mark tree into the words, in order.

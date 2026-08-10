@@ -180,6 +180,65 @@ object MaUsage {
     }
 
     /**
+     * Every key's totals for one provider, in a single pass over the ledger.
+     *
+     * [totals] walks the whole ledger per key, which is fine for three keys and is not fine for
+     * sixty: at sixty keys and a year of entries that is 157 ms of work on the main thread every
+     * time the key screen recomposes, which is a visible stutter while scrolling. Measured, not
+     * guessed. This walks the entries once and buckets them, so the cost stops depending on how many
+     * keys are stored.
+     *
+     * Keyed by the four-character tail, which is what the ledger stores.
+     */
+    fun totalsByKey(
+        ledger: Ledger,
+        providerId: String,
+        since: Long = 0L,
+        rate: Double = DEFAULT_RATES[providerId] ?: 0.0,
+    ): Map<String, Totals> {
+        val characters = HashMap<String, Long>()
+        val millis = HashMap<String, Long>()
+        val calls = HashMap<String, Int>()
+        for (e in ledger.entries) {
+            if (e.providerId != providerId) continue
+            if (e.at < since) continue
+            calls[e.keyTail] = (calls[e.keyTail] ?: 0) + 1
+            when (e.unit) {
+                Unit.CHARACTER -> characters[e.keyTail] = (characters[e.keyTail] ?: 0L) + e.amount
+                Unit.MILLISECOND -> millis[e.keyTail] = (millis[e.keyTail] ?: 0L) + e.amount
+            }
+        }
+        return calls.keys.associateWith { tail ->
+            val c = characters[tail] ?: 0L
+            val m = millis[tail] ?: 0L
+            Totals(
+                characters = c,
+                milliseconds = m,
+                calls = calls[tail] ?: 0,
+                cost = c / 1_000_000.0 * rate + m / 3_600_000.0 * rate,
+            )
+        }
+    }
+
+    /**
+     * Every key's line, for one provider, computed once.
+     *
+     * The screen calls this once and looks each row up, rather than calling [describeKey] per row.
+     * Same sentences, two passes over the ledger instead of two per key.
+     */
+    fun describeAll(
+        ledger: Ledger,
+        providerId: String,
+        rate: Double,
+    ): Map<String, String> {
+        val month = totalsByKey(ledger, providerId, startOfMonth(), rate)
+        val all = totalsByKey(ledger, providerId, 0L, rate)
+        return all.mapValues { (tail, allTime) ->
+            line(month[tail] ?: Totals(), allTime, providerId, rate)
+        }
+    }
+
+    /**
      * The line shown under one key: this month, and all time.
      *
      * Deliberately one line. It sits under a masked key in a list of keys, and a paragraph there
@@ -189,6 +248,11 @@ object MaUsage {
         val tail = tail(key)
         val month = totals(ledger, providerId, tail, startOfMonth(), rate)
         val all = totals(ledger, providerId, tail, 0L, rate)
+        return line(month, all, providerId, rate)
+    }
+
+    /** The one place the sentence is written, shared by the per-key and the all-keys paths. */
+    private fun line(month: Totals, all: Totals, providerId: String, rate: Double): String {
         if (all.calls == 0) return "not used from this phone yet"
         // With no rate there is nothing honest to put in the money column, so the volume stands
         // alone and the sentence says why rather than printing $0.00 next to real use.
