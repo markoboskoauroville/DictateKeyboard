@@ -106,6 +106,7 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.florisboard.dictate.MaSpeed
+import dev.patrickgold.florisboard.ime.text.key.KeyCode
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateRecordingAnimation
 import dev.patrickgold.florisboard.dictate.PushToTalkPhase
@@ -142,12 +143,12 @@ private val RecordingRed = Color(0xFF9B3B33)
  * - Error: the error message, auto-cleared after a few seconds.
  */
 /**
- * The armed strip, drawn by the Smartbar while the drawer is open and nothing is recording.
+ * The armed strip: the three keys, and nothing else, because nothing is happening yet.
  *
  * A sibling of [DictateSmartbarUi] rather than a branch inside it, because that one switches on
- * [DictateController.UiState] and armed is not a state: it is Idle with a drawer open. Keeping it
- * out here is what stops "armed" having to be smuggled into an enum that every `is Idle` check in
- * the app depends on meaning exactly what it says.
+ * [DictateController.UiState] and armed is not a state: it is Idle with the row open. Keeping it out
+ * here is what stops "armed" having to be smuggled into an enum that every `is Idle` check in the app
+ * depends on meaning exactly what it says.
  */
 @Composable
 fun MaArmedSmartbarUi(modifier: Modifier = Modifier) {
@@ -159,12 +160,20 @@ fun MaArmedSmartbarUi(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MaPreRecordBar()
+        MaUtilityKeys(modifier = Modifier.fillMaxHeight())
     }
 }
 
 @Composable
 fun DictateSmartbarUi(state: DictateController.UiState, modifier: Modifier = Modifier) {
+    // The three keys stay while recording. Marko's, and it is the change that makes AUTO safe: in
+    // AUTO there is no armed strip to visit, so if the keys lived only there, turning AUTO on would
+    // hide the only way back and the way out would be a settings screen. Here, a recording that
+    // started before he was ready is cancelled with the button beside them and the setting is
+    // already under his thumb.
+    //
+    // ONE ROW, not a screen to change to. Everything about a recording, and everything that decides
+    // how it will be treated, is on the same strip at the same time.
     // Centred while recording as well.
     //
     // SpaceBetween pushed the discard button to one edge and the meter and stopwatch to the other,
@@ -186,6 +195,13 @@ fun DictateSmartbarUi(state: DictateController.UiState, modifier: Modifier = Mod
         horizontalArrangement = arrangement,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The keys first, then whatever the state is doing, on the same row. Only while recording:
+        // in the other states the strip is reporting rather than offering, and a transcribe in
+        // flight cannot be made faster or moved to another language by pressing anything.
+        if (state is DictateController.UiState.Recording) {
+            MaUtilityKeys(modifier = Modifier.fillMaxHeight())
+            Spacer(modifier = Modifier.width(4.dp))
+        }
         when (state) {
             is DictateController.UiState.Recording -> RecordingContent(state)
             is DictateController.UiState.Transcribing -> TranscribingContent(state)
@@ -275,22 +291,6 @@ private fun RecordingContent(state: DictateController.UiState.Recording) {
                 }
             }
         }
-        // The language, inside the centred group and immediately before the meter.
-        //
-        // Marko asked for it: while a recording is running there was nothing on screen saying which
-        // language it would be transcribed as, and that is the one moment the answer matters, since
-        // by the time the transcript comes back in the wrong language the speaking is already done.
-        //
-        // Here rather than out at an edge because the group is centred as a whole. A badge on the
-        // left would push the stopwatch off centre by its own width, and a stopwatch that is nearly
-        // centred reads as a mistake rather than as a measurement. Inside the group it travels with
-        // it and the group stays centred.
-        //
-        // Tappable, because a language noticed as wrong is a language worth fixing on the spot. It
-        // cannot be reached any other way mid recording: volume down means cancel while a recording
-        // runs, so the key that switches language when idle is doing something else here.
-        MaRecordingLanguage()
-        Spacer(modifier = Modifier.width(6.dp))
         // MA TWIST: oscilloscope behind, braille spinner and stopwatch in front.
         MaRecordingScope(paused = state.paused, frozen = ptt.discarding, elapsedMs = elapsedMs)
         // Segmented mode: how many cut segments are transcribing in the background right now.
@@ -473,74 +473,73 @@ private fun RecordingAudioDot(paused: Boolean, frozen: Boolean = false) {
 }
 
 /**
- * The drawer: what volume up opens, and what the next press will act on.
+ * The three decisions, as keys.
  *
- * Two controls and a word. The language, fast or slow, and `speak` to say what the key in your hand
- * does next. Those two settings are here and nothing else is, because they are the only two that
- * cannot be corrected afterwards: a recording made in the wrong language is not a setting to fix, it
- * is a thing to say again, and the choice between paying three times as much for an answer that
- * arrives at once is only a choice before the audio goes up.
+ * `ENG` or `HR`, `FAST` or `SLOW`, `AUTO` or `MANUAL`. Nothing else, and no label saying what to do
+ * next: Marko's, and he is right. A word that only explains the other words is a word that gets read
+ * once and then occupies the row forever.
  *
- * Centred as one group, like the recording bar it is about to become, so the strip does not appear to
- * jump when the recording actually starts.
+ * **Keys, not text.** They were drawn as plain labels and looked like a readout, which is exactly
+ * wrong for three things whose whole purpose is being pressed. They now use the same [ThemedKey] the
+ * feature row uses, so a thing that can be pressed looks like the other things that can be pressed,
+ * and the thumb needs no instruction to find them.
  *
- * It draws the same two toggles the transcribe view's quick row draws, in the same words, because
- * they are the same two decisions. FAST here and FAST there must never be able to disagree, so both
- * read and write the same preference and neither keeps a copy.
+ * **Each one names what it IS, not what pressing it would do.** The key says `SLOW` when the slow
+ * path is in use. The alternative convention, where a button says what it will switch you to, is the
+ * one that makes people press twice to work out which way round it is. State first; the tap is
+ * discoverable, the state is not.
+ *
+ * No lit or selected styling for the same reason: there is no off. `HR` is not "Croatian is enabled",
+ * it is "you are in Croatian", and lighting it would invite the question of what the unlit version
+ * means when there is no such thing.
  */
 @Composable
-private fun MaPreRecordBar() {
+private fun MaUtilityKeys(modifier: Modifier = Modifier) {
     val prefs by FlorisPreferenceStore
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val speed by prefs.dictate.maSpeed.collectAsState()
-
-    MaRecordingLanguage()
-    Spacer(modifier = Modifier.width(10.dp))
-    SnyggText(
-        text = if (speed == MaSpeed.FAST) "FAST" else "SLOW",
-        modifier = Modifier
-            .clickable {
-                scope.launch {
-                    prefs.dictate.maSpeed.set(if (speed == MaSpeed.FAST) MaSpeed.SLOW else MaSpeed.FAST)
-                }
-            }
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-    )
-    Spacer(modifier = Modifier.width(10.dp))
-    // What the next press does, in one word. The drawer is opened without looking, by a thumb on the
-    // side of the phone, so the strip has to answer "and now what" without being studied.
-    SnyggText(text = "speak")
-}
-
-/**
- * HR or ENG, shown while recording, and one tap moves to the other.
- *
- * One toggle rather than one button per language, which is what the rest of this app now does too.
- * There are exactly two languages and there permanently will be, so a row of buttons where only one
- * can be on is a radio group drawn the expensive way: it costs the width of every option to say a
- * thing a single word already says.
- *
- * Written as text at the strip's own scale rather than as another round icon key. The buttons either
- * side of the meter are actions, and a state readout that looks like them invites being pressed by
- * mistake while the finger is going for send.
- */
-@Composable
-private fun MaRecordingLanguage() {
-    val prefs by FlorisPreferenceStore
-    val context = LocalContext.current
-    // Read through the preference so it recomposes when the language is changed anywhere else, and
-    // through MaLanguage so the string is the same one every other surface shows.
     val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
-    val badge = remember(activeCode) { MaLanguage.badge() }
-    SnyggText(
-        text = badge,
-        modifier = Modifier
-            .clickable { MaLanguage.toggle(context) }
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-    )
+    val speed by prefs.dictate.maSpeed.collectAsState()
+    val auto by prefs.dictate.maAutoRecord.collectAsState()
+    val languageBadge = remember(activeCode) { MaLanguage.badge() }
+
+    MaUtilityKey(label = languageBadge, modifier = modifier) { MaLanguage.toggle(context) }
+    MaUtilityKey(label = if (speed == MaSpeed.FAST) "FAST" else "SLOW", modifier = modifier) {
+        scope.launch {
+            prefs.dictate.maSpeed.set(if (speed == MaSpeed.FAST) MaSpeed.SLOW else MaSpeed.FAST)
+        }
+    }
+    // AUTO skips the drawer: the next volume up records at once. MANUAL is the two-press form.
+    //
+    // The reason this key has to live on the recording strip and not only on the armed one is that
+    // AUTO removes the armed strip entirely. If it were only reachable there, turning AUTO on would
+    // hide the only way to turn it off, and the way back would be a settings screen. Here, a
+    // recording that started when it was not wanted is cancelled and the key is right there.
+    MaUtilityKey(label = if (auto) "AUTO" else "MANUAL", modifier = modifier) {
+        scope.launch { prefs.dictate.maAutoRecord.set(!auto) }
+    }
 }
 
+/** One key, in the feature row's own style, sized to its label rather than to a grid. */
+@Composable
+private fun MaUtilityKey(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    ThemedKey(
+        code = KeyCode.NOOP,
+        // widthIn rather than a weight: this row is shared with the recording meter, whose width is
+        // not ours to take. A minimum keeps the two short labels from becoming slivers, and MANUAL,
+        // the longest of the six words, decides the natural width.
+        modifier = modifier.widthIn(min = 52.dp),
+        onClick = onClick,
+    ) { fg ->
+        Text(
+            text = label,
+            color = fg,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+        )
+    }
+}
 
 @Composable
 private fun TranscribingContent(state: DictateController.UiState.Transcribing) {

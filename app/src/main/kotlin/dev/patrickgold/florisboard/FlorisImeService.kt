@@ -672,9 +672,9 @@ class FlorisImeService : LifecycleInputMethodService() {
     /**
      * Volume keys as dictation controls, while the keyboard is on screen.
      *
-     * Volume up opens the drawer; pressed again it starts recording; pressed again it sends. Volume
-     * down undoes whichever of those just happened: it closes the drawer, or throws away a recording
-     * in progress. Both are things otherwise done by looking at the screen and aiming a
+     * In MANUAL, volume up opens the utility row; pressed again it starts recording; pressed again it
+     * sends. In AUTO the first press records straight away. Volume down undoes whichever of those
+     * just happened: it closes the row, or throws away a recording in progress. Both are things otherwise done by looking at the screen and aiming a
      * thumb, and both are exactly what a physical button is good for: speaking into a phone held
      * away from the face, or in the dark. Cancel belongs on a hardware key for the same reason start
      * does; realising mid-sentence that the wrong thing is being said is precisely the moment the
@@ -715,8 +715,12 @@ class FlorisImeService : LifecycleInputMethodService() {
                 // The on-screen microphone deliberately does NOT gain the extra press. A thumb
                 // already on the key can see the strip it is about to change, so the press before
                 // the press buys nothing there and would cost a tap on the commonest path.
+                // AUTO gives the single press back. The two forms are one preference apart and the
+                // key that flips it lives on the recording strip, so AUTO can always be undone from
+                // inside a recording it started: cancel, press MANUAL, and the drawer is back.
                 val idle = DictateController.state.value is DictateController.UiState.Idle
-                if (idle && !DictateController.maArmed.value) {
+                val auto = prefs.dictate.maAutoRecord.get()
+                if (idle && !auto && !DictateController.maArmed.value) {
                     DictateController.maArm()
                 } else {
                     DictateController.maDisarm()

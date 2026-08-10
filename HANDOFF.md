@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 150. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 151. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -846,6 +846,39 @@ Down always means the smaller state. Up always means the next step.
   underneath. Two language toggles side by side would also be two answers to one question.
 - FAST in the drawer and FAST in the transcribe row are the same preference read twice. Neither keeps
   a copy, so they cannot disagree.
+
+### The utility row, and AUTO. Shipped at build 151
+
+The armed strip drew `ENG SLOW speak` as plain text. Marko circled all three in red. Three changes:
+
+- **They are keys now**, using the same `ThemedKey` the feature row uses. Drawn as labels they looked
+  like a readout, which is exactly wrong for three things whose entire purpose is being pressed.
+- **`speak` is gone.** A word that only explains the other words is read once and then occupies the
+  row forever.
+- **A third key, AUTO or MANUAL.** MANUAL is the two-press form from build 150. AUTO gives the single
+  press back: volume up records at once, no row first.
+
+**Each key names what it IS, not what pressing it would do.** It says `SLOW` while the slow path is
+in use. The other convention, where a button advertises what it will switch you to, is the one that
+makes people press twice to find out which way round it is. State first: the tap is discoverable, the
+state is not. No lit styling, because there is no off; `HR` is not "Croatian is enabled", it is "you
+are in Croatian".
+
+**THE THREE KEYS STAY ON SCREEN WHILE RECORDING, AND THIS IS WHAT MAKES AUTO SAFE.** Marko asked for
+one row rather than a screen to change to, and the reason is sharper than tidiness: AUTO removes the
+armed strip entirely. If the keys lived only there, turning AUTO on would hide the only way to turn
+it off and the way back would be a settings screen. On the recording strip, a recording that started
+before he was ready is cancelled with the button beside them and MANUAL is already under his thumb.
+
+They appear only in `Recording`, not in the other states. Transcribing is the strip reporting rather
+than offering, and a request in flight cannot be made faster or moved to another language by pressing
+anything.
+
+`MaRecordingLanguage`, the text badge added at build 147, was deleted: the `ENG` key replaced it and
+two implementations of one idea is how they drift.
+
+The full key map is now three rows deep and still symmetric. Up is the next step, down is the smaller
+state. In AUTO the first row of that table simply does not happen.
 
 ### Next: retranscribe
 
