@@ -79,7 +79,6 @@ fun MaFeatureRowScreen() = FlorisScreen {
         val prefs by FlorisPreferenceStore
         val scope = rememberCoroutineScope()
         val storedRaw by prefs.dictate.maFeatureRowOrder.collectAsState()
-        val rowHeightPx = with(LocalDensity.current) { ROW_HEIGHT.toPx() }
 
         // The order being dragged, held locally so the row under the finger moves at the speed of the
         // finger. Writing to the preference on every pixel would round-trip through the datastore and
