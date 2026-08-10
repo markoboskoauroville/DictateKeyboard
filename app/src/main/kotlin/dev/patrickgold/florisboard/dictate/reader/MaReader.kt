@@ -14,11 +14,13 @@ import android.content.Context
 import android.media.MediaPlayer
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaKeyRingStore
+import dev.patrickgold.florisboard.dictate.MaScreenshot
 import dev.patrickgold.florisboard.dictate.MaUsageStore
 import dev.patrickgold.florisboard.dictate.provider.MaKeyRing
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.dictate.provider.MaSpeechify
 import dev.patrickgold.florisboard.dictate.provider.MaUsage
+import dev.patrickgold.florisboard.dictate.provider.MaVision
 import dev.mantraproductions.reader.engine.MaAlign
 import dev.mantraproductions.reader.engine.MaEdgeVoice
 import dev.mantraproductions.reader.engine.MaText
@@ -260,6 +262,72 @@ object MaReader {
      * language, a dead key, no signal, means the same thing to the caller, which is that the Edge
      * path should run. A sentence must never fail to be spoken because the newer voice was busy.
      */
+    /**
+     * Reads the newest screenshot and loads its words, ready to be spoken.
+     *
+     * The whole point of the reader is text that arrived from somewhere else, and a great deal of
+     * what Marko wants read is a picture of words rather than words: a message thread, a PDF page, a
+     * post that will not let itself be selected. The clipboard cannot carry those. A screenshot can.
+     *
+     * The capture is his own: power and volume down, a gesture his thumbs already know. This reads
+     * what that produced. See [MaScreenshot] for why that beats capturing the screen ourselves.
+     *
+     * Groq keys go through the same ring as everything else, so a refused key rolls to the next one
+     * and is remembered as refused. [onResult] is called on the main thread with a sentence to
+     * announce, or null when the text loaded and reading has begun.
+     */
+    fun readScreenshot(context: Context, onResult: (String?) -> Unit) {
+        scope.launch {
+            val failure = runCatching { readScreenshotBlocking(context) }
+                .getOrElse { "Could not read the screenshot" }
+            withContext(Dispatchers.Main) { onResult(failure) }
+        }
+    }
+
+    /** Returns null on success, or the sentence to show the user. */
+    private suspend fun readScreenshotBlocking(context: Context): String? {
+        if (!MaScreenshot.hasPermission(context)) {
+            return "Allow access to photos in Settings, then press again"
+        }
+        val shot = MaScreenshot.newest(context)
+            ?: return "No screenshot found. Take one with power and volume down."
+
+        val stored = prefs.dictate.providerAccounts.get().getOrEmpty(GROQ_ID).apiKey
+        val keys = MaKeys.split(stored).filter { it.isNotBlank() }
+        if (keys.isEmpty()) return "Add a Groq key in Settings, API keys"
+
+        val ring = MaKeyRingStore.load(context, GROQ_ID)
+        var learned = ring
+        val read = runCatching {
+            MaKeyRing.run(keys, ring) { key ->
+                MaVision.read(
+                    key = key,
+                    imageBase64 = shot.base64,
+                    mimeType = shot.mimeType,
+                )
+            }
+        }.onSuccess { learned = it.second }
+            .onFailure { if (it is MaKeyRing.NoKeyLeft) learned = it.ring }
+            .getOrNull()
+        if (learned !== ring) MaKeyRingStore.save(context, GROQ_ID, learned)
+
+        val text = read?.first?.text.orEmpty()
+        if (text.isBlank()) {
+            // Distinguishing these two matters: one is a bad key and the other is a screenshot with
+            // nothing in it worth reading, and they send Marko to completely different places.
+            return if (read == null) "Groq could not be reached" else "No text found in that screenshot"
+        }
+        withContext(Dispatchers.Main) {
+            load(context, text)
+            play(context)
+        }
+        // Said out loud only when the screenshot is old enough that it may not be the one meant.
+        return if (shot.ageMinutes >= 10) "Reading a screenshot from ${shot.ageMinutes} minutes ago" else null
+    }
+
+    /** The provider the screenshot reader uses, named once. */
+    private const val GROQ_ID = "groq"
+
     private fun speak(context: Context, sentence: String, clip: File): List<MaAlign.Token>? {
         if (!voice.startsWith("en-", ignoreCase = true)) return null
         val stored = prefs.dictate.providerAccounts.get().getOrEmpty(SPEECHIFY_ID).apiKey

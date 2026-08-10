@@ -58,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -134,7 +135,14 @@ fun HomeScreen() = FlorisScreen {
         // Named FlorisBoard rather than Dictate because these particular screens are FlorisBoard's,
         // by Patrick Goldinger. Dictate, the fork this came from, contributed the dictation screens,
         // and those are on the Mantra side because they have been rebuilt almost entirely.
-        var tab by rememberSaveable { mutableStateOf(0) }
+        // ALWAYS opens on Mantra, tab 0.
+        //
+        // It was rememberSaveable, which restores whichever tab was last looked at, so one visit to
+        // the FlorisBoard tab made every later visit open there. That is the right behaviour for a
+        // scroll position and the wrong one for this: the FlorisBoard tab is what survived from the
+        // fork and is visited to check something once, while Mantra is the app. Plain remember, so
+        // entering settings always lands on the side that is his.
+        var tab by remember { mutableStateOf(0) }
         TabRow(selectedTabIndex = tab) {
             Tab(
                 selected = tab == 0,

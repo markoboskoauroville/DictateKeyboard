@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 154. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 155. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -978,6 +978,56 @@ a moving meter and a running clock would be a third thing competing for the eye.
 paused, which is the one thing a steady lamp has to get right or it lies for as long as the pause
 lasts. The signal is `recording?.paused`, not the meter's own `active` flag, which also covers being
 frozen for a discard.
+
+### Reading a screenshot: build 155
+
+A camera key in the LLL reader, beside paste. It takes the **newest file in the screenshots folder**,
+sends it to Groq's vision model, and loads the words into the reader, which starts speaking them.
+
+**Why the newest file rather than capturing the screen.** A keyboard cannot screenshot anything.
+Android offers `MediaProjection`, which shows a consent dialog per session and needs a foreground
+service and a trampoline activity, or an `AccessibilityService`, which is permission to read
+everything on screen forever. Marko's own suggestion avoids both: he presses power and volume down, a
+gesture already in his thumbs, and the app reads what that produced. One ordinary media permission,
+granted once, and it keeps him in control of what gets sent.
+
+**THE PROMPT IS THE FEATURE.** A phone screenshot is mostly not the thing being read. His own example
+had a status bar above and a third of the screen taken by this very keyboard, and a model told only
+"read this image" returns `12:01`, `4G+`, `71`, `ENG FAST ab AB Ab`, `AP 1 2 3` woven into the
+sentences. Read aloud that is unusable. `MaVision.OCR_PROMPT` therefore spends most of its words on
+what NOT to return, ordered from the most common intrusion down, and a test asserts the exclusions
+are still in it so they cannot drift out.
+
+Two clauses look like fussiness and are not. **No preamble**, because every instruction-tuned model
+opens with "Here is the text from the image:" and that sentence then gets spoken every single time.
+**Nothing when there is nothing**, because a model asked for text in a picture with no prose invents a
+description of the picture instead, and a description is exactly what this is not for.
+
+`extractText` strips the preamble as well, but **only when the first line is short and ends in a
+colon**. A naive "drop the first line" eats the opening sentence of an article, which is the case the
+tests pin down.
+
+- **Groq was in the registry but not in `presets`**, so `byId("groq")` returned null and
+  `MaKeyImport` silently dropped every Groq key in the keyring file. Listing it is what gives it the
+  key manager, the multi-key ring, the tester and the parser, all at once. Its keys are `gsk_`, which
+  now has its own shape so it cannot be filed elsewhere.
+- **Downscaling is not an optimisation.** These models bill by image tiles, and a 1080×2400 screenshot
+  costs several times more tokens than the text needs. The long edge goes to 1568 via `inSampleSize`
+  during decode, so the full-size bitmap never exists in memory, which matters in a keyboard process.
+- **`DATE_ADDED` is in SECONDS.** Reading it as milliseconds puts every screenshot in 1970 and makes
+  the staleness warning fire on all of them.
+- The folder is found by **bucket name** first and path second, because `Pictures/Screenshots`,
+  `DCIM/Screenshots` and vendor variants all disagree, and bucket name is what they agree on.
+- The permission differs by version: `READ_MEDIA_IMAGES` from 33, `READ_EXTERNAL_STORAGE` below.
+  Asking for the wrong one is a permission the system silently never grants, which looks exactly like
+  a missing screenshot.
+
+### Settings opens on Mantra: build 155
+
+`HomeScreen`'s tab was `rememberSaveable`, so one visit to the FlorisBoard tab made every later visit
+open there. Right for a scroll position, wrong here: FlorisBoard is what survived the fork and is
+visited once to check something, Mantra is the app. Plain `remember` now, so settings always lands on
+his side.
 
 ### Next: retranscribe
 

@@ -920,6 +920,7 @@
     <string name="lll__pause">Pause</string>
     <string name="lll__voice">Change voice</string>
     <string name="lll__load">Read what is on the clipboard</string>
+    <string name="lll__screenshot">Screenshot</string>
     <string name="lll__nothing_to_read">Nothing on the clipboard to read</string>
     <string name="lll__preparing">Preparing the voice…</string>
     <string name="ma__feature_file">Transcribe an audio file</string>

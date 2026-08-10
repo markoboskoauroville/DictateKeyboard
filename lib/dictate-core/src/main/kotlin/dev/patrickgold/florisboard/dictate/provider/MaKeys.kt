@@ -43,6 +43,16 @@ object MaKeys {
      */
     private val SPEECHIFY = Regex("sk_[0-9A-Za-z_-]{16,}")
 
+    /**
+     * Groq keys: `gsk_` then the body.
+     *
+     * Note the order this is tested in below matters, because `gsk_...` also satisfies the loose
+     * tier and, read carelessly, looks like a Speechify `sk_` key with a letter in front. It does not
+     * match [SPEECHIFY], which anchors on `sk_` at a token boundary, but the resemblance is close
+     * enough to be worth a line here.
+     */
+    private val GROQ = Regex("gsk_[0-9A-Za-z_-]{20,}")
+
     /** Fallback shape for anything else key-like, used only when no hex key is present. */
     private val LOOSE = Regex("[A-Za-z0-9._-]{24,120}")
 
@@ -181,6 +191,7 @@ object MaKeys {
         if (providerId != "gemini" && GEMINI.matches(token)) return true
         if (providerId != "openai" && providerId != "groq" && OPENAI.matches(token)) return true
         if (providerId != "speechify" && SPEECHIFY.matches(token)) return true
+        if (providerId != "groq" && GROQ.matches(token)) return true
         return false
     }
 
@@ -198,6 +209,7 @@ object MaKeys {
                 add("OpenAI")
             }
             if (providerId != "speechify" && SPEECHIFY.containsMatchIn(text)) add("Speechify")
+            if (providerId != "groq" && GROQ.containsMatchIn(text)) add("Groq")
         }
         if (others.isEmpty()) return null
         return "No key for this provider in that file. Keys for " +
@@ -222,6 +234,7 @@ object MaKeys {
             "anthropic" -> ANTHROPIC
             "assemblyai" -> HEX32
             "speechify" -> SPEECHIFY
+            "groq" -> GROQ
             "openai", "groq" -> OPENAI
             else -> null
         }

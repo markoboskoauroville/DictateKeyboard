@@ -34,6 +34,10 @@
         tools:ignore="ScopedStorage"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
+    <!-- Reading the newest screenshot so the LLL reader can speak a picture of words. From 33 the
+         storage permission above no longer covers images and this is the one that does; below 33 it
+         is the other way round, which is why both are here and each is capped. See MaScreenshot. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"/>
 

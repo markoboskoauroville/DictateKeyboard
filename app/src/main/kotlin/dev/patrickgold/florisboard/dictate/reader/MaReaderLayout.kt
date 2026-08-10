@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material3.Text
@@ -191,6 +192,22 @@ fun MaReaderLayout(modifier: Modifier = Modifier) {
             // Reading starts on its own from here, so this is usually the only key touched at all.
             ReaderKey(Icons.Default.ContentPaste, stringRes(R.string.lll__load), keyMod) {
                 loadFromClipboard(context, clipboardManager, announceEmpty = true)
+            }
+
+            // The screenshot, beside paste, because they are the same act: bring in words from
+            // somewhere else. Paste takes them when they can be selected and this takes them when
+            // they cannot, which covers a message thread, a PDF page, a post that refuses selection.
+            //
+            // It reads the newest file in the screenshots folder rather than capturing anything: the
+            // capture is power and volume down, a gesture already in the thumbs. See MaScreenshot.
+            ReaderKey(Icons.Default.PhotoCamera, stringRes(R.string.lll__screenshot), keyMod) {
+                // Said before the wait, not after. This is the one key here that goes to the network
+                // and can take a few seconds, and a key that appears to do nothing gets pressed
+                // again, which sends a second screenshot and pays for it.
+                context.showShortToastSync("Reading the screenshot")
+                MaReader.readScreenshot(context) { message ->
+                    if (message != null) context.showShortToastSync(message)
+                }
             }
 
             ReaderKey(

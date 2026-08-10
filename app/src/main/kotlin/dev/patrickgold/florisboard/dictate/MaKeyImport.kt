@@ -40,7 +40,7 @@ object MaKeyImport {
         "speechify" to "the reader's voice, English, with word timings",
         "anthropic" to "rewording and the restyle prompts",
         "gemini" to "optional second engine, transcription and rewording",
-        "groq" to "optional fast fallback",
+        "groq" to "reads the words out of a screenshot",
         "openai" to "optional, for custom endpoints",
     )
 

@@ -439,8 +439,13 @@ object ProviderRegistry {
     // MA TWIST: three cloud providers plus the on-device engine, nothing else. LOCAL is the
     // offline Whisper/Parakeet runner that needs no key and no network. The other presets stay
     // defined above so code referencing them by name still compiles, they are simply not offered.
+    // GROQ joins the list at build 155 so the reader can send a screenshot to its vision model. The
+    // preset existed all along but was never listed, and byId() only looks here, which meant
+    // MaKeyImport skipped it silently: Groq keys in the keyring file were parsed and then dropped
+    // because no preset answered to "groq". Being in this list is what gives it the key manager, the
+    // multi key ring, the tester and the parser, all of it for free.
     val presets: List<ProviderPreset> = listOf(
-        ASSEMBLYAI, SPEECHIFY, GEMINI, ANTHROPIC, LOCAL,
+        ASSEMBLYAI, SPEECHIFY, GROQ, GEMINI, ANTHROPIC, LOCAL,
     )
 
     fun byId(id: String): ProviderPreset? = presets.firstOrNull { it.id == id }
