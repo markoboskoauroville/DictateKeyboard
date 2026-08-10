@@ -379,6 +379,10 @@ class FlorisImeService : LifecycleInputMethodService() {
         // If the service is torn down mid-recording, finalize and keep the audio and release the mic
         // instead of leaking the (process-scoped) recorder (issue #147). No-op when not recording.
         dev.patrickgold.florisboard.dictate.DictateController.stashRecordingOnHide(this)
+        // The drawer never survives the keyboard closing. It is a thing opened a moment before
+        // speaking, so finding it still open on the next unrelated visit would make the next volume
+        // up start recording when the user expected it to open something.
+        dev.patrickgold.florisboard.dictate.DictateController.maDisarm()
         unregisterReceiver(wallpaperChangeReceiver)
         FlorisImeServiceReference = WeakReference(null)
     }
@@ -668,8 +672,9 @@ class FlorisImeService : LifecycleInputMethodService() {
     /**
      * Volume keys as dictation controls, while the keyboard is on screen.
      *
-     * Volume up starts a recording and, pressed again, ends it and sends it. Volume down throws away
-     * a recording in progress. Both are things otherwise done by looking at the screen and aiming a
+     * Volume up opens the drawer; pressed again it starts recording; pressed again it sends. Volume
+     * down undoes whichever of those just happened: it closes the drawer, or throws away a recording
+     * in progress. Both are things otherwise done by looking at the screen and aiming a
      * thumb, and both are exactly what a physical button is good for: speaking into a phone held
      * away from the face, or in the dark. Cancel belongs on a hardware key for the same reason start
      * does; realising mid-sentence that the wrong thing is being said is precisely the moment the
@@ -679,8 +684,9 @@ class FlorisImeService : LifecycleInputMethodService() {
      * reachable by the microphone key and the keyboard key, both of which are on screen whenever it
      * is wanted, so the hardware key was spending itself on something already easy.
      *
-     * With nothing recording, volume down does nothing at all rather than guessing at some other
-     * meaning. A key that does one thing and is silent otherwise can be trusted in the dark.
+     * With nothing recording and the drawer shut, volume down still toggles the language, which is
+     * the one setting worth reaching for without looking. Down always means the smaller state: no
+     * recording, no drawer, or the other language.
      *
      * Deliberately scoped to while the input view is shown. An input method only receives key events
      * then, and taking the volume keys away from the whole system would be indefensible; the moment
@@ -694,9 +700,28 @@ class FlorisImeService : LifecycleInputMethodService() {
         if (!isInputViewShown) return false
         return when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP -> {
-                // One button, both ends of a dictation: onMicClick already starts when idle and
-                // stops and sends when recording, which is the behaviour asked for.
-                DictateController.onMicClick(this)
+                // TWO PRESSES, and the first one records nothing.
+                //
+                // It used to start on the first press. Marko's change: the first press opens the
+                // drawer and the second starts. The gap between them is where the language and fast
+                // or slow get checked, and those two are wrong in the same expensive way, which is
+                // that you find out after the words are already said. A recording made in the wrong
+                // language is not a setting to correct, it is a thing to say again.
+                //
+                // Nothing else moves. The second press starts, the press after that sends, and
+                // volume up mid recording still sends, because onMicClick already means "the other
+                // end of whatever is happening".
+                //
+                // The on-screen microphone deliberately does NOT gain the extra press. A thumb
+                // already on the key can see the strip it is about to change, so the press before
+                // the press buys nothing there and would cost a tap on the commonest path.
+                val idle = DictateController.state.value is DictateController.UiState.Idle
+                if (idle && !DictateController.maArmed.value) {
+                    DictateController.maArm()
+                } else {
+                    DictateController.maDisarm()
+                    DictateController.onMicClick(this)
+                }
                 true
             }
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
@@ -707,10 +732,14 @@ class FlorisImeService : LifecycleInputMethodService() {
                 // speaking and checking it means looking at the screen. The bar is held briefly on a
                 // discard so it reads as something that happened rather than the recording simply
                 // vanishing.
-                if (DictateController.state.value is DictateController.UiState.Recording) {
-                    DictateController.cancelRecording(keepBarForMs = 600L)
-                } else {
-                    MaLanguage.toggle(this)
+                when {
+                    DictateController.state.value is DictateController.UiState.Recording ->
+                        DictateController.cancelRecording(keepBarForMs = 600L)
+                    // Backing out of the drawer. The same key cancels a recording, so in both cases
+                    // volume down undoes whatever volume up just did, which is the only mapping
+                    // worth having on a key pressed without looking.
+                    DictateController.maArmed.value -> DictateController.maDisarm()
+                    else -> MaLanguage.toggle(this)
                 }
                 true
             }

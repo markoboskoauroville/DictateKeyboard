@@ -63,6 +63,10 @@ fun maSmartbarHasContent(): Boolean {
     // and an error that vanishes with the row it is written on is an error nobody reads.
     val dictateState by DictateController.state.collectAsState()
 
+    // The drawer, opened by the first press of volume up. Nothing is recording yet, so the state
+    // above is still Idle; this is the whole reason the strip has to ask about both.
+    val armed by DictateController.maArmed.collectAsState()
+
     // The contextual prompt strip replaces the candidates while text is selected, so it counts as
     // content too. Derived as a distinct boolean so this does not recompose on every keystroke,
     // only when the selection actually flips, exactly as the Smartbar itself does it.
@@ -85,6 +89,7 @@ fun maSmartbarHasContent(): Boolean {
         prompts.isNotEmpty()
 
     return alwaysOn ||
+        armed ||
         candidates.isNotEmpty() ||
         inlineSuggestions.isNotEmpty() ||
         dictateState !is DictateController.UiState.Idle ||

@@ -67,6 +67,7 @@ import dev.patrickgold.florisboard.dictate.DictatePromptsLayout
 import dev.patrickgold.florisboard.dictate.ui.DictatePromptRow
 import dev.patrickgold.florisboard.dictate.ui.DictatePromptStrip
 import dev.patrickgold.florisboard.dictate.ui.DictateSmartbarUi
+import dev.patrickgold.florisboard.dictate.ui.MaArmedSmartbarUi
 import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionButton
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionsRow
@@ -212,6 +213,8 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
 
     // Drives the in-Smartbar dictation indicator (recording timer / transcribing spinner).
     val dictateState by DictateController.state.collectAsState()
+    // The drawer opened by the first press of volume up: idle, but with something to show.
+    val armed by DictateController.maArmed.collectAsState()
 
     // Contextual prompt chip strip: shown in place of the candidates while text is selected and
     // rewording is enabled (roadmap 4.3). The selection flag is derived as a distinct boolean so the
@@ -283,7 +286,10 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
             val exitTransition = if (shouldAnimate) HorizontalExitTransition else NoExitTransition
             val isDictating = dictateState !is DictateController.UiState.Idle
             this@CenterContent.AnimatedVisibility(
-                visible = !expanded && !isDictating && !showDictatePromptStrip,
+                // The drawer takes the strip while it is open. Without this the candidates draw
+                // underneath it and the two overlap, because these are siblings in a Box rather than
+                // branches of a when.
+                visible = !expanded && !isDictating && !showDictatePromptStrip && !armed,
                 enter = enterTransition,
                 exit = exitTransition,
             ) {
@@ -316,6 +322,17 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
                 exit = exitTransition,
             ) {
                 DictateSmartbarUi(dictateState)
+            }
+            // The drawer. Volume up opens it without starting anything, so the language and fast or
+            // slow can be checked in the second before speaking; the next press starts. Armed is
+            // still Idle, so it is deliberately not one of the branches above: every one of those
+            // asks what is happening, and the answer here is nothing, yet.
+            this@CenterContent.AnimatedVisibility(
+                visible = !isDictating && armed,
+                enter = enterTransition,
+                exit = exitTransition,
+            ) {
+                MaArmedSmartbarUi()
             }
         }
     }
@@ -432,8 +449,11 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
                 // there are suggestions to sit beside, which is while typing. That is the moment the
                 // suggestion language matters, so the indicator is present precisely when it means
                 // something and gone when it would only be taking up a row.
+                // Also stands down while the drawer is open, which carries its own language toggle.
+                // Two of them side by side would be two answers to one question, and the one further
+                // from the thumb would be the one pressed.
                 val isDictatingNow = dictateState !is DictateController.UiState.Idle
-                if (!isDictatingNow) {
+                if (!isDictatingNow && !armed) {
                     LanguageToggle()
                 }
                 CenterContent()

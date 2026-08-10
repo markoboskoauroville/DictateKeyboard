@@ -82,6 +82,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,6 +105,7 @@ import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaLanguage
+import dev.patrickgold.florisboard.dictate.MaSpeed
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateRecordingAnimation
 import dev.patrickgold.florisboard.dictate.PushToTalkPhase
@@ -111,6 +113,7 @@ import dev.patrickgold.florisboard.dictate.provider.DictateApiException
 import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.jetpref.datastore.model.collectAsState
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import org.florisboard.lib.compose.stringRes
 import org.florisboard.lib.snygg.ui.SnyggIcon
@@ -138,6 +141,28 @@ private val RecordingRed = Color(0xFF9B3B33)
  * - Transcribing: a spinning icon + label, or a retry indicator while a transient failure is retried.
  * - Error: the error message, auto-cleared after a few seconds.
  */
+/**
+ * The armed strip, drawn by the Smartbar while the drawer is open and nothing is recording.
+ *
+ * A sibling of [DictateSmartbarUi] rather than a branch inside it, because that one switches on
+ * [DictateController.UiState] and armed is not a state: it is Idle with a drawer open. Keeping it
+ * out here is what stops "armed" having to be smuggled into an enum that every `is Idle` check in
+ * the app depends on meaning exactly what it says.
+ */
+@Composable
+fun MaArmedSmartbarUi(modifier: Modifier = Modifier) {
+    SnyggRow(
+        elementName = FlorisImeUi.SmartbarSharedActionsRow.elementName,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 6.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MaPreRecordBar()
+    }
+}
+
 @Composable
 fun DictateSmartbarUi(state: DictateController.UiState, modifier: Modifier = Modifier) {
     // Centred while recording as well.
@@ -445,6 +470,47 @@ private fun RecordingAudioDot(paused: Boolean, frozen: Boolean = false) {
             .clip(CircleShape)
             .background(RecordingRed),
     )
+}
+
+/**
+ * The drawer: what volume up opens, and what the next press will act on.
+ *
+ * Two controls and a word. The language, fast or slow, and `speak` to say what the key in your hand
+ * does next. Those two settings are here and nothing else is, because they are the only two that
+ * cannot be corrected afterwards: a recording made in the wrong language is not a setting to fix, it
+ * is a thing to say again, and the choice between paying three times as much for an answer that
+ * arrives at once is only a choice before the audio goes up.
+ *
+ * Centred as one group, like the recording bar it is about to become, so the strip does not appear to
+ * jump when the recording actually starts.
+ *
+ * It draws the same two toggles the transcribe view's quick row draws, in the same words, because
+ * they are the same two decisions. FAST here and FAST there must never be able to disagree, so both
+ * read and write the same preference and neither keeps a copy.
+ */
+@Composable
+private fun MaPreRecordBar() {
+    val prefs by FlorisPreferenceStore
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val speed by prefs.dictate.maSpeed.collectAsState()
+
+    MaRecordingLanguage()
+    Spacer(modifier = Modifier.width(10.dp))
+    SnyggText(
+        text = if (speed == MaSpeed.FAST) "FAST" else "SLOW",
+        modifier = Modifier
+            .clickable {
+                scope.launch {
+                    prefs.dictate.maSpeed.set(if (speed == MaSpeed.FAST) MaSpeed.SLOW else MaSpeed.FAST)
+                }
+            }
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    )
+    Spacer(modifier = Modifier.width(10.dp))
+    // What the next press does, in one word. The drawer is opened without looking, by a thumb on the
+    // side of the phone, so the strip has to answer "and now what" without being studied.
+    SnyggText(text = "speak")
 }
 
 /**

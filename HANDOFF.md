@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 144. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 150. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -805,6 +805,47 @@ Things to settle while building it, none of them guessable:
 - **The armed state has to look different from recording**, or the first press will read as a failed
   recording. Colour is reserved for state in this app, which is exactly what this is: gold armed,
   red recording, and those two are already the established pair on the keyboard's own modifier keys.
+
+### The drawer: volume up opens, volume up again starts. Shipped at build 150
+
+Volume up used to start recording on the first press. It now takes two: the first **opens the
+drawer**, the second **starts**. The gap between them is the point. The drawer holds the language and
+FAST or SLOW, and those two are the only settings in the app that cannot be corrected afterwards: a
+recording made in the wrong language is not a setting to fix, it is a thing to say again.
+
+The strip it opens is the one that became dynamic at build 147. That work is what makes this possible
+at all: there is now a row that exists only when it has something to say, so opening it costs nothing
+when it is shut.
+
+**Armed is a flag, not a fifth `UiState`, and this is the decision to preserve.** Every `is
+UiState.Idle` check in the app and the interface means "nothing is happening", and armed **is**
+nothing happening: no recorder is open, no audio exists, nothing needs cancelling. A fifth state
+would have made every one of those checks silently wrong in a way the compiler could not catch. What
+armed changes is only which strip is drawn and what the next press means. For the same reason
+`MaArmedSmartbarUi` is a sibling of `DictateSmartbarUi` rather than a branch inside it: that one
+switches on the state, and this is not one.
+
+The full mapping, which is now symmetric and is the reason it can be used without looking:
+
+| | volume up | volume down |
+|---|---|---|
+| idle, shut | open the drawer | switch language |
+| idle, drawer open | start recording | close the drawer |
+| recording | send | throw it away |
+
+Down always means the smaller state. Up always means the next step.
+
+- **No timeout, deliberately.** A drawer that closes itself while being read is a drawer that has to
+  be opened twice, and the press before the press is the entire feature.
+- **It never survives the keyboard closing** (`onWindowHidden`), or the next unrelated volume up
+  would start recording where the user expected it to open something.
+- **The on-screen microphone does not gain the extra press.** A thumb already on that key can see the
+  strip it is about to change, so the extra press buys nothing and costs a tap on the commonest path.
+- **The candidates branch and the language badge both stand down while armed.** The strip's branches
+  are siblings in a `Box`, not arms of a `when`, so anything not explicitly stood down draws
+  underneath. Two language toggles side by side would also be two answers to one question.
+- FAST in the drawer and FAST in the transcribe row are the same preference read twice. Neither keeps
+  a copy, so they cannot disagree.
 
 ### Next: retranscribe
 
