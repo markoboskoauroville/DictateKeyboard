@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 159. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 160. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -1129,6 +1129,43 @@ those positions is something a thumb had learned.
 **Still to build, and it is the larger half:** his own bar in the keyboard view stripped to a single
 button, the voice-prompt history box beside him with summary above and prompt below, long press to
 open an editor, and the model picker in his settings.
+
+### The Little Man and his train: build 160
+
+Marko's picture and it is the right one. The assistant is the **locomotive**, fixed at the head of the
+row, and every instruction ever spoken to him is a **wagon** behind it. The wagons scroll
+horizontally; the locomotive never does, because it is the button that starts a new instruction and a
+head that can be scrolled off is a head lost behind its own wagons.
+
+**His old bar is gone entirely.** It held a chip per saved prompt with the live-prompt button among
+them: two kinds of button on one strip, one meaning "run this saved thing" and the other "run this
+thing I said". That is a row which has to be read to be used. There is one Little Man now, and
+everything else on the row is history.
+
+Each wagon carries the **summary above and the prompt below**, which is the only arrangement that
+works at that size: the summary is what the eye lands on, the prompt underneath confirms it is the
+right one. Fixed width, because carriages of varying width give the eye nothing to count along.
+
+- **Tap runs it. Long press opens the editor.** The editor exists for a narrow and real reason: these
+  instructions arrived by voice, voice gets one word wrong, and re-speaking a whole sentence to fix a
+  word is exactly what it saves.
+- **An edited wagon keeps its place in the line**, which is why `MaLittleMan.edited` exists rather
+  than a remove followed by a `remember`. `remember` moves an instruction to the front, which is
+  right when it is *used* and wrong when it is *corrected*. Editing is not using.
+- **The summary is computed locally, never asked of the model.** A summary from the assistant would
+  cost a request, a wait and money per prompt, to label something Marko said himself and will
+  recognise from its own first words. Leading filler is stripped first, or six wagons all read
+  "Can you" and the list has to be read rather than scanned.
+- **He has no model of his own.** The row in his settings shows and sets the *same* preference the
+  rewording screen uses, because everything he does goes through the rewording path. A second setting
+  would be a second answer to one question and the two would disagree the first time either moved.
+
+`MaLivePrompts` gained `replaceAll`, since editing must write the whole line back in order and every
+other path there either prepends or removes.
+
+`DictatePromptRow` is now a one-line delegate to `MaLittleManTrain`. Its `prompts` and `rows`
+parameters are unused and kept only so the two call sites and the height arithmetic in
+`FlorisImeSizing` did not have to change in the same push; the next person here can drop them.
 
 ### Next: retranscribe
 

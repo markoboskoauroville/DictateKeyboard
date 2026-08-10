@@ -64,6 +64,19 @@ object MaLivePrompts {
         prefs.dictate.maLivePromptHistory.set(kept.joinToString(SEP))
     }
 
+    /**
+     * Writes the whole line back, in the order given.
+     *
+     * Needed because editing a wagon must keep its place, and every other path here either prepends
+     * or removes. Trimmed, emptied of blanks and de-duplicated on the way in, so a caller cannot
+     * store a list this object would not have produced itself.
+     */
+    suspend fun replaceAll(instructions: List<String>) {
+        val prefs by FlorisPreferenceStore
+        val kept = instructions.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(LIMIT)
+        prefs.dictate.maLivePromptHistory.set(kept.joinToString(SEP))
+    }
+
     /** Forgets one instruction. */
     suspend fun forget(instruction: String) {
         val prefs by FlorisPreferenceStore

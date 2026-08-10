@@ -103,14 +103,15 @@ fun DictatePromptStrip(
 }
 
 /**
- * The always-on rewording prompt row (ROW layout mode): a horizontally scrollable strip pinned above
- * the Smartbar, so every prompt is one tap away without opening a panel. The live-prompt chip is the
- * first (leftmost) entry, followed by the user's saved prompts.
+ * The Little Man's row in the keyboard view: **one assistant and his train of past instructions**.
  *
- * Behavior depends on the dictation state:
- *  - idle: tapping a prompt reword-applies it immediately (live chip records a spoken instruction);
- *  - recording/transcribing: tapping a prompt *queues* it (toggle) to be applied in tap order once the
- *    transcript is ready, and the queued chips are highlighted in the accent color.
+ * It used to be a chip per saved prompt with the live-prompt button among them, and all of that is
+ * gone at build 160 on Marko's instruction. Two kinds of button on one strip, one meaning "run this
+ * saved thing" and the other "run this thing I said", was a row that had to be read to be used.
+ *
+ * The row itself is now [MaLittleManTrain]. The signature keeps its [prompts] and [rows] parameters
+ * so the two call sites and the height arithmetic in FlorisImeSizing do not have to change in the
+ * same breath; both are unused and the next person to touch this can drop them.
  */
 @Composable
 fun DictatePromptRow(
@@ -118,107 +119,7 @@ fun DictatePromptRow(
     modifier: Modifier = Modifier,
     rows: Int = 1,
 ) {
-    val context = LocalContext.current
-    val inputFeedbackController = LocalInputFeedbackController.current
-    val dictateState by DictateController.state.collectAsState()
-    val pending by DictateController.pendingPrompts.collectAsState()
-    val livePromptActive by DictateController.livePromptActive.collectAsState()
-    val isCapturing = dictateState is DictateController.UiState.Recording ||
-        dictateState is DictateController.UiState.Transcribing
-    // Slightly taller than the Smartbar and with a touch of vertical padding inside each chip, so the
-    // always-on row gives the prompt buttons a more comfortable hit area than the compact Smartbar.
-    val rowChipPadding = PaddingValues(horizontal = 2.dp, vertical = 5.dp)
-
-    // Long press on the little man: the instructions already spoken, so a sentence sent yesterday
-    // does not have to be said again today. Tapping one runs it against whatever is in the field now.
-    var recallOpen by remember { mutableStateOf(false) }
-    val liveChip: @Composable () -> Unit = {
-        Box {
-            DictateLivePromptChip(
-                onClick = { DictateController.startLivePrompt(context) },
-                onLongPress = { if (MaLivePrompts.list().isNotEmpty()) recallOpen = true },
-                modifier = Modifier.padding(horizontal = 1.5.dp),
-                tapPadding = rowChipPadding,
-                // Compact row: show only the voice icon to leave more width for the saved-prompt chips.
-                iconOnly = true,
-                // Accent-highlight it while its recording runs (tap again to stop — startLivePrompt toggles).
-                highlighted = livePromptActive,
-            )
-            DropdownMenu(expanded = recallOpen, onDismissRequest = { recallOpen = false }) {
-                MaLivePrompts.list().forEach { instruction ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = instruction,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        onClick = {
-                            recallOpen = false
-                            DictateController.applyRememberedPrompt(context, instruction)
-                        },
-                    )
-                }
-            }
-        }
-    }
-    val promptChip: @Composable (PromptModel) -> Unit = { prompt ->
-        DictatePromptChip(
-            icon = dictatePromptIcon(prompt),
-            text = prompt.name.orEmpty(),
-            onClick = {
-                // While a recording/transcription is in flight, queue the prompt instead of applying it;
-                // otherwise apply it right away. Queuing is a silent state change, so give a haptic tick.
-                if (isCapturing) {
-                    inputFeedbackController.keyPress()
-                    DictateController.togglePendingPrompt(prompt)
-                } else {
-                    DictateController.applyPrompt(context, prompt)
-                }
-            },
-            onLongClick = { editPromptInSettings(prompt) },
-            modifier = Modifier.padding(horizontal = 1.5.dp),
-            tapPadding = rowChipPadding,
-            highlighted = pending.any { it.id == prompt.id },
-        )
-    }
-
-    // One shared scroll state so the (optional) second row scrolls together with the first — it's really
-    // one strip that happens to wrap onto two lines (#194), not two independently-scrolling rows.
-    val scrollState = rememberScrollState()
-    if (rows >= 2) {
-        // Reading order stays left-to-right: the live chip + first half on the top line, the rest below;
-        // both lines share the one horizontal scroll.
-        val half = (prompts.size + 1) / 2
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .horizontalScroll(scrollState)
-                .padding(horizontal = 4.dp),
-        ) {
-            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                liveChip()
-                prompts.take(half).forEach { promptChip(it) }
-            }
-            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                prompts.drop(half).forEach { promptChip(it) }
-            }
-        }
-    } else {
-        SnyggRow(
-            elementName = FlorisImeUi.SmartbarSharedActionsRow.elementName,
-            modifier = modifier
-                .fillMaxWidth()
-                .height(FlorisImeSizing.smartbarHeight * 1.25f)
-                .horizontalScroll(scrollState)
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            liveChip()
-            prompts.forEach { promptChip(it) }
-        }
-    }
+    MaLittleManTrain(modifier = modifier)
 }
 
 /**

@@ -16,6 +16,12 @@
 
 package dev.patrickgold.florisboard.app.settings.dictate
 
+import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.app.LocalNavController
+import dev.patrickgold.jetpref.datastore.model.collectAsState
+import dev.patrickgold.jetpref.datastore.ui.Preference
+import dev.patrickgold.florisboard.app.Routes
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -84,6 +90,29 @@ fun DictateLittleManScreen() = FlorisScreen {
         fun persist(model: PromptModel) {
             scope.launch(Dispatchers.IO) { db.update(model) }
         }
+
+        // His model, shown here and set here, but stored in the SAME preference the rewording screen
+        // uses. He has no separate model and must not get one: everything he does goes through the
+        // rewording path, so a second setting would be a second answer to one question and the two
+        // would disagree the first time either was touched.
+        val navController = LocalNavController.current
+        val prefs by FlorisPreferenceStore
+        val model by prefs.dictate.rewordingModel.collectAsState()
+        Preference(
+            icon = Icons.Default.AutoAwesome,
+            title = "Model",
+            summary = model.ifBlank { "Not set" },
+            onClick = { navController.navigate(Routes.Settings.DictateRewording) },
+        )
+
+        Text(
+            text = "The little man's history lives on the keyboard itself: hold him to speak an " +
+                "instruction, and every one you have spoken becomes a card beside him. Hold a card " +
+                "there to edit it.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(16.dp),
+        )
 
         Text(
             text = "The buttons beside the little man. The label is what the button says; the prompt " +
