@@ -57,7 +57,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun ThemeScreen() = FlorisScreen {
     title = stringRes(R.string.settings__theme__title)
-    previewFieldVisible = true
 
     val context = LocalContext.current
     val navController = LocalNavController.current

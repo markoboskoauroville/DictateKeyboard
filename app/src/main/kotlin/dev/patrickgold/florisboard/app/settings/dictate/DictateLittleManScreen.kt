@@ -63,7 +63,6 @@ import kotlinx.coroutines.withContext
 @Composable
 fun DictateLittleManScreen() = FlorisScreen {
     title = "Little man"
-    previewFieldVisible = true
     iconSpaceReserved = false
 
     content {

@@ -74,7 +74,6 @@ private val POPULAR_TITLES = setOf(
 @Composable
 fun SettingsSearchScreen() = FlorisScreen {
     title = stringRes(R.string.settings__search__title)
-    previewFieldVisible = false
 
     val navController = LocalNavController.current
     val context = LocalContext.current

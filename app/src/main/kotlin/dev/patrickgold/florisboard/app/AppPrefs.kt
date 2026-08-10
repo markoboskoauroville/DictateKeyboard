@@ -866,6 +866,27 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
          * which matters because this row is the one that survives when every other row is folded
          * away: it is the only route to backspace, to enter and to the microphone.
          */
+        /**
+         * Which view the keyboard shows when it appears: `keyboard`, `dictation`, or `last`.
+         *
+         * Default `keyboard`, on Marko's instruction, replacing a rule that always reopened whichever
+         * view was last used. That rule was written to stop a view being lost, and it does, but it
+         * also means the keyboard that appears depends on something done in a different app an hour
+         * ago. A keyboard is opened to type far more often than to dictate, and a text field that
+         * greets you with a microphone is a surprise every time it happens.
+         *
+         * `last` keeps the old behaviour for anyone who wants it, which is why this is a setting and
+         * not a deletion.
+         */
+        val maOpeningView = string(
+            key = "dictate__ma_opening_view",
+            default = "keyboard",
+        )
+        /** The Mantra settings list order, as comma separated ids. See MaSettingsOrder. */
+        val maSettingsOrder = string(
+            key = "dictate__ma_settings_order",
+            default = "",
+        )
         val maFeatureRowOrder = string(
             key = "dictate__ma_feature_row_order",
             default = MaFeatureOrder.DEFAULT_RAW,

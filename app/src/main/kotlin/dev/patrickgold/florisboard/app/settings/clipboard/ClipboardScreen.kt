@@ -37,7 +37,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun ClipboardScreen() = FlorisScreen {
     title = stringRes(R.string.settings__clipboard__title)
-    previewFieldVisible = true
 
     content {
         SwitchPreference(

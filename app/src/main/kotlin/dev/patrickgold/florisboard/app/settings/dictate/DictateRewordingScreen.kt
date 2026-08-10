@@ -57,7 +57,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun DictateRewordingScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__rewording_title)
-    previewFieldVisible = true
     iconSpaceReserved = true
 
     val prefs by FlorisPreferenceStore

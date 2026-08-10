@@ -76,7 +76,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun DictateFloatingButtonScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__floating_button_title)
-    previewFieldVisible = true
     iconSpaceReserved = true
 
     val prefs by FlorisPreferenceStore

@@ -116,7 +116,6 @@ fun DictatePromptsScreen(
     // "Little man", after the button it fills. The prompts here are what its row offers, so the
     // screen is named for the thing rather than for the abstraction.
     title = "Little man"
-    previewFieldVisible = true
     scrollable = false
 
     val context = LocalContext.current

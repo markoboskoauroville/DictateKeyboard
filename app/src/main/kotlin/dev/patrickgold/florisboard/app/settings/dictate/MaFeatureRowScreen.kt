@@ -5,15 +5,12 @@
 
 package dev.patrickgold.florisboard.app.settings.dictate
 
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,22 +38,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaFeatureKey
 import dev.patrickgold.florisboard.dictate.MaFeatureOrder
 import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 import dev.patrickgold.jetpref.datastore.model.collectAsState
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 /** The height of one row. Fixed on purpose; see [MaFeatureRowScreen] for why the drag depends on it. */
-private val ROW_HEIGHT = 64.dp
+val ROW_HEIGHT = 64.dp
 
 /**
  * Settings, Mantra, Feature row: the nine keys, in a list, dragged into whatever order suits.
@@ -82,7 +74,6 @@ private val ROW_HEIGHT = 64.dp
 @Composable
 fun MaFeatureRowScreen() = FlorisScreen {
     title = "Feature row"
-    previewFieldVisible = true
 
     content {
         val prefs by FlorisPreferenceStore
@@ -113,71 +104,15 @@ fun MaFeatureRowScreen() = FlorisScreen {
 
         Spacer(Modifier.height(12.dp))
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            order.forEachIndexed { index, key ->
-                val isDragging = draggingIndex == index
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(ROW_HEIGHT)
-                        // The dragged row rides above its neighbours and follows the finger; the rest
-                        // sit still and let the list re-sort underneath it.
-                        .zIndex(if (isDragging) 1f else 0f)
-                        .offset { IntOffset(0, if (isDragging) dragOffset.roundToInt() else 0) }
-                        .pointerInput(index, order) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = {
-                                    draggingIndex = index
-                                    dragOffset = 0f
-                                },
-                                onDrag = { change, amount ->
-                                    change.consume()
-                                    dragOffset += amount.y
-                                    val from = draggingIndex ?: return@detectDragGesturesAfterLongPress
-                                    // One row height of travel is one place moved. Rounding rather
-                                    // than truncating means the swap happens when the dragged row is
-                                    // more than halfway over its neighbour, which is the moment the
-                                    // eye expects it rather than a full row later.
-                                    val moved = (dragOffset / rowHeightPx).roundToInt()
-                                    if (moved != 0) {
-                                        val target = (from + moved).coerceIn(0, order.size - 1)
-                                        if (target != from) {
-                                            order = MaFeatureOrder.move(order, from, target)
-                                            draggingIndex = target
-                                            // Keep the offset relative to the NEW slot, or the row
-                                            // jumps a full height at the moment it changes places.
-                                            dragOffset -= (target - from) * rowHeightPx
-                                        }
-                                    }
-                                },
-                                onDragEnd = {
-                                    draggingIndex = null
-                                    dragOffset = 0f
-                                    scope.launch {
-                                        prefs.dictate.maFeatureRowOrder.set(MaFeatureOrder.serialize(order))
-                                    }
-                                },
-                                onDragCancel = {
-                                    // A cancelled drag still keeps the order it had reached. The
-                                    // rows have already moved on screen, and snapping them back
-                                    // would read as the app undoing something the user watched
-                                    // happen.
-                                    draggingIndex = null
-                                    dragOffset = 0f
-                                    scope.launch {
-                                        prefs.dictate.maFeatureRowOrder.set(MaFeatureOrder.serialize(order))
-                                    }
-                                },
-                            )
-                        },
-                ) {
-                    MaFeatureRowItem(
-                        position = index + 1,
-                        key = key,
-                        lifted = isDragging,
-                    )
-                }
-            }
+        MaReorderableColumn(
+            items = order,
+            rowHeight = ROW_HEIGHT,
+            onMove = { from, to -> order = MaFeatureOrder.move(order, from, to) },
+            onSettled = {
+                scope.launch { prefs.dictate.maFeatureRowOrder.set(MaFeatureOrder.serialize(order)) }
+            },
+        ) { index, key, lifted ->
+            MaFeatureRowItem(position = index + 1, key = key, lifted = lifted)
         }
 
         Spacer(Modifier.height(16.dp))

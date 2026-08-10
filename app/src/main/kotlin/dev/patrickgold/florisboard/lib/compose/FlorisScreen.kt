@@ -69,7 +69,6 @@ interface FlorisScreenScope {
 
     var navigationIconVisible: Boolean
 
-    var previewFieldVisible: Boolean
 
     var scrollable: Boolean
 
@@ -90,7 +89,6 @@ private class FlorisScreenScopeImpl : FlorisScreenScope {
     override var title: String by mutableStateOf("")
     override var titleContent: (@Composable () -> Unit)? by mutableStateOf(null)
     override var navigationIconVisible: Boolean by mutableStateOf(true)
-    override var previewFieldVisible: Boolean by mutableStateOf(false)
     override var scrollable: Boolean by mutableStateOf(true)
     override var iconSpaceReserved: Boolean by mutableStateOf(true)
 
@@ -131,12 +129,10 @@ private class FlorisScreenScopeImpl : FlorisScreenScope {
     @Composable
     fun Render() {
         val context = LocalContext.current
-        val previewFieldController = LocalPreviewFieldController.current
         val colorScheme = MaterialTheme.colorScheme
 
         SideEffect {
             val window = (context as Activity).window
-            previewFieldController?.isVisible = previewFieldVisible
             window.statusBarColor = Color.Transparent.toArgb()
             if (AndroidVersion.ATLEAST_API29_Q) {
                 window.navigationBarColor = Color.Transparent.toArgb()

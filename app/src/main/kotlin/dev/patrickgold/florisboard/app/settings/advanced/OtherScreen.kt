@@ -57,7 +57,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun OtherScreen() = FlorisScreen {
     title = stringRes(R.string.settings__other__title)
-    previewFieldVisible = false
 
     val navController = LocalNavController.current
     val context = LocalContext.current

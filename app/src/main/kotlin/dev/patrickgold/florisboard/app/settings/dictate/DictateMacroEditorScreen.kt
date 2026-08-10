@@ -69,7 +69,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun DictateMacroEditorScreen() = FlorisScreen {
     title = "Macro bar"
-    previewFieldVisible = true
     iconSpaceReserved = false
 
     val prefs by FlorisPreferenceStore

@@ -59,7 +59,6 @@ import java.util.Locale
 @Composable
 fun DictateRecoveredScreen() = FlorisScreen {
     title = "Recovered recordings"
-    previewFieldVisible = false
     iconSpaceReserved = false
 
     content {

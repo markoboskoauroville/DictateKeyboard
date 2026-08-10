@@ -88,7 +88,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun DictatePromptLibraryScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__prompt_library_title)
-    previewFieldVisible = false
     scrollable = false
 
     val context = LocalContext.current

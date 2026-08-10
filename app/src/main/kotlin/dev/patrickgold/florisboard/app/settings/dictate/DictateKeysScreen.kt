@@ -150,7 +150,6 @@ private const val LOCAL_PROVIDER_ID = "local"
 @Composable
 fun DictateKeysScreen() = FlorisScreen {
     title = "API keys"
-    previewFieldVisible = false
     iconSpaceReserved = false
 
     val prefs by FlorisPreferenceStore

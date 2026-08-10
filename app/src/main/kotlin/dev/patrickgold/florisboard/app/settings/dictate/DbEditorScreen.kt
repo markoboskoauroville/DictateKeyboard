@@ -77,7 +77,6 @@ import dev.patrickgold.florisboard.lib.compose.FlorisScreen
 @Composable
 fun DbEditorScreen() = FlorisScreen {
     title = "db"
-    previewFieldVisible = false
     iconSpaceReserved = false
 
     val prefs by FlorisPreferenceStore

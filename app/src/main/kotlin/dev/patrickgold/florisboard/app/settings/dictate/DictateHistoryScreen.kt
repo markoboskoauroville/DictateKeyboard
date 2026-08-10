@@ -111,7 +111,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun DictateHistoryScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__history_title)
-    previewFieldVisible = false
     scrollable = false
 
     val context = LocalContext.current

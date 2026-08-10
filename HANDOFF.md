@@ -1041,6 +1041,55 @@ open there. Right for a scroll position, wrong here: FlorisBoard is what survive
 visited once to check something, Mantra is the app. Plain `remember` now, so settings always lands on
 his side.
 
+### The settings list becomes Marko's: build 156
+
+The Mantra tab is now a **flat, user-ordered list**, edited in Settings, Mantra, Edit settings order,
+with the same hold-and-drag as the feature row.
+
+**The group headings went with the grouping, and that is the real change.** "Start here",
+"Dictation", "Saved", "Keyboard extras" were a filing system, and a filing system contradicts a free
+order: the moment History can sit above Recording, a heading saying *Saved* is either a lie or a
+cage. Flat is the honest version and on a phone it is also two screens shorter.
+
+The default order is Marko's instruction read literally, custom things first: Little man, Feature
+row, Opening view, Macro bar, db, API keys, then the dictation settings in the order a dictation
+happens in, then the two archives, then the editor for this list last. `SETTINGS_ORDER` is **in** the
+list rather than pinned outside it, because it is a link like any other and someone who wants it at
+the top should be able to drag it there.
+
+- **The drag is now shared.** `MaReorderableColumn` was extracted from the feature row editor when
+  this needed exactly the same thing. Two copies of drag arithmetic is how two lists quietly stop
+  behaving alike, one swapping where the other shifts, and nobody able to say why.
+- **`MaSettingsEntry.route` is an extension, not a field.** The enum lives in the settings package
+  and `Routes` knows every screen in the app; putting a route on the enum would drag the whole
+  navigation graph into a file whose only job is names and an order.
+- `parse` always returns every entry, so a settings screen added later appears at the bottom for
+  people who have already arranged the list rather than being invisible to exactly them.
+- **`Icons.Default.Reorder` has no proven import in this repo**, so `Tune` is used instead. Same
+  check that caught `KeyboardReturn` at build 151: grep the repo for each icon, and treat zero
+  existing usages as the signal.
+
+### Removed at build 156
+
+- **"Try the keyboard" and `TryItScreen`, entirely.** Setup's finish button used to land there; it
+  now lands on the settings list. A page whose only purpose was to be typed into was a stop on the
+  way to somewhere, and the keyboard is reachable from any text field on the phone.
+- **The "Try out your setup" preview bar, entirely**, including the `previewFieldVisible` property on
+  `FlorisScreen` and its 33 assignments across the settings screens. `PreviewKeyboardField` itself
+  survives because `ThemeEditorScreen` builds its own; what is gone is the app-wide bar.
+
+### Opening view: build 156
+
+Settings, Mantra, Opening view. **Defaults to the typing keyboard**, replacing a rule that always
+reopened whichever view was last used. That rule existed to stop a view being lost and it does, but
+it also makes the keyboard that appears depend on something done in another app an hour ago, and a
+text field that greets you with a live microphone is a surprise every time it happens.
+
+`last` is still offered, so this is a setting rather than a deletion. The reader is deliberately not
+an option: it is entered to read something specific, and a keyboard that opens into it is a keyboard
+that cannot type. An unreadable preference falls to the keyboard, never to dictation: one is a
+surprise, the other is a live microphone.
+
 ### Next: retranscribe
 
 Robust sending is done. What remains of that item is the manual half: a circular back-arrow, in

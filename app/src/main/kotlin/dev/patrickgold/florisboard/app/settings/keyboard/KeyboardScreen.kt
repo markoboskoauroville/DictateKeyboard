@@ -42,7 +42,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun KeyboardScreen() = FlorisScreen {
     title = stringRes(R.string.settings__keyboard__title)
-    previewFieldVisible = true
 
     val navController = LocalNavController.current
 

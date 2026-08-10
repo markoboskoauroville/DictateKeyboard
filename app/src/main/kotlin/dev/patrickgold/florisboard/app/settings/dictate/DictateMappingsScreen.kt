@@ -55,7 +55,6 @@ fun DictateMappingsScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__mappings_title)
     // Show the keyboard-test field so find-and-replace rules can be tried out live (same as the other
     // dictate settings pages).
-    previewFieldVisible = true
     iconSpaceReserved = true
 
     val prefs by FlorisPreferenceStore

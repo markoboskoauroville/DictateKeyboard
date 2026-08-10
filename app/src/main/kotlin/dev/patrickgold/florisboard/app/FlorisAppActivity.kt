@@ -53,7 +53,6 @@ import dev.patrickgold.florisboard.appContext
 import dev.patrickgold.florisboard.cacheManager
 import dev.patrickgold.florisboard.lib.FlorisLocale
 import dev.patrickgold.florisboard.lib.compose.LocalPreviewFieldController
-import dev.patrickgold.florisboard.lib.compose.PreviewKeyboardField
 import dev.patrickgold.florisboard.lib.compose.rememberPreviewFieldController
 import dev.patrickgold.florisboard.lib.util.AppVersionUtils
 import dev.patrickgold.jetpref.datastore.model.collectAsState
@@ -239,7 +238,6 @@ class FlorisAppActivity : ComponentActivity() {
                         navController = navController,
                         startDestination = startDestination,
                     )
-                    PreviewKeyboardField(previewFieldController)
                 }
                 // Show the "What's new" surface once after an update (only when setup is complete, so
                 // it never competes with the onboarding flow). For the 5.0 milestone this is the

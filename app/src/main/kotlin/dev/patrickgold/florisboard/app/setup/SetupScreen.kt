@@ -365,9 +365,11 @@ private fun PreferenceUiScope<FlorisPreferenceModel>.steps(
             }
             StepButton(label = stringRes(R.string.setup__finish_up__finish_btn)) {
                 scope.launch { this@steps.prefs.internal.isImeSetUp.set(true) }
-                // Into the test field, not the settings list. Finishing setup is the moment somebody
-                // wants to know whether it works, and a page of options answers a different question.
-                navController.navigate(Routes.Settings.TryIt) {
+                // Into the settings list. This used to land on a blank test page, which was removed
+                // at build 156 along with the preview bar: the keyboard is now reachable from any
+                // text field on the phone, and a page whose only purpose was to be typed into was a
+                // stop on the way to somewhere.
+                navController.navigate(Routes.Settings.Home) {
                     popUpTo(Routes.Setup.Screen) {
                         inclusive = true
                     }

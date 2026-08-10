@@ -95,7 +95,6 @@ object Restore {
 @Composable
 fun RestoreScreen() = FlorisScreen {
     title = stringRes(R.string.backup_and_restore__restore__title)
-    previewFieldVisible = false
 
     val navController = LocalNavController.current
     val context = LocalContext.current

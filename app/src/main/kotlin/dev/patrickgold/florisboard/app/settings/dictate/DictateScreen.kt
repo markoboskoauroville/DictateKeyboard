@@ -111,7 +111,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun DictateFormattingScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__formatting_title)
-    previewFieldVisible = true
     iconSpaceReserved = true
 
     val prefs by FlorisPreferenceStore
@@ -163,7 +162,6 @@ fun DictateFormattingScreen() = FlorisScreen {
 @Composable
 fun DictateRecordingScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__recording_group)
-    previewFieldVisible = true
     iconSpaceReserved = true
 
     val prefs by FlorisPreferenceStore
@@ -338,7 +336,6 @@ fun DictateRecordingScreen() = FlorisScreen {
 @Composable
 fun DictateOutputScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__output_group)
-    previewFieldVisible = true
     iconSpaceReserved = true
 
     val prefs by FlorisPreferenceStore
@@ -413,7 +410,6 @@ fun DictateOutputScreen() = FlorisScreen {
 @Composable
 fun DictateLayoutScreen() = FlorisScreen {
     title = stringRes(R.string.dictate__layout_title)
-    previewFieldVisible = true
     iconSpaceReserved = true
 
     val prefs by FlorisPreferenceStore

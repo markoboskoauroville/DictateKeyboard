@@ -535,26 +535,26 @@ class FlorisImeService : LifecycleInputMethodService() {
     }
 
     /**
-     * The panel a fresh editor field should open in.
+     * The view a fresh editor field opens in.
      *
-     * A pin is an explicit instruction and beats everything else. With nothing pinned the older
-     * behaviour still applies: reopen whichever view was last used, unless that is switched off, in
-     * which case the typing keyboard is the plain default.
+     * Settings, Mantra, Opening view. **Defaults to the typing keyboard** at build 156, replacing a
+     * rule that always reopened the last view used. That rule existed to stop a view being lost, and
+     * it does, but it also makes the keyboard that appears depend on something done in another app an
+     * hour ago, and a text field that greets you with a live microphone is a surprise every time.
      */
-    /**
-     * The view a fresh editor field opens in: whichever was last used, always.
-     *
-     * No pin and no setting. Both existed to answer the question this answers by itself, and a
-     * control that has to be found and pressed to stop losing a view is a worse answer than never
-     * losing it. Only the two main views are remembered; clipboard, emoji and history panels are
-     * transient and would be wrong to reopen on an unrelated field.
-     */
-    private fun maRestoredUiMode(): ImeUiMode {
-        return if (prefs.dictate.maLastImeUiMode.get() == ImeUiMode.TRANSCRIBE.name) {
+    private fun maRestoredUiMode(): ImeUiMode = when (prefs.dictate.maOpeningView.get()) {
+        "dictation" -> ImeUiMode.TRANSCRIBE
+        // The old behaviour, kept for anyone who wants it: reopen whichever view was last used. Only
+        // the two main views are remembered; clipboard, emoji and history are transient and would be
+        // wrong to reopen on an unrelated field.
+        "last" -> if (prefs.dictate.maLastImeUiMode.get() == ImeUiMode.TRANSCRIBE.name) {
             ImeUiMode.TRANSCRIBE
         } else {
             ImeUiMode.TEXT
         }
+        // "keyboard", and anything unrecognised. An unreadable preference must open the typing
+        // keyboard rather than the dictation view: one is a surprise, the other is a live microphone.
+        else -> ImeUiMode.TEXT
     }
 
     override fun onWindowHidden() {

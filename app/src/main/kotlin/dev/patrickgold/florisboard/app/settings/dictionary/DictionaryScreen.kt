@@ -30,7 +30,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun DictionaryScreen() = FlorisScreen {
     title = stringRes(R.string.settings__dictionary__title)
-    previewFieldVisible = true
 
     val navController = LocalNavController.current
 

@@ -48,7 +48,6 @@ class DebugOnPurposeCrashException : Exception(
 @Composable
 fun DevtoolsScreen() = FlorisScreen {
     title = stringRes(R.string.devtools__title)
-    previewFieldVisible = true
 
     val context = LocalContext.current
     val navController = LocalNavController.current

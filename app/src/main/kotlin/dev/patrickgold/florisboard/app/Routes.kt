@@ -50,7 +50,6 @@ import dev.patrickgold.florisboard.app.ext.ExtensionListScreen
 import dev.patrickgold.florisboard.app.ext.ExtensionListScreenType
 import dev.patrickgold.florisboard.app.ext.ExtensionViewScreen
 import dev.patrickgold.florisboard.app.settings.HomeScreen
-import dev.patrickgold.florisboard.app.settings.TryItScreen
 import dev.patrickgold.florisboard.app.settings.search.SettingsSearchScreen
 import dev.patrickgold.florisboard.app.settings.about.AboutScreen
 import dev.patrickgold.florisboard.app.settings.about.DataAttributionsScreen
@@ -63,6 +62,8 @@ import dev.patrickgold.florisboard.app.settings.advanced.RestoreScreen
 import dev.patrickgold.florisboard.app.settings.clipboard.ClipboardScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateMappingsScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateKeysScreen
+import dev.patrickgold.florisboard.app.settings.MaOpeningViewScreen
+import dev.patrickgold.florisboard.app.settings.MaSettingsOrderScreen
 import dev.patrickgold.florisboard.app.settings.dictate.MaFeatureRowScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateLittleManScreen
 import dev.patrickgold.florisboard.app.settings.dictate.DictateMacroEditorScreen
@@ -136,8 +137,12 @@ object Routes {
         object MaFeatureRow
 
         @Serializable
-        @Deeplink("settings/tryit")
-        object TryIt
+        @Deeplink("settings/dictate/settingsorder")
+        object MaSettingsOrder
+
+        @Serializable
+        @Deeplink("settings/dictate/openingview")
+        object MaOpeningView
 
         @Serializable
         @Deeplink("settings/dictate/littleman")
@@ -373,10 +378,11 @@ object Routes {
             composableWithDeepLink(Settings.Home::class) { HomeScreen() }
             composableWithDeepLink(Settings.Search::class) { SettingsSearchScreen() }
 
-            composableWithDeepLink(Settings.TryIt::class) { TryItScreen() }
             composableWithDeepLink(Settings.DictateLittleMan::class) { DictateLittleManScreen() }
             composableWithDeepLink(Settings.DictateKeys::class) { DictateKeysScreen() }
             composableWithDeepLink(Settings.MaFeatureRow::class) { MaFeatureRowScreen() }
+            composableWithDeepLink(Settings.MaSettingsOrder::class) { MaSettingsOrderScreen() }
+            composableWithDeepLink(Settings.MaOpeningView::class) { MaOpeningViewScreen() }
             composableWithDeepLink(Settings.DictateRecovered::class) { DictateRecoveredScreen() }
             composableWithDeepLink(Settings.DictateMacros::class) { DictateMacroEditorScreen() }
             composableWithDeepLink(Settings.DictateMappings::class) { DictateMappingsScreen() }

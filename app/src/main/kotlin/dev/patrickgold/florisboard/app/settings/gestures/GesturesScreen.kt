@@ -37,7 +37,6 @@ import org.florisboard.lib.compose.stringRes
 @Composable
 fun GesturesScreen() = FlorisScreen {
     title = stringRes(R.string.settings__gestures__title)
-    previewFieldVisible = true
 
     content {
         // General gestures are gone. Swipe up for shift, down to hide, left and right to change

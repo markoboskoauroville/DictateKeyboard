@@ -148,7 +148,6 @@ object Backup {
 @Composable
 fun BackupScreen() = FlorisScreen {
     title = stringRes(R.string.backup_and_restore__back_up__title)
-    previewFieldVisible = false
 
     val navController = LocalNavController.current
     val context = LocalContext.current

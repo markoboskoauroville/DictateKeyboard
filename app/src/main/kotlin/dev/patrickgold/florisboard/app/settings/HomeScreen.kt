@@ -84,7 +84,6 @@ import org.florisboard.lib.compose.stringRes
 fun HomeScreen() = FlorisScreen {
     title = stringRes(R.string.settings__home__title)
     navigationIconVisible = false
-    previewFieldVisible = true
 
     val navController = LocalNavController.current
     val context = LocalContext.current
@@ -157,89 +156,23 @@ fun HomeScreen() = FlorisScreen {
         }
 
         if (tab == 0) {
-            PreferenceGroup(title = "Start here") {
+            // FLAT AND ORDERED BY MARKO, not grouped by me. See MaSettingsOrder.
+            //
+            // The headings that used to be here, Start here, Dictation, Saved, Keyboard extras, were
+            // a filing system, and a filing system contradicts a free order: the moment History can
+            // sit above Recording, a heading saying "Saved" is either a lie or a cage. Flat is the
+            // honest version and on a phone it is also two screens shorter.
+            val storedOrder by prefs.dictate.maSettingsOrder.collectAsState()
+            val entries = remember(storedOrder) { MaSettingsOrder.parse(storedOrder) }
+            entries.forEach { entry ->
                 Preference(
-                    icon = Icons.Default.Edit,
-                    title = "Try the keyboard",
-                    summary = "A blank page to dictate into",
-                    onClick = { navController.navigate(Routes.Settings.TryIt) },
-                )
-                Preference(
-                    icon = Icons.Default.Key,
-                    title = "API keys",
-                    summary = "Import, test and manage every key",
-                    onClick = { navController.navigate(Routes.Settings.DictateKeys) },
-                )
-            }
-
-            PreferenceGroup(title = "Keyboard") {
-                Preference(
-                    icon = Icons.Default.DragHandle,
-                    title = "Feature row",
-                    summary = "Drag the nine keys into the order you want",
-                    onClick = { navController.navigate(Routes.Settings.MaFeatureRow) },
-                )
-            }
-
-            PreferenceGroup(title = "Dictation") {
-                Preference(
-                    icon = Icons.Default.Mic,
-                    title = stringRes(R.string.dictate__recording_group),
-                    onClick = { navController.navigate(Routes.Settings.DictateRecording) },
-                )
-                Preference(
-                    icon = Icons.Default.RecordVoiceOver,
-                    title = "Little man",
-                    summary = "His buttons, their prompts, and what he remembers",
-                    onClick = { navController.navigate(Routes.Settings.DictateLittleMan) },
-                )
-                Preference(
-                    icon = Icons.Default.AutoAwesome,
-                    title = stringRes(R.string.dictate__rewording_title),
-                    onClick = { navController.navigate(Routes.Settings.DictateRewording) },
-                )
-                Preference(
-                    icon = Icons.Default.Spellcheck,
-                    title = stringRes(R.string.dictate__mappings_title),
-                    onClick = { navController.navigate(Routes.Settings.DictateMappings) },
-                )
-                Preference(
-                    icon = Icons.Default.Keyboard,
-                    title = stringRes(R.string.dictate__output_group),
-                    onClick = { navController.navigate(Routes.Settings.DictateOutput) },
-                )
-            }
-
-            PreferenceGroup(title = "Saved") {
-                Preference(
-                    icon = Icons.Default.History,
-                    title = stringRes(R.string.dictate__history_title),
-                    summary = "Every transcription, with its audio",
-                    onClick = { navController.navigate(Routes.Settings.DictateHistory) },
-                )
-                Preference(
-                    icon = Icons.Default.History,
-                    title = "Recovered recordings",
-                    summary = "Audio saved when a recording was cut short",
-                    onClick = { navController.navigate(Routes.Settings.DictateRecovered) },
-                )
-            }
-
-            PreferenceGroup(title = "Keyboard extras") {
-                // db first in this group, and with the longest summary of anything here, because it
-                // is the one screen that changes what the keyboard looks like and the one panel that
-                // has no button of its own left on the keyboard.
-                Preference(
-                    icon = Icons.Default.Dashboard,
-                    title = "db",
-                    summary = "The dashboard: what is on it, and how to open it",
-                    onClick = { navController.navigate(Routes.Settings.DbEditor) },
-                )
-                Preference(
-                    icon = Icons.Default.Bolt,
-                    title = "Macro bar",
-                    summary = "Buttons that type text or press keys",
-                    onClick = { navController.navigate(Routes.Settings.DictateMacros) },
+                    icon = entry.icon,
+                    title = entry.title,
+                    summary = entry.summary,
+                    // navigate() takes the route object itself; entry.route is typed Any so the
+                    // enum stays free of the navigation graph, and the cast is safe because every
+                    // branch of that when returns a @Serializable route object.
+                    onClick = { navController.navigate(entry.route) },
                 )
             }
         } else {
