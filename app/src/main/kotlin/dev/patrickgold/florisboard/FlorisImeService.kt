@@ -379,10 +379,6 @@ class FlorisImeService : LifecycleInputMethodService() {
         // If the service is torn down mid-recording, finalize and keep the audio and release the mic
         // instead of leaking the (process-scoped) recorder (issue #147). No-op when not recording.
         dev.patrickgold.florisboard.dictate.DictateController.stashRecordingOnHide(this)
-        // The drawer never survives the keyboard closing. It is a thing opened a moment before
-        // speaking, so finding it still open on the next unrelated visit would make the next volume
-        // up start recording when the user expected it to open something.
-        dev.patrickgold.florisboard.dictate.DictateController.maDisarm()
         unregisterReceiver(wallpaperChangeReceiver)
         FlorisImeServiceReference = WeakReference(null)
     }
@@ -684,9 +680,8 @@ class FlorisImeService : LifecycleInputMethodService() {
      * reachable by the microphone key and the keyboard key, both of which are on screen whenever it
      * is wanted, so the hardware key was spending itself on something already easy.
      *
-     * With nothing recording and the drawer shut, volume down still toggles the language, which is
-     * the one setting worth reaching for without looking. Down always means the smaller state: no
-     * recording, no drawer, or the other language.
+     * With nothing recording, volume down toggles the language, which is the one setting worth
+     * reaching for without looking.
      *
      * Deliberately scoped to while the input view is shown. An input method only receives key events
      * then, and taking the volume keys away from the whole system would be indefensible; the moment
@@ -700,32 +695,21 @@ class FlorisImeService : LifecycleInputMethodService() {
         if (!isInputViewShown) return false
         return when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP -> {
-                // TWO PRESSES, and the first one records nothing.
+                // ONE press, both ends of a dictation: onMicClick starts when idle and stops and
+                // sends when recording.
                 //
-                // It used to start on the first press. Marko's change: the first press opens the
-                // drawer and the second starts. The gap between them is where the language and fast
-                // or slow get checked, and those two are wrong in the same expensive way, which is
-                // that you find out after the words are already said. A recording made in the wrong
-                // language is not a setting to correct, it is a thing to say again.
+                // It took two for four builds, so the language and fast or slow could be checked
+                // before speaking. Reverted once the pipeline was actually read: BOTH settings are
+                // consulted when the REQUEST IS BUILT, not when recording starts. maUseSyncPath
+                // reads the speed after the resample, where the length and size are facts rather
+                // than intentions, and the language is read in the same place. So either can be
+                // changed at any point up to release, and the second press was charging a tap on the
+                // commonest action in the app to prevent a mistake that is already correctable while
+                // still speaking.
                 //
-                // Nothing else moves. The second press starts, the press after that sends, and
-                // volume up mid recording still sends, because onMicClick already means "the other
-                // end of whatever is happening".
-                //
-                // The on-screen microphone deliberately does NOT gain the extra press. A thumb
-                // already on the key can see the strip it is about to change, so the press before
-                // the press buys nothing there and would cost a tap on the commonest path.
-                // AUTO gives the single press back. The two forms are one preference apart and the
-                // key that flips it lives on the recording strip, so AUTO can always be undone from
-                // inside a recording it started: cancel, press MANUAL, and the drawer is back.
-                val idle = DictateController.state.value is DictateController.UiState.Idle
-                val auto = prefs.dictate.maAutoRecord.get()
-                if (idle && !auto && !DictateController.maArmed.value) {
-                    DictateController.maArm()
-                } else {
-                    DictateController.maDisarm()
-                    DictateController.onMicClick(this)
-                }
+                // If a reason to arm before recording ever comes back, check it against those two
+                // reads first. Both are late on purpose.
+                DictateController.onMicClick(this)
                 true
             }
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
@@ -736,14 +720,10 @@ class FlorisImeService : LifecycleInputMethodService() {
                 // speaking and checking it means looking at the screen. The bar is held briefly on a
                 // discard so it reads as something that happened rather than the recording simply
                 // vanishing.
-                when {
-                    DictateController.state.value is DictateController.UiState.Recording ->
-                        DictateController.cancelRecording(keepBarForMs = 600L)
-                    // Backing out of the drawer. The same key cancels a recording, so in both cases
-                    // volume down undoes whatever volume up just did, which is the only mapping
-                    // worth having on a key pressed without looking.
-                    DictateController.maArmed.value -> DictateController.maDisarm()
-                    else -> MaLanguage.toggle(this)
+                if (DictateController.state.value is DictateController.UiState.Recording) {
+                    DictateController.cancelRecording(keepBarForMs = 600L)
+                } else {
+                    MaLanguage.toggle(this)
                 }
                 true
             }

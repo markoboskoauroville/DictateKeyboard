@@ -694,26 +694,6 @@ class OpenAiCompatibleClient(
         }
     }
 
-    /**
-     * Opens the connection to the Sync endpoint before there is anything to send, so the DNS lookup and
-     * the TCP and TLS handshakes happen while the phone is still recording instead of in front of the
-     * transcript. `GET /warm` is unauthenticated, idempotent and safe to call repeatedly; the connection
-     * it leaves behind is only reused by requests through the same client pool and base URL, which is why
-     * this lives on the client rather than anywhere more convenient.
-     *
-     * Never throws. A warm that fails has cost the user nothing: the next request simply pays for its own
-     * handshake, exactly as it would have without this.
-     */
-    suspend fun warmSync() {
-        runCatching {
-            val httpRequest = Request.Builder()
-                .url(config.normalizedBaseUrl + "warm")
-                .header(SYNC_MODEL_HEADER, SYNC_MODEL)
-                .get()
-                .build()
-            executeForBody(httpRequest, maxRetries = 0)
-        }
-    }
 
     /**
      * Google Gemini transcription. Gemini exposes no speech-to-text endpoint; its multimodal models

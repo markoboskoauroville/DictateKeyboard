@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 153. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 154. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -931,6 +931,53 @@ spells it correctly.
 **The app module tests with Kotest `FunSpec`, not `kotlin.test`.** `lib/dictate-core` uses
 `kotlin.test`. Writing an app-module test in the dictate-core style puts it on a classpath that may
 not carry it. Match the module, not the last file you wrote.
+
+### One press again, and the reason the drawer was never needed: build 154
+
+Marko asked whether fast and slow can be chosen **during** a recording, since only the sending
+differs. He is right, and the code says so plainly enough that I should have checked before building
+the two-press drawer at build 150 rather than after.
+
+**Both settings are read when the request is built, not when recording starts.** The pipeline is:
+capture at whatever rate the phone gives, resample to 16 kHz mono WAV, and only **then** decide. The
+comment at that decision has been there all along: fast or slow is chosen there *because by then the
+length and the size are facts about a file instead of intentions*. `maUseSyncPath` reads the speed at
+that moment and the language is read in the same place. FAST sends that WAV as-is, because Sync
+accepts WAV and PCM and nothing else; SLOW encodes it to AAC first and waits for the job.
+
+So either can be changed at any point up to release, and cancel is available throughout. The second
+press was charging a tap on the commonest action in the app to prevent a mistake that is already
+correctable while still speaking. Removed, with `maArmed`, `maArm`, `maDisarm`, the armed strip and
+the `maAutoRecord` preference that had grown alongside it.
+
+**Anything that wants to arm before recording again must be checked against those two reads first.**
+Both are late on purpose.
+
+The two keys survive on the recording strip, which is where they were always doing the real work:
+`ENG`/`HR` and `FAST`/`SLOW`, changeable mid sentence.
+
+- **The sync warm-up is gone.** It was a bare `GET /warm` fired when a recording started. Worth being
+  straight about: it was **not** billing anything, since AssemblyAI charges on audio duration and
+  that request carried none. But it bought only a TLS handshake, and Marko would rather have no
+  request at all until he has finished speaking. `warmSync()` is deleted from `OpenAiCompatibleClient`
+  too rather than left as an unused entry point.
+- **Two-minute stitching is dropped from the plan, on Marko's instruction.** Over two minutes falls
+  back to the slow path, which is what already happens and what the fallback was designed to do. It
+  is no longer an open item.
+
+### The recording lamp: build 154
+
+A red dot before the stopwatch, in `MaRecordMeter`, so both views get it from one change.
+
+A red circle has meant recording on every camera and tape machine for fifty years; a number counting
+up only means recording once it has been read. It obeys the colour rule rather than bending it, since
+colour in this app means state and this is the state itself, in the app's own recording red.
+
+**It does not pulse.** Nothing in this app breathes, and a blinking light on a strip that already has
+a moving meter and a running clock would be a third thing competing for the eye. It goes dark while
+paused, which is the one thing a steady lamp has to get right or it lies for as long as the pause
+lasts. The signal is `recording?.paused`, not the meter's own `active` flag, which also covers being
+frozen for a discard.
 
 ### Next: retranscribe
 

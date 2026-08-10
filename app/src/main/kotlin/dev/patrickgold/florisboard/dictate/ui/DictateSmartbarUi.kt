@@ -142,35 +142,12 @@ private val RecordingRed = Color(0xFF9B3B33)
  * - Transcribing: a spinning icon + label, or a retry indicator while a transient failure is retried.
  * - Error: the error message, auto-cleared after a few seconds.
  */
-/**
- * The armed strip: the three keys, and nothing else, because nothing is happening yet.
- *
- * A sibling of [DictateSmartbarUi] rather than a branch inside it, because that one switches on
- * [DictateController.UiState] and armed is not a state: it is Idle with the row open. Keeping it out
- * here is what stops "armed" having to be smuggled into an enum that every `is Idle` check in the app
- * depends on meaning exactly what it says.
- */
-@Composable
-fun MaArmedSmartbarUi(modifier: Modifier = Modifier) {
-    SnyggRow(
-        elementName = FlorisImeUi.SmartbarSharedActionsRow.elementName,
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 6.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        MaUtilityKeys(modifier = Modifier.fillMaxHeight())
-    }
-}
-
 @Composable
 fun DictateSmartbarUi(state: DictateController.UiState, modifier: Modifier = Modifier) {
-    // The three keys stay while recording. Marko's, and it is the change that makes AUTO safe: in
-    // AUTO there is no armed strip to visit, so if the keys lived only there, turning AUTO on would
-    // hide the only way back and the way out would be a settings screen. Here, a recording that
-    // started before he was ready is cancelled with the button beside them and the setting is
-    // already under his thumb.
+    // The two keys stay while recording, and that is now the whole mechanism rather than half of it.
+    // Both the language and FAST or SLOW are read when the REQUEST IS BUILT, not when recording
+    // starts, so changing either mid sentence really does change what gets sent. That is what made
+    // the two-press drawer unnecessary and it is why these two belong here.
     //
     // ONE ROW, not a screen to change to. Everything about a recording, and everything that decides
     // how it will be treated, is on the same strip at the same time.
@@ -473,14 +450,19 @@ private fun RecordingAudioDot(paused: Boolean, frozen: Boolean = false) {
 }
 
 /**
- * The three decisions, as keys.
+ * The two decisions, as keys.
  *
- * `ENG` or `HR`, `FAST` or `SLOW`, `AUTO` or `MANUAL`. Nothing else, and no label saying what to do
- * next: Marko's, and he is right. A word that only explains the other words is a word that gets read
- * once and then occupies the row forever.
+ * `ENG` or `HR`, `FAST` or `SLOW`. Nothing else, and no label saying what to do next: Marko's, and he
+ * is right. A word that only explains the other words is a word that gets read once and then occupies
+ * the row forever.
+ *
+ * There was a third, `AUTO` or `MANUAL`, which chose between one press and two on the volume key. It
+ * went with the two-press form at build 154. Both of the surviving keys work **during** a recording,
+ * because both settings are read when the request is built rather than when recording starts, and
+ * that is precisely why the drawer they used to sit in was not needed.
  *
  * **Keys, not text.** They were drawn as plain labels and looked like a readout, which is exactly
- * wrong for three things whose whole purpose is being pressed. They now use the same [ThemedKey] the
+ * wrong for things whose whole purpose is being pressed. They now use the same [ThemedKey] the
  * feature row uses, so a thing that can be pressed looks like the other things that can be pressed,
  * and the thumb needs no instruction to find them.
  *
@@ -500,7 +482,6 @@ private fun MaUtilityKeys(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
     val speed by prefs.dictate.maSpeed.collectAsState()
-    val auto by prefs.dictate.maAutoRecord.collectAsState()
     val languageBadge = remember(activeCode) { MaLanguage.badge() }
 
     MaUtilityKey(label = languageBadge, modifier = modifier) { MaLanguage.toggle(context) }
@@ -508,15 +489,6 @@ private fun MaUtilityKeys(modifier: Modifier = Modifier) {
         scope.launch {
             prefs.dictate.maSpeed.set(if (speed == MaSpeed.FAST) MaSpeed.SLOW else MaSpeed.FAST)
         }
-    }
-    // AUTO skips the drawer: the next volume up records at once. MANUAL is the two-press form.
-    //
-    // The reason this key has to live on the recording strip and not only on the armed one is that
-    // AUTO removes the armed strip entirely. If it were only reachable there, turning AUTO on would
-    // hide the only way to turn it off, and the way back would be a settings screen. Here, a
-    // recording that started when it was not wanted is cancelled and the key is right there.
-    MaUtilityKey(label = if (auto) "AUTO" else "MANUAL", modifier = modifier) {
-        scope.launch { prefs.dictate.maAutoRecord.set(!auto) }
     }
 }
 
@@ -526,8 +498,8 @@ private fun MaUtilityKey(label: String, modifier: Modifier = Modifier, onClick: 
     ThemedKey(
         code = KeyCode.NOOP,
         // widthIn rather than a weight: this row is shared with the recording meter, whose width is
-        // not ours to take. A minimum keeps the two short labels from becoming slivers, and MANUAL,
-        // the longest of the six words, decides the natural width.
+        // not ours to take. A minimum keeps the two short labels from becoming slivers, and SLOW,
+        // the longest of the four words, decides the natural width.
         modifier = modifier.widthIn(min = 52.dp),
         onClick = onClick,
     ) { fg ->

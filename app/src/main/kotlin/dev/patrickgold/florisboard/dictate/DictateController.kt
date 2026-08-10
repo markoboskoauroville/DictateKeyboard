@@ -244,41 +244,6 @@ object DictateController {
     private val _maStatus = MutableStateFlow("")
     val maStatus: StateFlow<String> = _maStatus.asStateFlow()
 
-    /**
-     * The drawer: open, nothing recording yet.
-     *
-     * Volume up used to start recording on the first press. Marko's change is that the first press
-     * **opens** and the second **starts**, so the settings that have to be right before speaking can
-     * be checked in the second between deciding to speak and speaking. Those settings are the
-     * language and fast or slow, and both are wrong in the same expensive way: you find out after
-     * the words are already said.
-     *
-     * A separate flag rather than a fifth [UiState], deliberately. Every `is UiState.Idle` check in
-     * this file and in the interface means "nothing is happening", and armed **is** nothing
-     * happening: no recorder is open, no audio exists, nothing needs cancelling. Adding a state
-     * would have made each of those checks silently wrong in a way the compiler could not catch.
-     * What armed changes is only whether a strip is drawn and what the next press means.
-     *
-     * It is not a timer and there is no timeout. A drawer that closes itself while being read is a
-     * drawer that has to be opened twice, and the whole point is the press before the press.
-     */
-    private val _maArmed = MutableStateFlow(false)
-    val maArmed: StateFlow<Boolean> = _maArmed.asStateFlow()
-
-    /** Opens the drawer. Ignored while anything is already happening. */
-    fun maArm() {
-        if (_state.value is UiState.Idle) _maArmed.value = true
-    }
-
-    /**
-     * Closes it. Called on the press that starts recording, on the way out of the keyboard, and by
-     * volume down, which is the same key that cancels a recording and so reads as "back out" in both
-     * cases.
-     */
-    fun maDisarm() {
-        _maArmed.value = false
-    }
-
     private val _prompts = MutableStateFlow<List<PromptModel>>(emptyList())
     /** The user's saved prompts (shared `prompts.db`), refreshed via [refreshPrompts]; drives the Smartbar prompt chips. */
     val prompts: StateFlow<List<PromptModel>> = _prompts.asStateFlow()
@@ -1062,7 +1027,6 @@ object DictateController {
                     // Hide the one-time native VAD/session setup behind the user's recording time.
                     scope.launch { SpeechGate.prewarm(appContext) }
                 }
-                maWarmSyncPath()
                 _state.value = UiState.Recording(SystemClock.elapsedRealtime(), accumulatedMs = seedAccumulatedMs)
                 startAudioLevelSampling()
                 // Highlight the live-prompt chip for the duration of a live-prompt recording.
@@ -3524,30 +3488,6 @@ object DictateController {
      * [file] must already be the resampled WAV, so the length and the size below are measured rather
      * than assumed.
      */
-    /**
-     * Opens the connection to the Sync endpoint the moment recording starts, so the DNS lookup and the
-     * handshakes happen behind the recording instead of in front of the transcript. The whole promise of
-     * the fast path is a round trip of about 134 ms, and a cold TLS handshake on a phone is several times
-     * that, so without this the first dictation of a session would never feel like the number.
-     *
-     * Fire and forget, and deliberately unconditional on length: at this point nobody knows how long the
-     * recording will be, and a warm that goes unused has cost one unauthenticated GET.
-     */
-    private fun maWarmSyncPath() {
-        if (prefs.dictate.maSpeed.get() != MaSpeed.FAST) return
-        val account = transcriptionAccount()
-        if (presetFor(account).transcriptionApi != TranscriptionApi.ASSEMBLYAI_ASYNC) return
-        scope.launch {
-            runCatching {
-                OpenAiCompatibleClient.from(
-                    ProviderRegistry.ASSEMBLYAI_SYNC,
-                    MaKeyRingStore.currentKey(account.providerId, account.apiKey),
-                    proxy = prefs.dictate.dictateProxyConfig(),
-                    trustUserCerts = prefs.dictate.trustUserCertificates.get(),
-                ).warmSync()
-            }
-        }
-    }
 
     private fun maUseSyncPath(preset: ProviderPreset, chatAudio: Boolean, file: File): Boolean {
         if (prefs.dictate.maSpeed.get() != MaSpeed.FAST) return false

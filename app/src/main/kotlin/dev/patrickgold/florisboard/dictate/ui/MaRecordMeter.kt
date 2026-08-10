@@ -20,6 +20,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -197,6 +200,35 @@ private fun MaReadings(sending: Boolean, tint: Color) {
         // being read, which is what a meter is for; a number saying the same thing was one reading
         // too many on a strip this size and it was taking room from the one that matters.
         Spacer(modifier = Modifier.weight(1f))
+        // The red dot, immediately before the clock.
+        //
+        // Marko asked for it and the reason is the right one: a red circle has meant "recording" on
+        // every camera and every tape machine for fifty years, and a number counting up only means
+        // recording once you have read it. The dot is understood before it is read.
+        //
+        // It obeys the colour rule rather than breaking it. Colour in this app means state and
+        // nothing else, and this is the state itself, in the app's own recording red. It does NOT
+        // pulse: nothing in this app breathes, and a blinking light on a bar that already has a
+        // moving meter and a running clock would be the third thing on the strip demanding an eye.
+        //
+        // Dark while paused, because a paused recording is not recording. That is the one thing a
+        // steady lamp has to get right, or it is lying for as long as the pause lasts.
+        Box(
+            modifier = Modifier
+                .padding(end = 8.dp, bottom = 6.dp)
+                .size(11.dp)
+                .background(
+                    // recording?.paused is the honest signal here rather than the meter's own
+                    // "active" flag, which is not in scope in this function and also covers being
+                    // frozen for a discard. Lit means audio is being captured, now.
+                    color = if (sending || recording == null || recording.paused) {
+                        MaRecordLampOff
+                    } else {
+                        MaRecordLampOn
+                    },
+                    shape = CircleShape,
+                ),
+        )
         Text(
             // As large as the row allows. This is the number actually watched during a dictation,
             // and it now has the space the level readout was using.
@@ -218,6 +250,16 @@ private fun MaReadings(sending: Boolean, tint: Color) {
         )
     }
 }
+
+/**
+ * The recording lamp, lit and dark.
+ *
+ * The lit colour is the same red the whole app uses for recording, so the dot and the record key
+ * agree. The dark one is not grey: it is the same red taken most of the way down, which reads as a
+ * lamp that is off rather than as a different indicator that has appeared.
+ */
+private val MaRecordLampOn = Color(0xFF9B3B33)
+private val MaRecordLampOff = Color(0xFF9B3B33).copy(alpha = 0.22f)
 
 /** Below this a speech signal is silence as far as this meter is concerned. */
 private const val FLOOR_DB = -54f

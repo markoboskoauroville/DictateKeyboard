@@ -962,17 +962,6 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_speed",
             default = MaSpeed.SLOW,
         )
-        // AUTO or MANUAL: whether volume up records at once, or opens the utility row first.
-        //
-        // Default false, meaning MANUAL and two presses. The press before the press is what lets the
-        // language and the speed be checked in the second before speaking, and those are the only two
-        // settings that cannot be corrected afterwards. AUTO is for when they are already right and
-        // the recording matters more than the check, so it is a thing to reach for rather than a
-        // thing to be given.
-        val maAutoRecord = boolean(
-            key = "dictate__ma_auto_record",
-            default = false,
-        )
         val maLastSendFormat = string(
             key = "dictate__ma_last_send_format",
             default = "",
