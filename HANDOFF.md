@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 151. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 153. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -132,6 +132,15 @@ the next route, which then carried two of each and failed with *"This annotation
 rather than anything mentioning the thing that was deleted. Delete the whole declaration including
 the annotations above it, and grep for a `@Deeplink` not followed by an `object` before pushing.
 Cost build 148.
+
+**Never test for an import with `in`.** `"import androidx.compose.runtime.remember" in source` is
+**true** when the file only has `rememberCoroutineScope`, because the first string is a substring of
+the second. The missing import then cascades: `remember` unresolved makes the value it returns
+untyped, which makes the `forEach` lambda's parameter uninferable, which makes every composable call
+inside it report *"@Composable invocations can only happen from the context of a @Composable
+function"*. Eleven errors, one cause, and none of the eleven names it. Compare whole stripped lines.
+`/home/claude/importcheck.py <files>` does this and also checks `getValue`/`setValue` for `by`
+delegates. Cost build 152.
 
 **Icon imports.** `Icons.Default.X` needs `...icons.filled.X`; `Icons.Outlined.X` needs
 `...icons.outlined.X`. Importing both `filled.X` and `outlined.X` is a name clash and will not
