@@ -55,19 +55,29 @@ import org.florisboard.lib.compose.stringRes
 import dev.patrickgold.florisboard.R
 
 /**
- * The feature row: one row, eight keys, drawn by both views and the last row standing when
- * everything above it is folded away.
+ * The feature row: one row, nine keys, drawn by both views and the last row standing when everything
+ * above it is folded away.
  *
- * Four borrowed keys, three switches, then the reader and the view swap:
+ * `AP · select-all · backspace · mic · book · 1 2 3 · enter`
  *
- * `AP · select-all · backspace · enter · 1 2 3 · book · mic`
+ * **This order is Marko's and it has been corrected twice.** At build 139 the switches were on the
+ * left and the borrowed keys on the right, and he swapped them. At build 146 he moved the microphone
+ * in beside backspace, put the book next to it, and sent enter to the far end. Do not rearrange this
+ * row on a theory; it is arranged by the person using it.
  *
- * The borrowed keys come first. They are used inside a sentence, while the switches are reached a
- * few times a session, so the busy end of the row is the end the thumb starts from. The four keys
- * are the ones that must survive a fold: AP and select-all are the copy row's most used pair, and
- * backspace and enter are the two keys from the keyboard proper with no substitute anywhere else
- * once zone two is shut. The numbers then read left to right as the parts of the keyboard they
- * control.
+ * What the current order means, so a future change can tell what it would be breaking:
+ *
+ * - **The busy end is the end the thumb starts from.** AP, select-all and backspace are used inside
+ *   a sentence; the numbered switches are reached a few times a session.
+ * - **The two view swaps sit together.** The microphone and the book are the only keys here that
+ *   change which view is on screen, and a pair that does one kind of thing is found by feel. They
+ *   were at opposite ends of the row before, which is the arrangement that made that hard.
+ * - **Enter is bottom right**, where every keyboard ever made has put it. Borrowing a habit somebody
+ *   already has beats any argument about grouping.
+ * - **The numbers read left to right** as the parts of the keyboard they control.
+ * - **AP, select-all, backspace and enter are the keys that must survive a fold.** The first two are
+ *   the copy row's most used pair; the last two are the only keys from the keyboard proper with no
+ *   substitute anywhere else once zone two is shut.
  *
  * The rule it exists to satisfy is Marko's, and it is a good one: a feature you have to enable in a
  * settings app before you can see it is a feature most people never find. The dictation view is not
@@ -139,8 +149,8 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
         // stand in for: with zone two closed there is no other way to delete a character.
         //
         // First in the row, on Marko's instruction. These are the keys used inside a sentence; the
-        // three switches after them are reached a few times a session. The hand that reaches most
-        // often gets the end of the row it starts from.
+        // switches further along are reached a few times a session. The hand that reaches most often
+        // gets the end of the row it starts from.
         //
         // These three do not fold the row on a long press, and must not. Backspace holds to repeat
         // and swipes to select, which is the behaviour it has everywhere else in this app, and a
@@ -164,18 +174,41 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             hasSelection = hasSelection,
         )
 
-        // Enter, beside backspace, and the same key the bottom row draws rather than a new one that
-        // types a newline. Tap for a newline, hold for the character popup from the settings screen.
+        // The two ways out of this view, side by side: the microphone to the dictation screen and
+        // the book to the reader. They moved here from the far end at Marko's instruction, and
+        // grouping them is the point rather than a side effect. They are the same kind of key, the
+        // only two that change which view you are looking at, and a pair that does one kind of thing
+        // is easier to find by feel than two keys of the same kind at opposite ends of a row.
         //
-        // It is here for the same reason backspace is: with zone two folded away there is no enter
-        // key anywhere else, and a keyboard that cannot end a line is a keyboard that has to be
-        // unfolded to finish a sentence. Deleting and sending are the two things every field needs.
-        //
-        // No fold on long press, like the two before it. The hold already means the popup.
-        LegacyEnterKey(
-            keyboardManager = keyboardManager,
+        // The microphone is also the reason the keyboard can be folded away entirely. With zone two
+        // closed there is no key left anywhere that reaches the dictation screen, so the way between
+        // the two views has to live in the row that always survives. Wherever this row is rearranged
+        // in future, the microphone stays in it.
+        val inTranscribe = keyboardManager.activeState.imeUiMode == ImeUiMode.TRANSCRIBE
+        ThemedIconKey(
+            code = KeyCode.NOOP,
+            icon = if (inTranscribe) Icons.Default.Keyboard else Icons.Default.Mic,
+            contentDescription = stringRes(
+                if (inTranscribe) R.string.ma__feature_keyboard else R.string.ma__feature_mic,
+            ),
             modifier = keyMod,
-        )
+            onLongClick = fold,
+        ) {
+            keyboardManager.activeState.imeUiMode =
+                if (inTranscribe) ImeUiMode.TEXT else ImeUiMode.TRANSCRIBE
+        }
+
+        // The reader. LLL: it speaks the clipboard and lights each word as it is said. Beside the
+        // microphone, because listening and dictating are the two halves of what this app is for.
+        ThemedIconKey(
+            code = KeyCode.NOOP,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
+            contentDescription = stringRes(R.string.ma__feature_lll),
+            modifier = keyMod,
+            onLongClick = fold,
+        ) {
+            keyboardManager.activeState.imeUiMode = ImeUiMode.READER
+        }
 
         // 1, the number row. Digits, or whichever set the row is showing.
         ThemedTextKey("1", keyMod, if (zone1) onGreen else null, fold) {
@@ -193,33 +226,22 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
             scope.launch { prefs.dictate.maEditRow.set(!zone3) }
         }
 
-        // The reader. LLL: it speaks the clipboard and lights each word as it is said.
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = Icons.AutoMirrored.Filled.MenuBook,
-            contentDescription = stringRes(R.string.ma__feature_lll),
+        // Enter, last, which is where every keyboard ever made has put it. It was beside backspace
+        // until Marko moved it here, and the bottom right corner is a position the thumb finds
+        // without looking because it has been finding it on other keyboards for decades. Borrowing a
+        // habit somebody already has is worth more than any argument about grouping.
+        //
+        // Still the same key the bottom row draws rather than a new one that types a newline: tap
+        // for a newline, hold for the character popup from the settings screen. And still here for
+        // the reason backspace is, that with zone two folded away there is no enter key anywhere
+        // else, and a keyboard that cannot end a line has to be unfolded to finish a sentence.
+        //
+        // No fold on long press. The hold already means the popup.
+        LegacyEnterKey(
+            keyboardManager = keyboardManager,
             modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            keyboardManager.activeState.imeUiMode = ImeUiMode.READER
-        }
+        )
 
-        // The microphone, last, and the reason the keyboard can be folded away entirely. With zone
-        // two closed there is no key left that reaches the dictation screen, so the way between the
-        // two views has to live in the row that always survives.
-        val inTranscribe = keyboardManager.activeState.imeUiMode == ImeUiMode.TRANSCRIBE
-        ThemedIconKey(
-            code = KeyCode.NOOP,
-            icon = if (inTranscribe) Icons.Default.Keyboard else Icons.Default.Mic,
-            contentDescription = stringRes(
-                if (inTranscribe) R.string.ma__feature_keyboard else R.string.ma__feature_mic,
-            ),
-            modifier = keyMod,
-            onLongClick = fold,
-        ) {
-            keyboardManager.activeState.imeUiMode =
-                if (inTranscribe) ImeUiMode.TEXT else ImeUiMode.TRANSCRIBE
-        }
     }
 }
 

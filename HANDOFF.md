@@ -306,13 +306,21 @@ Marko drew three lines across a screenshot of the keyboard and asked for the par
 to be switchable one by one. The row is now eight keys:
 
 ```
-AP  ·  select-all  ·  backspace  ·  enter  ·  1  2  3  ·  book  ·  mic
+AP  ·  select-all  ·  backspace  ·  mic  ·  book  ·  1  2  3  ·  enter
 ```
 
-**The order is Marko's and it was corrected once**, at build 139: the switches were on the left and
-the borrowed keys on the right, and he swapped them. The reason holds generally, so keep it in mind
-before arranging anything else here. The borrowed keys are used inside a sentence and the switches
-a few times a session, so the busy group belongs at the end the thumb starts from.
+**The order is Marko's and it has been corrected twice.** At build 139 the switches were on the left
+and the borrowed keys on the right, and he swapped them. At **build 146** he moved the microphone in
+beside backspace, put the book next to it, and sent enter to the far end. Do not rearrange this row
+on a theory. It is arranged by the person using it, from a screenshot with arrows drawn on it, and
+both corrections went the opposite way to what seemed sensible from the code.
+
+Three reasons hold in the current order and are worth knowing before touching it. The busy group
+belongs at the end the thumb starts from. **The microphone and the book belong together**, because
+they are the only two keys here that change which view is on screen, and a pair doing one kind of
+thing is found by feel where two keys of the same kind at opposite ends are not. And **enter belongs
+bottom right**, where every keyboard ever made has put it: borrowing a habit somebody already has
+beats any argument about grouping.
 
 - **1 is the number row** (`maExtraRow`). It was the edit strip before; that meaning moved to 3.
 - **2 is the keys themselves** (`maZoneKeyboard`), all of them at once, unchanged.
