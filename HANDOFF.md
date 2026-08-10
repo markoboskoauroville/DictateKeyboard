@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 142. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 143. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -559,12 +559,61 @@ failures only appear past about a dozen. Measured with a sixty key file, a year 
   223 ms to parse. It is read once, in a `LaunchedEffect` on IO, and the lines appear when they land.
 - **TEST ALL fired every key at once**, which at sixty keys is the most reliable way to trip a rate
   limit. A 429 was then classified QUOTA_EXCEEDED and painted a **healthy key amber**, inviting it to
-  be deleted. Two changes: the bulk run is sequential with a progress count, and `MaSpeechify.probe`
-  backs off once on a 429 and then reports **not checked** rather than a verdict. A light must never
-  say something about a key that is really about the burst it arrived in.
+  be deleted. `MaSpeechify.probe` now backs off once on a 429 and then reports **not checked** rather
+  than a verdict. A light must never say something about a key that is really about the burst it
+  arrived in. **The bulk test itself is gone at build 143**, replaced by the key ring below; making
+  it sequential was the right direction and not far enough.
 
 **The lights say what happened, and there is no light for credit remaining**, because no provider
 here will say. See the usage section above: the numbers are what this phone counted.
+
+### The key ring: first working key wins, shipped at build 143
+
+**Marko's rule, and it replaces what builds 141 and 142 did.** Go down the list in order. Take the
+first key that works. Use it until it stops working. Then flag it and move to the next. **Never test
+them all at once.**
+
+`maWithKeyFallback` walks the list in order on every call, which is correct and has **no memory**: a
+keyring whose first four keys are dead pays four failed round trips before every sentence the reader
+speaks, forever. And the bulk test checked every key, which on a per-character bill means paying, per
+key, to learn about keys that were never going to be reached. `MaKeyRing` is the memory that was
+missing, and the button is now **FIND A WORKING KEY**, which stops at the first green.
+
+**The hard part is not flagging, it is not flagging too eagerly.** The distinction is between a
+failure OF the key and a failure AROUND it:
+
+| what came back | the key's fault | what happens |
+|---|---|---|
+| 401 rejected | yes, permanently | flagged, never re-armed by time, only by a manual test |
+| 402 cap, budget or balance | yes, temporarily | flagged, re-armed after six hours or at the UTC month roll |
+| 429 too many requests | **no** | nothing recorded |
+| timeout, no signal | **no** | nothing recorded, and the run stops rather than burning the ring |
+
+Flagging a good key because the train went into a tunnel is worse than never flagging: the key is
+skipped, the next one is used, and the meter fills up somewhere Marko did not choose. The middle two
+rows are the ones to protect.
+
+Three rules that are easy to break by tidying:
+
+- **The ring can never return nothing.** If every key is flagged, `order` still returns them all,
+  worst last. A stale flag must not be able to silence the reader, and a key dead in March may work
+  in August. Being wrong about a key costs one failed request; refusing to try costs the feature.
+- **`NoKeyLeft` carries the ring.** The run that discovers the whole keyring is in trouble is the
+  most expensive one there is, and its flags are inside an exception rather than a return value.
+  Dropping them means paying for the same discovery again on the very next sentence.
+- **A manual test clears the flag first.** Otherwise a key just topped up in the console stays greyed
+  out because of yesterday, and the only way to clear it would be to know the rule.
+
+Six hours for the exhausted window: a spend cap is raised in the console in a minute, and a keyring
+that ignores a topped-up key until tomorrow looks broken. The month roll is separate and additional,
+because per-key caps and workspace budgets both reset at 00:00 UTC on the 1st.
+
+The key manager and the reader now write to the **same** ring, so a green light in settings and the
+key the reader actually reaches for are the same fact. Two stores holding two opinions is how a green
+light ends up above a key nothing will ever use.
+
+Fourteen tests in `MaKeyRingTest.kt`, all pure Kotlin and run in the sandbox. The two that matter
+most are `aDeadConnectionNeverFlagsAKey` and `everyKeyFlaggedStillTriesThemAll`.
 
 ### Next: retranscribe
 

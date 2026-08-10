@@ -13,11 +13,12 @@ package dev.patrickgold.florisboard.dictate.reader
 import android.content.Context
 import android.media.MediaPlayer
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.dictate.MaKeyRingStore
 import dev.patrickgold.florisboard.dictate.MaUsageStore
+import dev.patrickgold.florisboard.dictate.provider.MaKeyRing
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.dictate.provider.MaSpeechify
 import dev.patrickgold.florisboard.dictate.provider.MaUsage
-import dev.patrickgold.florisboard.dictate.provider.maWithKeyFallback
 import dev.mantraproductions.reader.engine.MaAlign
 import dev.mantraproductions.reader.engine.MaEdgeVoice
 import dev.mantraproductions.reader.engine.MaText
@@ -267,10 +268,13 @@ object MaReader {
         // The reader's own control is a male/female toggle, so the mapping is to two of the four
         // voices. The other two are defined in MaSpeechify and wait for a picker to choose them.
         val voiceId = if (voice.contains("Sonia", ignoreCase = true)) "beatrice_32" else "geffen_32"
-        val spoken = runCatching {
-            // The same fallback the transcription path uses: a rejected or exhausted key rolls on
-            // to the next one rather than failing the sentence.
-            maWithKeyFallback(keys) { key ->
+        // The ring, not a plain walk down the list. It starts at the key that worked last time and
+        // never asks the ones already known to be refused, so a keyring whose first few keys are
+        // dead costs those round trips once rather than before every sentence.
+        val ring = MaKeyRingStore.load(context, SPEECHIFY_ID)
+        var learned = ring
+        val outcome = runCatching {
+            MaKeyRing.run(keys, ring) { key ->
                 MaSpeechify.synthesize(
                     key = key,
                     text = sentence,
@@ -284,7 +288,14 @@ object MaReader {
                     )
                 }
             }
-        }.getOrNull() ?: return null
+        }.onSuccess { learned = it.second }
+            .onFailure { if (it is MaKeyRing.NoKeyLeft) learned = it.ring }
+            .getOrNull()
+        // Persist whatever was learned even when nothing was spoken. The flags raised on the way to
+        // failing are the entire point: dropping them means paying to learn the same thing again on
+        // the very next sentence.
+        if (learned !== ring) MaKeyRingStore.save(context, SPEECHIFY_ID, learned)
+        val spoken = outcome?.first ?: return null
         if (spoken.marks.isEmpty()) return null
         clip.parentFile?.mkdirs()
         runCatching { clip.writeBytes(spoken.audio) }.getOrElse { return null }

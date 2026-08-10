@@ -62,12 +62,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.dictate.MaKeyImport
+import dev.patrickgold.florisboard.dictate.MaKeyRingStore
 import dev.patrickgold.florisboard.dictate.MaUsageStore
 import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
+import dev.patrickgold.florisboard.dictate.provider.MaKeyRing
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.dictate.provider.MaSpeechify
 import dev.patrickgold.florisboard.dictate.provider.MaUsage
@@ -226,6 +228,11 @@ fun DictateKeysScreen() = FlorisScreen {
             val slot = preset.id + "\u0000" + key
             statuses[slot] = KeyStatus(KeyHealth.TESTING)
             val account = accounts.accounts[preset.id]
+            // Testing a key by hand is a fresh question, so any flag on it is dropped before the
+            // question is asked. Otherwise a key Marko has just topped up stays greyed out because
+            // of what happened to it yesterday, and the only way to clear it would be to know the
+            // rule.
+            MaKeyRingStore.forget(context, preset.id, key)
             return scope.launch {
                 val status = withContext(Dispatchers.IO) {
                     // Speechify speaks rather than listens, so there is no model list to count and
@@ -243,6 +250,17 @@ fun DictateKeysScreen() = FlorisScreen {
                                 probe.billableCharacters.toLong(), MaUsage.Unit.CHARACTER,
                             )
                         }
+                        // The verdict goes into the ring as well as onto the screen, so what the
+                        // key manager learns is the same thing the reader will act on. Two places
+                        // holding two opinions about the same key is how a green light ends up
+                        // above a key nothing will ever use.
+                        val ring = MaKeyRingStore.load(context, preset.id)
+                        val updated = when {
+                            probe.ok -> MaKeyRing.onSuccess(ring, key, probe.detail)
+                            probe.kind != null -> MaKeyRing.onFailure(ring, key, probe.kind, probe.detail)
+                            else -> ring
+                        }
+                        if (updated !== ring) MaKeyRingStore.save(context, preset.id, updated)
                         return@withContext when {
                             probe.ok -> KeyStatus(KeyHealth.WORKING, probe.detail)
                             probe.kind == DictateApiException.Kind.INVALID_API_KEY ->
@@ -336,28 +354,52 @@ fun DictateKeysScreen() = FlorisScreen {
                 modifier = Modifier.weight(1f),
                 enabled = !busy,
                 onClick = {
-                    // ONE AT A TIME, not all at once. Firing sixty keys simultaneously is the
-                    // fastest way to trip a per-workspace rate limit, and the answer that comes back
-                    // then is about the burst rather than about any key. Sequential is slower and it
-                    // is the only version whose lights mean what they say. The note line counts up
-                    // so a long run does not look like a frozen screen.
+                    // FIND A WORKING KEY, one at a time, and STOP at the first one that answers.
+                    //
+                    // This replaces a TEST ALL button, and the change is Marko's rule: go down the
+                    // list in order, take the first key that works, and stay on it. Testing every
+                    // key was wrong twice over. It costs money on a per-character bill, once per
+                    // key, to learn something about keys that were never going to be reached. And
+                    // firing them together trips a rate limit, whose answer says nothing about any
+                    // key while looking exactly like a verdict on all of them.
+                    //
+                    // The keys already known to be refused are skipped, so a long keyring is walked
+                    // once in its life rather than once per press.
                     busy = true
                     scope.launch {
-                        val work = shown.flatMap { preset ->
-                            MaKeys.split(accounts.accounts[preset.id]?.apiKey.orEmpty())
-                                .filter { it.isNotBlank() }
-                                .map { preset to it }
+                        var found = 0
+                        for (preset in shown) {
+                            val stored = accounts.accounts[preset.id]?.apiKey.orEmpty()
+                            val ring = MaKeyRingStore.load(context, preset.id)
+                            val ordered = MaKeyRing.order(
+                                MaKeys.split(stored).filter { it.isNotBlank() },
+                                ring,
+                            )
+                            if (ordered.isEmpty()) continue
+                            for ((index, key) in ordered.withIndex()) {
+                                note = "${preset.displayName}: trying key ${index + 1} of ${ordered.size}"
+                                testKey(preset, key).join()
+                                val health = statuses[preset.id + "\u0000" + key]?.health
+                                if (health == KeyHealth.WORKING) {
+                                    found++
+                                    note = "${preset.displayName}: key ${index + 1} works, using it"
+                                    break
+                                }
+                                // No signal is not a verdict on the key, and it will be no more of
+                                // one for the next key either. Stop rather than walk the whole ring
+                                // against a connection that is not there.
+                                if (health == KeyHealth.OFFLINE) {
+                                    note = "${preset.displayName}: no connection, nothing checked"
+                                    break
+                                }
+                            }
                         }
-                        work.forEachIndexed { index, (preset, key) ->
-                            note = "Testing ${index + 1} of ${work.size}"
-                            testKey(preset, key).join()
-                        }
-                        note = "Tested ${work.size} key" + (if (work.size == 1) "" else "s")
+                        if (found == 0) note = "No working key found"
                         busy = false
                     }
                 },
             ) {
-                Text("TEST ALL")
+                Text("FIND A WORKING KEY")
             }
             OutlinedButton(
                 modifier = Modifier.weight(1f),
@@ -468,6 +510,15 @@ fun DictateKeysScreen() = FlorisScreen {
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
+
+        Text(
+            text = "The app goes down this list in order, keeps the first key that works, and stays " +
+                "on it until it stops. A key the service refuses is skipped from then on; one that " +
+                "is out of credit is tried again after six hours, or as soon as the month turns.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
 
         Text(
             text = "The filled circle is the key tried first. The others are fallbacks, in order.",
