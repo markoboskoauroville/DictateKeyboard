@@ -131,9 +131,6 @@ object Routes {
         object Search
 
         @Serializable
-        @Deeplink("settings/dictate/languages")
-
-        @Serializable
         @Deeplink("settings/tryit")
         object TryIt
 

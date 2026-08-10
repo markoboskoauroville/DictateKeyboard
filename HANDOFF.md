@@ -126,6 +126,13 @@ error in an otherwise clean build, so it reads as something exotic. `dictate-cor
 Gradle module from `app`, so every nullable property crossing that line needs pulling into a local
 first. Cost builds 143 and 144.
 
+**Deleting a line with a regex leaves its annotations behind.** Removing `object DictateLanguages`
+from `Routes.kt` with a line-matching pattern left its `@Serializable` and `@Deeplink` sitting above
+the next route, which then carried two of each and failed with *"This annotation is not repeatable"*
+rather than anything mentioning the thing that was deleted. Delete the whole declaration including
+the annotations above it, and grep for a `@Deeplink` not followed by an `object` before pushing.
+Cost build 148.
+
 **Icon imports.** `Icons.Default.X` needs `...icons.filled.X`; `Icons.Outlined.X` needs
 `...icons.outlined.X`. Importing both `filled.X` and `outlined.X` is a name clash and will not
 compile. Use `/home/claude/iconcheck.py <files>` — it checks both. Also verify any icon name is
