@@ -16,6 +16,11 @@ import java.io.File
 data class ProviderCapabilities(
     val chat: Boolean,
     val transcription: Boolean,
+    /**
+     * Text to speech, the reader's side of the app. Defaulted so every existing preset compiles
+     * unchanged: only Speechify sets it, and nothing else here speaks.
+     */
+    val tts: Boolean = false,
 )
 
 /** A selectable model, as offered by a provider (statically or via [LlmProvider.listModels]). */

@@ -33,6 +33,16 @@ object MaKeys {
     /** OpenAI style, kept for custom endpoints. */
     private val OPENAI = Regex("sk-(?!ant-)[0-9A-Za-z_-]{20,}")
 
+    /**
+     * Speechify keys: `sk_` then the body.
+     *
+     * The separator is the whole difference from OpenAI's `sk-`, one character, and it is the only
+     * thing keeping a file that holds both from filing them under each other. [OPENAI] requires the
+     * hyphen literally, so the two patterns cannot both match the same token; that is deliberate and
+     * should survive any edit to either.
+     */
+    private val SPEECHIFY = Regex("sk_[0-9A-Za-z_-]{16,}")
+
     /** Fallback shape for anything else key-like, used only when no hex key is present. */
     private val LOOSE = Regex("[A-Za-z0-9._-]{24,120}")
 
@@ -45,7 +55,7 @@ object MaKeys {
     /** Words that mark a line as belonging to another service, unless it also says assembly. */
     private val FOREIGN_WORDS = listOf(
         "groq", "gemini", "google", "openai", "anthropic", "claude", "elevenlabs",
-        "deepgram", "huggingface", "replicate", "tidal", "spotify",
+        "deepgram", "huggingface", "replicate", "tidal", "spotify", "speechify",
     )
 
     /** The stored field, one key per line, back into a list. Blank and # lines are ignored. */
@@ -170,6 +180,7 @@ object MaKeys {
         if (providerId != "anthropic" && ANTHROPIC.matches(token)) return true
         if (providerId != "gemini" && GEMINI.matches(token)) return true
         if (providerId != "openai" && providerId != "groq" && OPENAI.matches(token)) return true
+        if (providerId != "speechify" && SPEECHIFY.matches(token)) return true
         return false
     }
 
@@ -186,6 +197,7 @@ object MaKeys {
             if (providerId != "openai" && providerId != "groq" && OPENAI.containsMatchIn(text)) {
                 add("OpenAI")
             }
+            if (providerId != "speechify" && SPEECHIFY.containsMatchIn(text)) add("Speechify")
         }
         if (others.isEmpty()) return null
         return "No key for this provider in that file. Keys for " +
@@ -195,9 +207,10 @@ object MaKeys {
     /**
      * Pulls keys out of an arbitrary text file, in order, without duplicates.
      *
-     * Tier one takes bare 32 character hex tokens, the AssemblyAI shape, which walks straight past
-     * prose, dates and other providers' keys. Only if that finds nothing does tier two accept any
-     * long token containing a digit, so an unusual key format is never silently lost.
+     * Tier one takes the shape belonging to the provider being imported for: 32 bare hex characters
+     * for AssemblyAI, `sk_` for Speechify, and so on. That walks straight past prose, dates and
+     * other providers' keys. Only if that finds nothing does tier two accept any long token
+     * containing a digit, so an unusual or newly changed key format is never silently lost.
      */
     fun extract(text: String, providerId: String = ""): List<String> {
         val lines = text.split('\n')
@@ -208,6 +221,7 @@ object MaKeys {
             "gemini" -> GEMINI
             "anthropic" -> ANTHROPIC
             "assemblyai" -> HEX32
+            "speechify" -> SPEECHIFY
             "openai", "groq" -> OPENAI
             else -> null
         }

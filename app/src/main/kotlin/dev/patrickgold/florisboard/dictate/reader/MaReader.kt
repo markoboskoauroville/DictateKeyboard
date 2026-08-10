@@ -12,6 +12,12 @@ package dev.patrickgold.florisboard.dictate.reader
 
 import android.content.Context
 import android.media.MediaPlayer
+import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.dictate.MaUsageStore
+import dev.patrickgold.florisboard.dictate.provider.MaKeys
+import dev.patrickgold.florisboard.dictate.provider.MaSpeechify
+import dev.patrickgold.florisboard.dictate.provider.MaUsage
+import dev.patrickgold.florisboard.dictate.provider.maWithKeyFallback
 import dev.mantraproductions.reader.engine.MaAlign
 import dev.mantraproductions.reader.engine.MaEdgeVoice
 import dev.mantraproductions.reader.engine.MaText
@@ -51,6 +57,11 @@ import java.security.MessageDigest
 object MaReader {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val prefs by FlorisPreferenceStore
+
+    /** The provider id the Speechify keys are filed under, and the only place it is written here. */
+    private const val SPEECHIFY_ID = "speechify"
 
     /** One prepared sentence. */
     data class ReadUnit(
@@ -205,6 +216,11 @@ object MaReader {
             tokens = runCatching { readTokens(tokenFile) }.getOrNull()
         }
         if (tokens == null) {
+            // Speechify first, when it can take this sentence. See [speak] for why that is only
+            // English, and why the result skips two of the four steps rather than joining them.
+            tokens = speak(context, sentence, clip)
+        }
+        if (tokens == null) {
             val spoken = runCatching { MaEdgeVoice.synthesize(sentence, voice) }.getOrNull()
                 ?: return@withContext null
             clip.parentFile?.mkdirs()
@@ -215,10 +231,82 @@ object MaReader {
             val refined = MaPcm.decode(clip)?.let { MaWaveform.refine(it, aligned).tokens } ?: aligned
             tokens = spread(refined)
             runCatching { writeTokens(tokenFile, tokens) }
+        } else {
+            runCatching { writeTokens(tokenFile, tokens) }
         }
         // Offsets so far are relative to the sentence; the view highlights inside the whole text.
         val shifted = tokens.map { it.copy(s = it.s + range.first, e = it.e + range.first) }
         ReadUnit(index = index, range = range, text = sentence, tokens = shifted, clip = clip)
+    }
+
+    /**
+     * Speaks one sentence with Speechify, or returns null to leave it to the Edge voice.
+     *
+     * **Why this exists at all.** `MaAlign` is a guess. Microsoft's endpoint returns a spoken word
+     * and a time and nothing else, so the engine has to work out which characters of the visible
+     * sentence that word was, and every branch in `alignTokens` is there because that guess went
+     * wrong once. Speechify returns `start` and `end` character offsets with each word. There is
+     * nothing left to align, so this path skips both `MaAlign` and the waveform refinement: it is
+     * not a faster route to the same answer, it is the answer without the question.
+     *
+     * **Why it is English only.** Croatian sits on Speechify's coming-soon list, not the supported
+     * one and not even the beta one, and the English models answer a non-English voice with a flat
+     * 400. So Croatian stays on Edge, which speaks it well, and this returns null for it. When
+     * `hr-HR` ships, the change here is one condition and a model id, and `MaSpeechify` already
+     * names the multilingual model for that day.
+     *
+     * Returning null rather than throwing is deliberate: every reason to decline, no key, wrong
+     * language, a dead key, no signal, means the same thing to the caller, which is that the Edge
+     * path should run. A sentence must never fail to be spoken because the newer voice was busy.
+     */
+    private fun speak(context: Context, sentence: String, clip: File): List<MaAlign.Token>? {
+        if (!voice.startsWith("en-", ignoreCase = true)) return null
+        val stored = prefs.dictate.providerAccounts.get().getOrEmpty(SPEECHIFY_ID).apiKey
+        val keys = MaKeys.split(stored).filter { it.isNotBlank() }
+        if (keys.isEmpty()) return null
+        // The reader's own control is a male/female toggle, so the mapping is to two of the four
+        // voices. The other two are defined in MaSpeechify and wait for a picker to choose them.
+        val voiceId = if (voice.contains("Sonia", ignoreCase = true)) "beatrice_32" else "geffen_32"
+        val spoken = runCatching {
+            // The same fallback the transcription path uses: a rejected or exhausted key rolls on
+            // to the next one rather than failing the sentence.
+            maWithKeyFallback(keys) { key ->
+                MaSpeechify.synthesize(
+                    key = key,
+                    text = sentence,
+                    voiceId = voiceId,
+                    language = "en-US",
+                ).also {
+                    // Counted from what the reply says it billed, not from the string that was sent.
+                    MaUsageStore.record(
+                        context, SPEECHIFY_ID, key,
+                        it.billableCharacters.toLong(), MaUsage.Unit.CHARACTER,
+                    )
+                }
+            }
+        }.getOrNull() ?: return null
+        if (spoken.marks.isEmpty()) return null
+        clip.parentFile?.mkdirs()
+        runCatching { clip.writeBytes(spoken.audio) }.getOrElse { return null }
+        // Offsets are already character ranges into this sentence, which is exactly what a Token
+        // holds, so this is a rename rather than a conversion. Clamped anyway: an offset past the
+        // end of the string would be a crash in the view, and the docs warn that the values follow
+        // the SSML rather than the plain text when SSML is sent.
+        //
+        // Token.d is an END TIME in seconds, not a duration. playUnit lights a word while
+        // `t <= now < d` and spread() writes `d = t + each`, so both read it as the moment the word
+        // stops. The name says otherwise and that is the trap: writing a duration here compiles,
+        // runs, and lights every word for the wrong span, which reads as a highlight that drifts.
+        val tokens = spoken.marks.mapNotNull { m ->
+            val s = m.start.coerceIn(0, sentence.length)
+            val e = m.end.coerceIn(s, sentence.length)
+            if (e <= s) return@mapNotNull null
+            MaAlign.Token(s = s, e = e, t = m.startMs / 1000.0, d = m.endMs / 1000.0)
+        }
+        // spread() is a no-op unless two words start within 20 ms of each other, which Speechify
+        // should never produce since it reports each word separately. Run anyway: it costs nothing
+        // and it is the one thing standing between a zero-length span and a word that never lights.
+        return spread(tokens).takeIf { it.isNotEmpty() }
     }
 
     /**

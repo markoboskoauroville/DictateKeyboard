@@ -285,16 +285,41 @@ class EditorInstance(context: Context) : AbstractEditorInstance(context) {
         val text = candidate.text.toString()
         if (text.isEmpty() || activeInfo.isRawInputEditor) return false
         val content = activeContent
+        // MA TWIST: a picked suggestion gets a REAL trailing space, not a promised one.
+        //
+        // Upstream only armed the phantom space here, which means the gap appears at the moment the
+        // next word is typed and not before. That is correct in the text and wrong on the screen:
+        // the word sits against whatever follows it until you have already typed past the problem,
+        // and Marko reads the line as he goes rather than afterwards.
+        //
+        // A real space needs the punctuation case handled, or "word" then "." becomes "word .".
+        // [autoSpace] is exactly that mechanism and it already exists: it marks the space before the
+        // cursor as one this app inserted, and [commitChar] deletes it again when a symbol from
+        // symbolsPrecedingAutoSpace arrives. So this is the same contract the punctuation path has
+        // used all along, applied one step earlier.
+        //
+        // The phantom space stays armed on purpose, for two reasons. It carries [candidate] for the
+        // revert-on-backspace path in KeyboardManager, which would be lost by clearing it. And its
+        // own determine() reads the character before the cursor, which is now a space: a space is
+        // neither a letter, a digit, nor a member of symbolsPrecedingPhantomSpace, so it cannot fire
+        // a second time and there is no way to end up with two.
+        //
+        // Not in a field that is not ordinary prose. An email address or a URL with a space dropped
+        // into the middle of it is a broken value, and those fields never wanted the space anyway.
+        val addSpace = activeState.keyVariation == KeyVariation.NORMAL
+        val committed = if (addSpace) text + SPACE else text
         return if (content.composing.isValid) {
             phantomSpace.setActive(showComposingRegion = false, candidate = candidate)
-            super.finalizeComposingText(text)
+            if (addSpace) autoSpace.setActive()
+            super.finalizeComposingText(committed)
         } else {
             val isPhantomSpaceActive = phantomSpace.determine(text)
             phantomSpace.setActive(showComposingRegion = false, candidate = candidate)
+            if (addSpace) autoSpace.setActive()
             return if (isPhantomSpaceActive) {
-                super.commitText("$SPACE$text")
+                super.commitText("$SPACE$committed")
             } else {
-                super.commitText(text)
+                super.commitText(committed)
             }.also {
                 // handled in finalizeComposingText if content.composing.isValid
                 updateLastCommitPosition()

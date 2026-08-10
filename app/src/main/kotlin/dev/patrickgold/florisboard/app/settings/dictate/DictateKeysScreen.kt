@@ -62,12 +62,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.dictate.MaKeyImport
+import dev.patrickgold.florisboard.dictate.MaUsageStore
 import dev.patrickgold.florisboard.dictate.MaVault
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
+import dev.patrickgold.florisboard.dictate.provider.MaSpeechify
+import dev.patrickgold.florisboard.dictate.provider.MaUsage
 import dev.patrickgold.florisboard.dictate.provider.OpenAiCompatibleClient
 import dev.patrickgold.florisboard.dictate.provider.ProviderAccount
 import dev.patrickgold.florisboard.dictate.provider.ProviderAccounts
@@ -219,6 +222,30 @@ fun DictateKeysScreen() = FlorisScreen {
             val account = accounts.accounts[preset.id]
             scope.launch {
                 val status = withContext(Dispatchers.IO) {
+                    // Speechify speaks rather than listens, so there is no model list to count and
+                    // nothing in OpenAiCompatibleClient that fits. It is probed by synthesising two
+                    // characters, which is the only test that answers the real question: not "does
+                    // this string authenticate" but "will this key make audio when the reader asks".
+                    // A key whose balance is gone lists voices perfectly well and then fails.
+                    if (preset.capabilities.tts) {
+                        val probe = MaSpeechify.probe(key)
+                        // The probe was billed, so it goes in the ledger like any other call. A
+                        // meter that quietly excludes its own traffic is a meter that drifts.
+                        if (probe.billableCharacters > 0) {
+                            MaUsageStore.record(
+                                context, preset.id, key,
+                                probe.billableCharacters.toLong(), MaUsage.Unit.CHARACTER,
+                            )
+                        }
+                        return@withContext when {
+                            probe.ok -> KeyStatus(KeyHealth.WORKING, probe.detail)
+                            probe.kind == DictateApiException.Kind.INVALID_API_KEY ->
+                                KeyStatus(KeyHealth.REJECTED, probe.detail)
+                            probe.kind == DictateApiException.Kind.QUOTA_EXCEEDED ->
+                                KeyStatus(KeyHealth.NO_QUOTA, probe.detail)
+                            else -> KeyStatus(KeyHealth.OFFLINE, probe.detail)
+                        }
+                    }
                     try {
                         val count = OpenAiCompatibleClient
                             .from(
@@ -429,6 +456,11 @@ fun DictateKeysScreen() = FlorisScreen {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
 
+        // The ledger is read once here rather than per row. It is recomputed whenever a test writes
+        // to it, which is what `statuses.size` is doing in the key: a test finishing is the only
+        // thing on this screen that can change the numbers, so it is the right thing to watch.
+        val ledger = remember(statuses.size) { MaUsageStore.load(context) }
+
         shown.forEach { preset ->
             ProviderSection(
                 preset = preset,
@@ -438,8 +470,25 @@ fun DictateKeysScreen() = FlorisScreen {
                 isRewording = preset.id == activeRewordingId,
                 onTest = { key -> testKey(preset, key) },
                 onSave = ::save,
+                usageOf = { key ->
+                    MaUsage.describeKey(
+                        ledger = ledger,
+                        providerId = preset.id,
+                        key = key,
+                        rate = MaUsage.DEFAULT_RATES[preset.id] ?: 0.0,
+                    )
+                },
             )
         }
+
+        Text(
+            text = "The usage figures under each key are counted by this phone, from what each " +
+                "reply says it billed. No provider here offers a balance to read, so nothing " +
+                "spent from the console or another device can appear in them.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        )
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
@@ -528,6 +577,7 @@ private fun ProviderSection(
     isRewording: Boolean,
     onTest: (String) -> Unit,
     onSave: (ProviderAccounts) -> Unit,
+    usageOf: (String) -> String = { "" },
 ) {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
@@ -624,6 +674,20 @@ private fun ProviderSection(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                // What this key has cost, under the key it belongs to. Two lines of very small type
+                // rather than a separate screen: the question "is this key any good" and the
+                // question "what has it cost me" are the same question asked twice, and answering
+                // them in two places means looking in two places.
+                val usage = usageOf(key)
+                if (usage.isNotEmpty()) {
+                    Text(
+                        text = usage,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }

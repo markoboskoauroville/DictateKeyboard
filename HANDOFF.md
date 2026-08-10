@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 140. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 141. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -344,7 +344,9 @@ same bill as now. No second vendor.
 is text to speech. Their "10 Best Speech to Text APIs" article recommends other companies and reads
 like a product page, which is where the confusion came from. Speechify IS worth revisiting for the
 LLL reader, because its TTS returns word-level timestamps, which is exactly what `MaAlign` needs and
-would replace an undocumented Microsoft endpoint with a contractual one.
+would replace an undocumented Microsoft endpoint with a contractual one. **That happened at build
+141; see "Speechify, the reader's voice" below.** It is still not a transcription provider and the
+`tts` capability on its preset is what stops a transcription role ever being pointed at it.
 
 **The verified endpoint**, checked against the docs rather than remembered:
 
@@ -422,6 +424,124 @@ Settings labels it something plain like "usage and cost".
 
 **And: long press on the microphone key opens the model chooser**, so fast and slow can be swapped
 without going into settings.
+
+### Speechify, the reader's voice: shipped at build 141
+
+**This is not a reversal of the rejection above and the two must not be confused.** Speechify has no
+speech to text API and never enters the dictation path. What it does have is text to speech that
+returns **character offsets** with every word, and that is the reader's whole problem solved.
+
+`MaAlign` exists because Microsoft's endpoint returns a spoken word and a time and nothing else, so
+the engine has to work out which characters of the visible sentence that word was. Every branch in
+`alignTokens` is there because that guess went wrong once. Speechify's `speech_marks` carry `start`
+and `end` indices into the string that was sent, alongside `start_time` and `end_time`. So the
+Speechify path skips `MaAlign` **and** the waveform refinement: it is not a faster route to the same
+answer, it is the answer without the question.
+
+**Verified against the live reference, not remembered:**
+
+```
+POST https://api.speechify.ai/v1/audio/speech
+Authorization: Bearer sk_...        <- Bearer, unlike AssemblyAI's raw key
+Content-Type: application/json
+{ "input", "voice_id", "model", "audio_format", "language" }
+-> { "audio_data": <base64>, "billable_characters_count": N,
+     "speech_marks": { start, end, start_time, end_time, value, chunks: [...] } }
+```
+
+2000 characters per request on this endpoint, 20000 on the streaming one which we do not use: the
+reader already works one sentence at a time so neither figure is ever approached, and one envelope
+beats a chunked response. Errors are one envelope with a stable `error.code`.
+
+**CROATIAN DOES NOT WORK AND THIS IS THE THING TO KNOW.** `hr-HR` is on Speechify's *coming soon*
+list, not supported and not even beta, and `simba-3.2` and `simba-english` are English only and
+answer a non-English voice with a flat 400. So the reader now has **two voice engines**: Speechify
+for English, Edge for Croatian, chosen in `MaReader.speak` by the prefix of the active voice string.
+Do not point `MaLanguage`'s Croatian half at Speechify and hope. When `hr-HR` ships the change is one
+condition and a model id, and `MaSpeechify.MODEL_MULTILINGUAL` is already named for that day.
+
+`MaReader.speak` returns **null** rather than throwing for every reason to decline, no key, wrong
+language, dead key, no signal. They all mean the same thing to the caller, which is that the Edge
+path should run. A sentence must never go unspoken because the newer voice was busy.
+
+**A trap that cost nothing only because it was caught before the push: `MaAlign.Token.d` is an END
+TIME in seconds, not a duration.** `playUnit` lights a word while `t <= now < d`, and `spread` writes
+`d = t + each`. The name says duration. Writing a duration there compiles, runs, and lights every
+word for the wrong span, which on the phone reads as a highlight that drifts rather than as a bug.
+Check `playUnit` before touching anything that builds a Token.
+
+**Do not write a fake key beginning `sk_live_` or `sk_test_` anywhere in this repository.** Those are
+Stripe's prefixes, GitHub's push protection scans every push for them, and it rejected build 141 on
+its first attempt over two invented strings in a test file. Bypassing the block is one click and is
+the wrong move: the rule is right and the fixture was lazy. Shape a fake Speechify key as `sk_` plus
+sixteen or more characters and nothing else.
+
+Keys: `sk_` and nothing else. OpenAI's are `sk-`. One character apart, and that character is all that
+keeps a keyring holding both from filing them under each other, so `MaKeys.SPEECHIFY` exists rather
+than letting them fall through to the generic tier. Twelve tests in
+`lib/dictate-core/.../MaSpeechifyTest.kt` cover the parsing, the mark flattening and the ledger; they
+are pure Kotlin and run in the sandbox, so this whole area is provable without CI.
+
+### Usage and cost: shipped at build 141, and why it counts rather than asks
+
+Under every key in the key manager there is now a line saying what that key has cost.
+
+**Neither provider will tell us.** Speechify's public reference is three groups of endpoints, audio,
+voices and models. There is no usage endpoint, no balance, no spend. `spend_cap` and
+`spend_cap_remaining` are real fields but they only ever reach a webhook or the console, and a
+keyboard has no webhook. AssemblyAI has no balance endpoint on the transcription API either. So the
+numbers are counted here or they do not exist.
+
+That is the better half of the trade anyway: it works with no signal, needs no second credential,
+covers every provider identically and cannot disagree with itself the way two sources do. What it
+cannot see is spending from the console or another device, and the screen **says so** rather than
+implying a total that is not one.
+
+**The counting is exact on the side that matters.** Speechify returns `billable_characters_count`
+with every reply, so the recorded figure is the billed figure rather than a count of the string that
+was sent. Transcription records milliseconds of audio, which the app already knows.
+
+- `MaUsage` in dictate-core is the arithmetic, pure and tested, including the Sunday case in
+  `startOfWeek`: Calendar numbers Sunday as 1, so the obvious subtraction is wrong one day in seven,
+  which is exactly often enough never to be noticed.
+- `MaUsageStore` in the app is one JSON file in `filesDir`. Deliberately not a preference: this is an
+  append-only log, and a preference store would copy it whole on every write and drag it into every
+  backup.
+- **The ledger never holds a key**, only the last four characters, which is enough to line a row up
+  with the list above it and useless to anyone reading the file.
+- **Rates are not invented.** The two AssemblyAI figures are published. Speechify's per-character
+  price depends on the plan and was not verified, so it is left at zero and the line reads *no rate
+  set* beside the real character count. A made up price is worse than no price because it looks like
+  an answer. Setting it is the next small job, along with the whole-app usage screen.
+
+The key tester now probes Speechify by **synthesising two characters** rather than listing anything.
+A key that can list voices but can no longer spend passes a listing test and then fails the moment
+the reader needs it, and a green light on that key is a lie. The probe's own characters go into the
+ledger: a meter that excludes its own traffic drifts.
+
+402 means three different things on this API and they are fixed in three different places, so
+`MaSpeechify.classify` keeps them apart: `spend_cap_exceeded` is this key's own monthly cap,
+`spend_budget_exceeded` is the workspace budget, `payment_required` is the balance. All three are
+QUOTA_EXCEEDED so the key fallback still rolls on, but the sentence under the light says which.
+
+### The trailing space after a suggestion: shipped at build 141
+
+Picking a word from the suggestion strip used only to **arm** the phantom space, so the gap appeared
+at the moment the next word was typed and not before. Correct in the text, wrong on the screen: the
+word sits against whatever follows until you have already typed past it. `commitCompletion` now
+commits a real space and marks it with `autoSpace`, which is the existing mechanism that deletes such
+a space again when punctuation follows, so "word" then "." is still "word." and not "word .".
+
+The phantom space stays armed on purpose. It carries the candidate for the revert-on-backspace path
+in `KeyboardManager`, and its own `determine()` cannot fire twice because the character before the
+cursor is now a space, which is neither a letter, a digit, nor a member of
+`symbolsPrecedingPhantomSpace`.
+
+Not applied when `keyVariation` is anything but `NORMAL`: a space dropped into an email address or a
+URL is a broken value.
+
+This is one of the two halves of the old "trailing space" item. **The other half, the trailing space
+after a recased word, is still open** and is listed below.
 
 ### Next: retranscribe
 
@@ -717,7 +837,8 @@ needing a list, it should look like the panel's list, not a second design.
 
 ### Smaller items, any order
 
-- The trailing space after a recased word
+- The trailing space after a recased word. The suggestion half of this shipped at build 141, see
+  above; the recasing pipeline is a separate path and still does not add one.
 - Theme manager: watch the Downloads folder and import a `.flex` automatically
 - The Auroville theme pack lags the app: locked modifiers show green only on Sunrise, because the
   green lives in the bundled stylesheet. The external repo needs the same rules.

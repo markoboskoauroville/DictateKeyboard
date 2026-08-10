@@ -37,6 +37,7 @@ object MaKeyImport {
      */
     val PROVIDERS = listOf(
         "assemblyai" to "speech to text, the transcription engine",
+        "speechify" to "the reader's voice, English, with word timings",
         "anthropic" to "rewording and the restyle prompts",
         "gemini" to "optional second engine, transcription and rewording",
         "groq" to "optional fast fallback",

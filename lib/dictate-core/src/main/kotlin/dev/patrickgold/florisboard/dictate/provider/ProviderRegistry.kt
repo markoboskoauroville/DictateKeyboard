@@ -66,6 +66,7 @@ object ProviderRegistry {
     private val CHAT_ONLY = ProviderCapabilities(chat = true, transcription = false)
     private val CHAT_AND_STT = ProviderCapabilities(chat = true, transcription = true)
     private val STT_ONLY = ProviderCapabilities(chat = false, transcription = true)
+    private val TTS_ONLY = ProviderCapabilities(chat = false, transcription = false, tts = true)
 
     val OPENAI = ProviderPreset(
         id = "openai",
@@ -355,6 +356,32 @@ object ProviderRegistry {
         curatedTranscriptionModels = listOf(OpenAiCompatibleClient.SYNC_MODEL),
     )
 
+    /**
+     * Speechify: the reader's voice, and the only provider here that speaks rather than listens.
+     *
+     * It is a text to speech company and has **no speech to text endpoint at all**. That is written
+     * down in HANDOFF.md and repeated here because the confusion has cost two research passes: their
+     * own "best speech to text APIs" article recommends other companies and reads like a product
+     * page. Nothing may ever point a transcription role at this preset, which is what [TTS_ONLY]
+     * enforces: the keys screen only offers a role a provider can actually perform.
+     *
+     * The wire format has nothing in common with OpenAI's, so it is not handled by
+     * [OpenAiCompatibleClient]; see [MaSpeechify], which is the only place that talks to it.
+     * `supportsDynamicModels` is false because the model list is three names and a live catalog call
+     * on a keyboard settings screen buys nothing.
+     *
+     * The default model is English only, deliberately. Croatian is on the coming-soon list rather
+     * than the supported one, so the reader keeps the Edge voice for Croatian; see [MaSpeechify].
+     */
+    val SPEECHIFY = ProviderPreset(
+        id = "speechify",
+        displayName = "Speechify",
+        baseUrl = MaSpeechify.BASE_URL,
+        capabilities = TTS_ONLY,
+        supportsDynamicModels = false,
+        apiKeyUrl = "https://console.speechify.ai/api-keys",
+    )
+
     val XAI = ProviderPreset(
         id = "xai",
         displayName = "xAI (Grok)",
@@ -413,7 +440,7 @@ object ProviderRegistry {
     // offline Whisper/Parakeet runner that needs no key and no network. The other presets stay
     // defined above so code referencing them by name still compiles, they are simply not offered.
     val presets: List<ProviderPreset> = listOf(
-        ASSEMBLYAI, GEMINI, ANTHROPIC, LOCAL,
+        ASSEMBLYAI, SPEECHIFY, GEMINI, ANTHROPIC, LOCAL,
     )
 
     fun byId(id: String): ProviderPreset? = presets.firstOrNull { it.id == id }
