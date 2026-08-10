@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Spellcheck
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -160,6 +161,15 @@ fun HomeScreen() = FlorisScreen {
                     title = "API keys",
                     summary = "Import, test and manage every key",
                     onClick = { navController.navigate(Routes.Settings.DictateKeys) },
+                )
+            }
+
+            PreferenceGroup(title = "Keyboard") {
+                Preference(
+                    icon = Icons.Default.DragHandle,
+                    title = "Feature row",
+                    summary = "Drag the nine keys into the order you want",
+                    onClick = { navController.navigate(Routes.Settings.MaFeatureRow) },
                 )
             }
 

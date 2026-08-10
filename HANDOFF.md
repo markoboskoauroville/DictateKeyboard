@@ -880,6 +880,49 @@ two implementations of one idea is how they drift.
 The full key map is now three rows deep and still symmetric. Up is the next step, down is the smaller
 state. In AUTO the first row of that table simply does not happen.
 
+### The feature row editor: shipped at build 151
+
+Settings, Mantra, **Feature row**. The nine keys in a list with their own icons, held and dragged into
+any order. The row reads the result immediately.
+
+The argument for it is in this document twice already: the order was corrected by hand at build 139
+and again at build 146, both times from a screenshot with arrows drawn on it, and **both times in the
+direction opposite to what looked sensible from inside the code**. The person holding the keyboard
+should not have to send a picture and wait for a build to move a key.
+
+**Order only. Nothing can be hidden, and this is a safety rule rather than a missing feature.** This
+row is the one that survives when every other row is folded away, so it is the only route to
+backspace, to enter and to the microphone. An editor that could hide those could leave somebody with
+a keyboard that cannot delete a character or end a line and no way back except the settings app.
+Rearranging cannot lock anyone out of anything. Hiding could. If a "hide" column is ever added, `MIC`,
+`BACKSPACE` and `ENTER` must be exempt from it.
+
+- `MaFeatureOrder.parse` **always returns all nine**, whatever is stored. Unknown ids drop, duplicates
+  collapse, and anything missing is appended in default order. That last part is what makes a tenth
+  key safe to add later: it appears at the end for people who already customised the row, instead of
+  being invisible to exactly them. Nine tests hammer this with truncated, garbled and duplicated
+  input, because the failure mode is a keyboard with no enter key.
+- The order is stored as **ids**, not indices, so it survives a key being added or renamed.
+- **The drag is written by hand, not pulled from a library.** Nine items of one fixed height is the
+  case where a reorderable list is a division: target index is drag distance over row height. The
+  fixed `ROW_HEIGHT` is what buys that, so if these rows ever gain different heights the calculation
+  has to be replaced rather than adjusted.
+- `dragOffset` is rebased by `(target - from) * rowHeight` at the moment of a swap. Without it the
+  dragged row jumps a full height exactly when it changes places.
+- Rounding, not truncating, so the swap happens when the row is more than **half** over its neighbour
+  rather than a full row later.
+- A cancelled drag **keeps** the order it reached. The rows have already moved on screen and snapping
+  them back reads as the app undoing something the user watched happen.
+
+**`Icons.Default.KeyboardReturn` does not exist; it is `Icons.AutoMirrored.Filled.KeyboardReturn`.**
+Caught before pushing by grepping the repo for each icon rather than trusting memory: six of the seven
+had proven imports elsewhere and that one had none, which is the signal. `ComputingEvaluator` already
+spells it correctly.
+
+**The app module tests with Kotest `FunSpec`, not `kotlin.test`.** `lib/dictate-core` uses
+`kotlin.test`. Writing an app-module test in the dictate-core style puts it on a classpath that may
+not carry it. Match the module, not the last file you wrote.
+
 ### Next: retranscribe
 
 Robust sending is done. What remains of that item is the manual half: a circular back-arrow, in

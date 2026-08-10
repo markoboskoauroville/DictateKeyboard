@@ -26,6 +26,7 @@ import dev.patrickgold.florisboard.app.setup.NotificationPermissionState
 import dev.patrickgold.florisboard.dictate.DictateFloatingButtonDesign
 import dev.patrickgold.florisboard.dictate.DictateLongformMode
 import dev.patrickgold.florisboard.dictate.MaNumericSecondary
+import dev.patrickgold.florisboard.dictate.MaFeatureOrder
 import dev.patrickgold.florisboard.dictate.MaSpeed
 import dev.patrickgold.florisboard.dictate.audio.DictateAudioSource
 import dev.patrickgold.florisboard.dictate.DictateFloatingButtonSize
@@ -855,6 +856,19 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val maFeatureRowShown = boolean(
             key = "dictate__ma_feature_row_shown",
             default = true,
+        )
+        /**
+         * The feature row's key order, as comma separated ids. Rearranged in Settings, Mantra,
+         * Feature row.
+         *
+         * Stored as a string of ids rather than as indices so that it survives a key being added or
+         * renamed. [MaFeatureOrder.parse] repairs anything unexpected and always returns all nine,
+         * which matters because this row is the one that survives when every other row is folded
+         * away: it is the only route to backspace, to enter and to the microphone.
+         */
+        val maFeatureRowOrder = string(
+            key = "dictate__ma_feature_row_order",
+            default = MaFeatureOrder.DEFAULT_RAW,
         )
         // Zone two: the keyboard itself, everything from the number row down to the bottom row,
         // switched as one from the feature row. Zone one is the edit strip and rides on maEditRow,
