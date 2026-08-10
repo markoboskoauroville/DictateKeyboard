@@ -30,7 +30,16 @@ enum class MaFeatureKey(val id: String, val label: String) {
     ZONE_1("zone1", "1, the number row"),
     ZONE_2("zone2", "2, the keys"),
     ZONE_3("zone3", "3, the copy row"),
-    ENTER("enter", "Enter");
+    ENTER("enter", "Enter"),
+
+    /**
+     * The Little Man AI Assistant, on the row itself.
+     *
+     * Off by default, so an existing keyboard does not silently gain a key: [MaFeatureOrder.DEFAULT]
+     * lists it, which is what makes it appear in the editor, and [MaFeatureOrder.DEFAULT_HIDDEN]
+     * switches it off until it is wanted. That pair is also the pattern for every key added later.
+     */
+    LITTLE_MAN("little_man", "Little Man AI Assistant");
 
     companion object {
         fun byId(id: String): MaFeatureKey? = entries.firstOrNull { it.id == id }
@@ -44,6 +53,29 @@ enum class MaFeatureKey(val id: String, val label: String) {
  * from the composable that draws the row so that both the row and the editor read the same thing.
  */
 object MaFeatureOrder {
+
+    /**
+     * The three keys that can be moved but never switched off.
+     *
+     * This row is the one that survives when every other row is folded away. `BACKSPACE` and `ENTER`
+     * are the only keys from the keyboard proper with no substitute anywhere once zone two is shut,
+     * and `MIC` is the only route to the dictation screen and therefore back out of it. Hiding any of
+     * the three leaves a keyboard that cannot delete a character, cannot end a line, or cannot reach
+     * the feature the app is named after, with no way back except the settings app.
+     *
+     * Rearranging can never lock anybody out of anything. Switching off can, and this is the line.
+     */
+    val ALWAYS_ON: Set<MaFeatureKey> = setOf(
+        MaFeatureKey.MIC,
+        MaFeatureKey.BACKSPACE,
+        MaFeatureKey.ENTER,
+    )
+
+    // DECLARED FIRST ON PURPOSE. DEFAULT_HIDDEN_RAW below calls serializeHidden, which reads this
+    // set, and an object initialises its properties top to bottom: with this declared underneath it
+    // would still be null at that moment, and the first touch of MaFeatureOrder would throw. Nothing
+    // in the compiler warns about it and nothing in the editor does either.
+
 
     /**
      * Marko's order at build 146, and the one a reset returns to.
@@ -63,9 +95,21 @@ object MaFeatureOrder {
         MaFeatureKey.ZONE_2,
         MaFeatureKey.ZONE_3,
         MaFeatureKey.ENTER,
+        MaFeatureKey.LITTLE_MAN,
     )
 
     val DEFAULT_RAW: String = serialize(DEFAULT)
+
+    /**
+     * Switched off to begin with: the Little Man's own key.
+     *
+     * A key added to this row appears in the editor immediately and on the keyboard only when asked
+     * for. A row that grows a key on its own is a row whose other keys all moved, and every one of
+     * those positions is something a thumb had learned.
+     */
+    val DEFAULT_HIDDEN: Set<MaFeatureKey> = setOf(MaFeatureKey.LITTLE_MAN)
+
+    val DEFAULT_HIDDEN_RAW: String = serializeHidden(DEFAULT_HIDDEN)
 
     /**
      * Parses a stored order, and **always returns all nine keys**.
@@ -85,6 +129,26 @@ object MaFeatureOrder {
     }
 
     fun serialize(order: List<MaFeatureKey>): String = order.joinToString(",") { it.id }
+
+    /**
+     * The keys switched off, read from the stored list.
+     *
+     * [ALWAYS_ON] is subtracted here rather than only in the editor, so a preference edited by hand,
+     * restored from an old backup, or written by a future bug still cannot produce a keyboard with no
+     * enter key. The guarantee belongs at the point the value is read, not at the point it is set.
+     */
+    fun parseHidden(raw: String?): Set<MaFeatureKey> =
+        raw.orEmpty()
+            .split(',')
+            .mapNotNull { MaFeatureKey.byId(it.trim()) }
+            .toSet() - ALWAYS_ON
+
+    fun serializeHidden(hidden: Set<MaFeatureKey>): String =
+        (hidden - ALWAYS_ON).joinToString(",") { it.id }
+
+    /** The keys actually drawn, in order. */
+    fun visible(order: List<MaFeatureKey>, hidden: Set<MaFeatureKey>): List<MaFeatureKey> =
+        order.filterNot { it in hidden - ALWAYS_ON }
 
     /**
      * Moves the key at [from] to [to], shifting the rest along.

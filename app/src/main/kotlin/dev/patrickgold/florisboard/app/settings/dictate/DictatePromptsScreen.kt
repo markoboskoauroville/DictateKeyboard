@@ -113,9 +113,9 @@ fun DictatePromptsScreen(
     // editor should open automatically once the list has loaded (-1 = none, the normal entry).
     editPromptId: Int = -1,
 ) = FlorisScreen {
-    // "Little man", after the button it fills. The prompts here are what its row offers, so the
+    // "Little Man AI Assistant", after the button it fills. The prompts here are what its row offers, so the
     // screen is named for the thing rather than for the abstraction.
-    title = "Little man"
+    title = "Little Man AI Assistant"
     scrollable = false
 
     val context = LocalContext.current

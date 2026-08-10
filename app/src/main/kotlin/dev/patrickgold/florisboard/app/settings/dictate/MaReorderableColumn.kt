@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -51,6 +52,10 @@ fun <T> MaReorderableColumn(
     row: @Composable (index: Int, item: T, lifted: Boolean) -> Unit,
 ) {
     val rowHeightPx = with(LocalDensity.current) { rowHeight.toPx() }
+    // Read inside the gesture without being part of its key. See the comment on pointerInput below.
+    val liveItems by rememberUpdatedState(items)
+    val liveOnMove by rememberUpdatedState(onMove)
+    val liveOnSettled by rememberUpdatedState(onSettled)
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffset by remember { mutableStateOf(0f) }
 
@@ -65,7 +70,15 @@ fun <T> MaReorderableColumn(
                     // rest sit still and let the list re-sort underneath it.
                     .zIndex(if (isDragging) 1f else 0f)
                     .offset { IntOffset(0, if (isDragging) dragOffset.roundToInt() else 0) }
-                    .pointerInput(index, items) {
+                    // KEYED ON index ALONE, never on items.
+                    //
+                    // With `items` in the key this restarted the moment the order changed, which is
+                    // the moment the first swap happened, and restarting a pointerInput cancels the
+                    // gesture running inside it. The symptom was a drag that moved a row exactly one
+                    // place and then died, every time, which is what Marko reported. The live list is
+                    // read through rememberUpdatedState instead, so the lambda always sees the
+                    // current one without the input ever being torn down mid-drag.
+                    .pointerInput(index) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = {
                                 draggingIndex = index
@@ -80,9 +93,9 @@ fun <T> MaReorderableColumn(
                                 // expects rather than a full row later.
                                 val moved = (dragOffset / rowHeightPx).roundToInt()
                                 if (moved != 0) {
-                                    val target = (from + moved).coerceIn(0, items.size - 1)
+                                    val target = (from + moved).coerceIn(0, liveItems.size - 1)
                                     if (target != from) {
-                                        onMove(from, target)
+                                        liveOnMove(from, target)
                                         draggingIndex = target
                                         // Rebased to the NEW slot. Without this the row jumps a full
                                         // height at the exact moment it changes places.
@@ -93,7 +106,7 @@ fun <T> MaReorderableColumn(
                             onDragEnd = {
                                 draggingIndex = null
                                 dragOffset = 0f
-                                onSettled()
+                                liveOnSettled()
                             },
                             // A cancelled drag KEEPS the order it reached. The rows have already
                             // moved on screen, and snapping them back reads as the app undoing
@@ -101,7 +114,7 @@ fun <T> MaReorderableColumn(
                             onDragCancel = {
                                 draggingIndex = null
                                 dragOffset = 0f
-                                onSettled()
+                                liveOnSettled()
                             },
                         )
                     },

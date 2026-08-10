@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 156. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 159. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -1089,6 +1089,46 @@ text field that greets you with a live microphone is a surprise every time it ha
 an option: it is entered to read something specific, and a keyboard that opens into it is a keyboard
 that cannot type. An unreadable preference falls to the keyboard, never to dictation: one is a
 surprise, the other is a live microphone.
+
+### Three feature row fixes, all reported by Marko: build 159
+
+**The drag only ever moved one place, then died.** `MaReorderableColumn` keyed its `pointerInput` on
+`(index, items)`, so the moment the order changed the input restarted, and restarting a `pointerInput`
+**cancels the gesture running inside it**. The first swap killed its own drag, every time. The list is
+read through `rememberUpdatedState` now and the key is `index` alone. Never put a changing collection
+in a `pointerInput` key.
+
+**The AP icon did not match the keyboard.** AP is drawn on the row as the two letters `AP`, and the
+comment at the key says why: every clipboard glyph already means one of the four keys beside it. The
+editor invented a `ContentPaste` icon, so it showed something that appears nowhere on the keyboard.
+The editor must show the key, not an idea of the key.
+
+**Keys can now be switched off**, with a checkbox each. `MIC`, `BACKSPACE` and `ENTER` cannot, and the
+exemption is enforced in `parseHidden` and `visible` rather than only in the editor: a preference
+edited by hand or restored from an old backup must still not be able to produce a keyboard that
+cannot delete a character, end a line, or reach the dictation view. The locked rows show a tick that
+does not respond rather than no tick, because an empty space invites the question and a fixed tick
+answers it.
+
+**A Kotlin object initialises its properties top to bottom.** `DEFAULT_HIDDEN_RAW` calls
+`serializeHidden`, which reads `ALWAYS_ON`; with `ALWAYS_ON` declared below it, it is still null at
+that moment and the first touch of `MaFeatureOrder` throws. Nothing warns about this. `ALWAYS_ON` is
+declared first on purpose and there is a comment saying so.
+
+### Little Man AI Assistant: renamed, and on the row. Build 159
+
+Renamed everywhere it is shown. He also has a key on the feature row now, wearing
+`RecordVoiceOver`, the same icon his settings entry uses, so the row and the settings list name him
+the same way.
+
+**He ships switched OFF**, listed in `DEFAULT` and hidden in `DEFAULT_HIDDEN`. That pair is the
+pattern for every key added later: it appears in the editor at once and on the keyboard only when
+asked for. A row that grows a key on its own is a row whose other keys all moved, and every one of
+those positions is something a thumb had learned.
+
+**Still to build, and it is the larger half:** his own bar in the keyboard view stripped to a single
+button, the voice-prompt history box beside him with summary above and prompt below, long press to
+open an editor, and the model picker in his settings.
 
 ### Next: retranscribe
 

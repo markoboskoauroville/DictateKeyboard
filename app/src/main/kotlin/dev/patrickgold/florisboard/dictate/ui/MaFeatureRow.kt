@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Timer
@@ -159,7 +160,15 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
         // survives when every other row is folded away, so it is the only route to backspace, to
         // enter and to the microphone. Rearranging cannot lock anybody out of anything. Hiding could.
         val orderRaw by prefs.dictate.maFeatureRowOrder.collectAsState()
-        val order = remember(orderRaw) { MaFeatureOrder.parse(orderRaw) }
+        val hiddenRaw by prefs.dictate.maFeatureRowHidden.collectAsState()
+        // visible() subtracts ALWAYS_ON itself, so backspace, enter and the microphone survive any
+        // stored value at all, including one edited by hand or restored from an old backup.
+        val order = remember(orderRaw, hiddenRaw) {
+            MaFeatureOrder.visible(
+                MaFeatureOrder.parse(orderRaw),
+                MaFeatureOrder.parseHidden(hiddenRaw),
+            )
+        }
 
         order.forEach { key ->
             when (key) {
@@ -243,6 +252,25 @@ fun MaFeatureRow(modifier: Modifier = Modifier) {
                     // 3, the copy and paste row along the top. Paste, copy, history and the rest of it.
                     ThemedTextKey("3", keyMod, if (zone3) onGreen else null, fold) {
                         scope.launch { prefs.dictate.maEditRow.set(!zone3) }
+                    }
+                }
+
+                MaFeatureKey.LITTLE_MAN -> {
+                    // The assistant, on the row itself. Off by default; switched on in the editor.
+                    //
+                    // RecordVoiceOver rather than a face: it is the icon his settings entry already
+                    // wears, so the row and the settings list name him the same way. It is also the
+                    // only speaking-head glyph with a proven import in this repo, and an icon that
+                    // exists in the docs but not in the artifact this project resolves is a build
+                    // failure named after a file nobody was editing.
+                    ThemedIconKey(
+                        code = KeyCode.NOOP,
+                        icon = Icons.Default.RecordVoiceOver,
+                        contentDescription = "Little Man AI Assistant",
+                        modifier = keyMod,
+                        onLongClick = fold,
+                    ) {
+                        keyboardManager.activeState.imeUiMode = ImeUiMode.TRANSCRIBE
                     }
                 }
 

@@ -887,6 +887,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "dictate__ma_settings_order",
             default = "",
         )
+        /** Feature row keys switched off, as comma separated ids. See MaFeatureOrder.parseHidden. */
+        val maFeatureRowHidden = string(
+            key = "dictate__ma_feature_row_hidden",
+            default = MaFeatureOrder.DEFAULT_HIDDEN_RAW,
+        )
         val maFeatureRowOrder = string(
             key = "dictate__ma_feature_row_order",
             default = MaFeatureOrder.DEFAULT_RAW,

@@ -18,11 +18,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Backspace
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -40,6 +41,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaFeatureKey
 import dev.patrickgold.florisboard.dictate.MaFeatureOrder
@@ -84,6 +86,8 @@ fun MaFeatureRowScreen() = FlorisScreen {
         // finger. Writing to the preference on every pixel would round-trip through the datastore and
         // the keyboard's own recomposition for each frame of a drag.
         var order by remember(storedRaw) { mutableStateOf(MaFeatureOrder.parse(storedRaw)) }
+        val hiddenRaw by prefs.dictate.maFeatureRowHidden.collectAsState()
+        var hidden by remember(hiddenRaw) { mutableStateOf(MaFeatureOrder.parseHidden(hiddenRaw)) }
         var draggingIndex by remember { mutableStateOf<Int?>(null) }
         var dragOffset by remember { mutableStateOf(0f) }
 
@@ -94,8 +98,8 @@ fun MaFeatureRowScreen() = FlorisScreen {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         Text(
-            text = "Every key stays on the row. Nothing here can remove one: with the keyboard " +
-                "folded away this row is the only way to reach backspace, enter and the microphone.",
+            text = "Untick a key to take it off the row. Backspace, enter and the microphone cannot " +
+                "be taken off: with the keyboard folded away this row is the only way to reach them.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -111,7 +115,22 @@ fun MaFeatureRowScreen() = FlorisScreen {
                 scope.launch { prefs.dictate.maFeatureRowOrder.set(MaFeatureOrder.serialize(order)) }
             },
         ) { index, key, lifted ->
-            MaFeatureRowItem(position = index + 1, key = key, lifted = lifted)
+            MaFeatureRowItem(
+                position = index + 1,
+                key = key,
+                lifted = lifted,
+                enabled = key !in hidden,
+                // The three that cannot be switched off show a tick that does not respond, rather
+                // than no tick at all: an empty space invites the question "why not this one", and a
+                // fixed tick answers it before it is asked.
+                locked = key in MaFeatureOrder.ALWAYS_ON,
+                onToggle = {
+                    hidden = if (key in hidden) hidden - key else hidden + key
+                    scope.launch {
+                        prefs.dictate.maFeatureRowHidden.set(MaFeatureOrder.serializeHidden(hidden))
+                    }
+                },
+            )
         }
 
         Spacer(Modifier.height(16.dp))
@@ -119,7 +138,11 @@ fun MaFeatureRowScreen() = FlorisScreen {
         OutlinedButton(
             onClick = {
                 order = MaFeatureOrder.DEFAULT
-                scope.launch { prefs.dictate.maFeatureRowOrder.set(MaFeatureOrder.DEFAULT_RAW) }
+                hidden = MaFeatureOrder.DEFAULT_HIDDEN
+                scope.launch {
+                    prefs.dictate.maFeatureRowOrder.set(MaFeatureOrder.DEFAULT_RAW)
+                    prefs.dictate.maFeatureRowHidden.set(MaFeatureOrder.DEFAULT_HIDDEN_RAW)
+                }
             },
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
@@ -129,7 +152,14 @@ fun MaFeatureRowScreen() = FlorisScreen {
 }
 
 @Composable
-private fun MaFeatureRowItem(position: Int, key: MaFeatureKey, lifted: Boolean) {
+private fun MaFeatureRowItem(
+    position: Int,
+    key: MaFeatureKey,
+    lifted: Boolean,
+    enabled: Boolean,
+    locked: Boolean,
+    onToggle: () -> Unit,
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -159,7 +189,20 @@ private fun MaFeatureRowItem(position: Int, key: MaFeatureKey, lifted: Boolean) 
                 text = key.label,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (lifted) FontWeight.SemiBold else FontWeight.Normal,
+                // A switched-off key is greyed rather than removed, so the list stays the same shape
+                // whatever is on: a list whose rows come and go cannot be learned by position.
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 modifier = Modifier.weight(1f),
+            )
+            Checkbox(
+                checked = enabled,
+                // Locked keys are not disabled, they are simply not clickable, so the tick keeps its
+                // normal colour instead of going grey and reading as "off".
+                onCheckedChange = if (locked) null else ({ onToggle() }),
             )
             Icon(
                 imageVector = Icons.Default.DragHandle,
@@ -183,8 +226,13 @@ private fun MaFeatureIcon(key: MaFeatureKey) {
     val tint = MaterialTheme.colorScheme.onSurface
     val size = Modifier.size(24.dp)
     when (key) {
-        MaFeatureKey.ALL_PASTE ->
-            Icon(Icons.Default.ContentPaste, contentDescription = null, tint = tint, modifier = size)
+        // AP is TWO LETTERS on the row, not a picture, and the reason is written at the key itself:
+        // every clipboard glyph already means one of the four keys beside it. Drawing an icon here
+        // made the editor show something that appears nowhere on the keyboard, which is exactly the
+        // mismatch Marko spotted. The editor has to show the key, not an idea of the key.
+        MaFeatureKey.ALL_PASTE -> Box(modifier = size, contentAlignment = Alignment.Center) {
+            Text(text = "AP", color = tint, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        }
         MaFeatureKey.SELECT_ALL ->
             Icon(Icons.Default.SelectAll, contentDescription = null, tint = tint, modifier = size)
         MaFeatureKey.BACKSPACE ->
@@ -215,6 +263,8 @@ private fun MaFeatureIcon(key: MaFeatureKey) {
                 fontWeight = FontWeight.SemiBold,
             )
         }
+        MaFeatureKey.LITTLE_MAN ->
+            Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = tint, modifier = size)
         MaFeatureKey.ENTER ->
             // AutoMirrored, not Default. The repo already uses it that way in ComputingEvaluator,
             // which is the check that caught this: Icons.Default.KeyboardReturn is the deprecated
