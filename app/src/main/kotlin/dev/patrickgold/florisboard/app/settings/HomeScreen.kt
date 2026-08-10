@@ -170,11 +170,6 @@ fun HomeScreen() = FlorisScreen {
                     onClick = { navController.navigate(Routes.Settings.DictateRecording) },
                 )
                 Preference(
-                    icon = Icons.Default.Translate,
-                    title = stringRes(R.string.dictate__languages_title),
-                    onClick = { navController.navigate(Routes.Settings.DictateLanguages) },
-                )
-                Preference(
                     icon = Icons.Default.RecordVoiceOver,
                     title = "Little man",
                     summary = "His buttons, their prompts, and what he remembers",

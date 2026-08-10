@@ -116,7 +116,7 @@ import dev.patrickgold.florisboard.FlorisImeService
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
-import dev.patrickgold.florisboard.dictate.DictateLanguages
+import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.florisboard.clipboardManager
 import dev.patrickgold.florisboard.editorInstance
 import dev.patrickgold.florisboard.ime.ImeUiMode
@@ -717,43 +717,29 @@ internal fun LegacyActionKey(
 }
 
 /**
- * The language action: shows the active dictation language (globe for auto-detect, else the short code).
- * Tap cycles through the selected languages; long-press opens a picker — mirrors the Smartbar chip.
+ * The language action: **HR** or **ENG**, and one tap moves to the other.
+ *
+ * It used to cycle a selected subset and long-press a picker of that subset, which was the shape for
+ * an app that offered ninety-nine languages. This one offers two, permanently, so there is no subset
+ * to select from, no cycle that could land somewhere unexpected, and nothing for a long press to
+ * open. Auto-detect went with the picker: it only ever meant "choose from the list for me".
+ *
+ * Through MaLanguage rather than DictateController.cycleLanguage, so the transcription language and
+ * the keyboard's suggestion language move together. They are the same decision and there is exactly
+ * one place that writes them.
  */
 @Composable
 private fun LegacyLanguageKey(modifier: Modifier) {
     val prefs by FlorisPreferenceStore
+    val context = LocalContext.current
     val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
-    val selectionRaw by prefs.dictate.inputLanguages.collectAsState()
-    val selection = remember(selectionRaw) { DictateLanguages.parseSelection(selectionRaw) }
-    val active = remember(activeCode) { DictateLanguages.of(activeCode) }
-    var menuOpen by remember { mutableStateOf(false) }
-    Box(modifier = modifier) {
-        ThemedKey(
-            code = KeyCode.NOOP,
-            modifier = Modifier.fillMaxSize(),
-            onLongClick = { if (selection.size > 1) menuOpen = true },
-            onClick = { DictateController.cycleLanguage() },
-        ) { fg ->
-            if (active.code == DictateLanguages.DETECT) {
-                Icon(Icons.Default.Language, contentDescription = stringRes(R.string.dictate__language_detect), tint = fg, modifier = Modifier.size(22.dp))
-            } else {
-                Text(active.shortCode, color = fg, fontWeight = FontWeight.SemiBold)
-            }
-        }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            selection.forEach { lang ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            if (lang.code == DictateLanguages.DETECT) stringRes(R.string.dictate__language_detect)
-                            else lang.displayName(),
-                        )
-                    },
-                    onClick = { DictateController.setLanguage(lang.code); menuOpen = false },
-                )
-            }
-        }
+    val badge = remember(activeCode) { MaLanguage.badge() }
+    ThemedKey(
+        code = KeyCode.NOOP,
+        modifier = modifier,
+        onClick = { MaLanguage.toggle(context) },
+    ) { fg ->
+        Text(badge, color = fg, fontWeight = FontWeight.SemiBold)
     }
 }
 

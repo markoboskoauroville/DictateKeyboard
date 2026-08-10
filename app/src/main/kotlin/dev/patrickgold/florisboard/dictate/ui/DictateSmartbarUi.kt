@@ -105,7 +105,6 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.florisboard.dictate.DictateController
-import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.dictate.DictateRecordingAnimation
 import dev.patrickgold.florisboard.dictate.PushToTalkPhase
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
@@ -449,12 +448,6 @@ private fun RecordingAudioDot(paused: Boolean, frozen: Boolean = false) {
 }
 
 /**
- * Compact dictation-language selector shown on the recording bar. Tap cycles through the user's
- * selected languages ([prefs.dictate.inputLanguages]); long-press opens a quick picker of that same
- * subset. Auto-detect is shown as a globe; any other language as its short code (DE, EN, …). The
- * choice only matters at transcription time, so switching mid-recording is fine.
- */
-/**
  * HR or ENG, shown while recording, and one tap moves to the other.
  *
  * One toggle rather than one button per language, which is what the rest of this app now does too.
@@ -482,55 +475,6 @@ private fun MaRecordingLanguage() {
     )
 }
 
-@Composable
-private fun LanguageChip() {
-    val prefs by FlorisPreferenceStore
-    val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
-    val selectionRaw by prefs.dictate.inputLanguages.collectAsState()
-    val selection = remember(selectionRaw) { DictateLanguages.parseSelection(selectionRaw) }
-    val active = remember(activeCode) { DictateLanguages.of(activeCode) }
-    var menuOpen by remember { mutableStateOf(false) }
-
-    // Use the same SnyggIconButton as the cancel/pause buttons so the press ripple and footprint
-    // are identical; the dropdown is anchored to the wrapping box.
-    Box(modifier = Modifier.fillMaxHeight()) {
-        SnyggIconButton(
-            elementName = FlorisImeUi.SmartbarActionKey.elementName,
-            onClick = { DictateController.cycleLanguage() },
-            onLongClick = { if (selection.size > 1) menuOpen = true },
-            modifier = Modifier.fillMaxHeight().aspectRatio(1f),
-        ) {
-            if (active.code == DictateLanguages.DETECT) {
-                SnyggIcon(
-                    imageVector = Icons.Default.Language,
-                    contentDescription = stringRes(R.string.dictate__language_detect),
-                    modifier = Modifier.size(20.dp),
-                )
-            } else {
-                SnyggText(text = active.shortCode)
-            }
-        }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            selection.forEach { lang ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            if (lang.code == DictateLanguages.DETECT) {
-                                stringRes(R.string.dictate__language_detect)
-                            } else {
-                                lang.displayName()
-                            }
-                        )
-                    },
-                    onClick = {
-                        DictateController.setLanguage(lang.code)
-                        menuOpen = false
-                    },
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun TranscribingContent(state: DictateController.UiState.Transcribing) {

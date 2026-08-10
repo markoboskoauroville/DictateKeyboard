@@ -69,6 +69,7 @@ import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
+import dev.patrickgold.florisboard.dictate.provider.MaAssemblyStats
 import dev.patrickgold.florisboard.dictate.provider.MaKeyRing
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
 import dev.patrickgold.florisboard.dictate.provider.MaSpeechify
@@ -286,9 +287,19 @@ fun DictateKeysScreen() = FlorisScreen {
                             )
                             .validateKey()
                         MaKeyRingStore.onSuccess(context, preset.id, key)
+                        // AssemblyAI will say more than "it works", so ask it. The transcript list is
+                        // server-side history, which means it counts dictations made from the laptop
+                        // or anywhere else, and the local ledger cannot. See MaAssemblyStats for how
+                        // far this goes and, more usefully, where it stops: there is no balance
+                        // endpoint, and the list carries no durations.
+                        val history = if (preset.id == "assemblyai") {
+                            MaAssemblyStats.describe(MaAssemblyStats.history(key))
+                        } else {
+                            null
+                        }
                         KeyStatus(
                             KeyHealth.WORKING,
-                            if (count >= 0) "works, $count models" else "works",
+                            history ?: if (count >= 0) "works, $count models" else "works",
                         )
                     } catch (e: DictateApiException) {
                         // Same ring as Speechify, same rules, every provider. A verdict reached here

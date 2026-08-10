@@ -727,6 +727,78 @@ Display only; the stored codes stay `en` and `hr` and nothing branches on the st
 **The bin stays.** Marko started to ask for it to be removed from the keyboard view and changed his
 mind inside the same sentence. It was not touched.
 
+### The language picker is gone, and one row carries the two decisions: build 148
+
+Marko sent a screenshot of the Transcription languages screen listing Afrikaans, Albanian, Amharic
+and ninety-six others, on an app whose second rule is that it has exactly two languages, permanently.
+The screen was inherited from the fork and had simply never been deleted. **It is gone, with its
+route, its home entry, its two search index entries and every picker that read from it**: the
+Smartbar chip, the transcribe view's cycle-and-long-press key, and the recording bar chip. All three
+are now the same one tap toggle, showing HR or ENG.
+
+`DictateLanguages.kt` itself stays. It is the code table, and `DictateController` still needs it to
+name a language on the wire. What is removed is every place that offered it as a **choice**. If a
+picker over that table ever reappears, that is this mistake coming back.
+
+`prefs.dictate.inputLanguages` also stays for now, written to `hr,en` by the migrator, because
+several call sites still read it. Emptying it is a separate job and a wrong move if rushed: the
+active language snaps back into that selection on load, so a blank one would strand the language.
+
+**FAST and SLOW, on the quick row, in the slot the language buttons gave back.** One saving paid
+straight into the next thing worth reaching without opening settings. SLOW uploads a small compressed
+file and waits for the job at a third of the price; FAST posts the audio and the transcript comes
+back in the same breath. Which is worth it is a judgement made in the second before speaking, which
+is why it belongs there. **FAST is a preference and never a promise**: anything past the sync
+endpoint's two minute cap goes down the slow path automatically and silently, because a long
+recording is the one that took the most effort and must never be the one that fails.
+
+### What AssemblyAI will actually tell you about a key: build 148
+
+Marko asked whether a key test could report more than "works". It can, and here is exactly how far,
+checked against the live API rather than assumed. This is written down so nobody researches it again.
+
+- **`GET /v2/transcript?limit=200` works** and is now used. It returns the transcripts made with that
+  key: status, created, error. Sorted newest first, **last 90 days only**, 200 to a page. It is
+  server-side, so it counts dictations made from the laptop or anywhere else, which the local ledger
+  cannot see. The key row now reads e.g. *"47 transcriptions in 90 days, 2 failed, last 2026-08-09"*.
+- **There is no usage or balance endpoint.** `/v2/usage`, `/v2/billing` and `/v2/account/usage` are
+  all 404, probed directly. **`/v2/account` answers `200 {}` to an invalid key**, so it returns an
+  empty object to anybody; a secret-scanning vendor's page describes it as returning "usage limits
+  and remaining credits" and that is wrong. Do not build on it.
+- **The list carries no `audio_duration`.** That lives on the individual transcript, so minutes would
+  cost one request per transcript: two hundred round trips to total one page, on a phone, on a
+  settings screen. Not done.
+
+So the split is: **the service says how many and when, the ledger says how long and what it cost.**
+Neither is guessed and neither pretends to be the other. `MaAssemblyStats.history` returns null on
+any failure rather than throwing, because it decorates a key that has already passed its real test
+and a working key must never be reported as broken because the decoration did not arrive.
+
+### Next: the volume key opens the drawer before it records
+
+**Asked for at build 148, not yet built.** Volume up currently starts a recording immediately. The
+new workflow is two presses:
+
+1. **First press opens the drawer**: the dictation bar appears in the keyboard view, showing the
+   language toggle and FAST/SLOW, and records nothing. Marko checks the two settings.
+2. **Second press starts recording.**
+
+This lands on top of two things that already exist, which is why it is worth doing now rather than
+earlier. The strip is already dynamic (build 147) and already knows how to appear and reserve its
+height in the same frame, so the drawer is that mechanism with a third reason to open. And both
+controls the drawer must show already exist as one-tap toggles (build 148).
+
+Things to settle while building it, none of them guessable:
+
+- **What closes the drawer if the second press never comes.** A drawer that opens on a stray press
+  and stays forever is the always-on row that was just removed. A timeout is the obvious answer and
+  the length matters: too short and it closes while Marko is deciding.
+- **Volume down.** It currently cancels while recording and switches language when idle. With an
+  armed-but-not-recording state there is a third case, and the natural meaning is close the drawer.
+- **The armed state has to look different from recording**, or the first press will read as a failed
+  recording. Colour is reserved for state in this app, which is exactly what this is: gold armed,
+  red recording, and those two are already the established pair on the keyboard's own modifier keys.
+
 ### Next: retranscribe
 
 Robust sending is done. What remains of that item is the manual half: a circular back-arrow, in
