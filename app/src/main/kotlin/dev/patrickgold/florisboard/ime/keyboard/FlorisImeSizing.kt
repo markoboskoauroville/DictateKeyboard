@@ -91,6 +91,9 @@ object FlorisImeSizing {
         // to come and go with it. This is the OTHER half of the pair that must agree; see
         // [maSmartbarHasContent], which is the single place that decides, and the fold at build 138,
         // which is what happens when the two halves disagree.
+        //
+        // ONLY the drawn keyboard may ask this. Anything that merely wants the keyboard's size asks
+        // [smartbarLayoutRowCountAsState] instead; see [smartbarLayoutHeight] for why the two exist.
         val hasContent = maSmartbarHasContent()
         // Keyed on hasContent deliberately. An unkeyed remember here would capture the value of a
         // plain Boolean once and never see it change again, and the row would be stuck at whatever
@@ -118,9 +121,75 @@ object FlorisImeSizing {
         return smartbarHeight * smartbarRowCount
     }
 
+    /**
+     * The smartbar's height **as a structural fact**, ignoring whether it currently has anything to
+     * say.
+     *
+     * The difference from [smartbarUiHeight] is the whole of this fix. The dynamic rule added at
+     * build 147 belongs to the typing view, which is the only place the Smartbar is actually drawn:
+     * `TextInputLayout` calls it and nothing else does. The panels, the reader, the clipboard, media
+     * and history, never draw it at all; they call [panelUiHeight] purely to answer "how tall is the
+     * keyboard I am replacing", so that swapping between them does not resize the window.
+     *
+     * Feeding the dynamic answer into that question made the reader shrink by a row exactly because
+     * it had nothing to suggest, which is always, and the reader subtracts a further fixed
+     * `smartbarHeight` on top. That is two rows of page gone and the control row pushed down.
+     *
+     * So: dynamic where it is drawn, structural where it is only being measured.
+     */
+    @Composable
+    fun smartbarLayoutHeight(): Dp {
+        val smartbarRowCount by smartbarLayoutRowCountAsState()
+        return smartbarHeight * smartbarRowCount
+    }
+
+    /**
+     * The rows the smartbar occupies as a matter of layout, whatever it currently holds.
+     *
+     * The same arithmetic as [smartbarRowCountAsState] with the content test removed. Written out
+     * rather than sharing a helper because the two must be free to diverge: one answers "what is on
+     * screen" and the other "what shape is this keyboard", and a future change to either has no
+     * business silently changing the other.
+     */
+    @Composable
+    fun smartbarLayoutRowCountAsState(): State<Int> {
+        val prefs by FlorisPreferenceStore
+        val smartbarEnabled by prefs.smartbar.enabled.collectAsState()
+        val smartbarLayout by prefs.smartbar.layout.collectAsState()
+        val extendedActionsExpanded by prefs.smartbar.extendedActionsExpanded.collectAsState()
+        return remember {
+            derivedStateOf {
+                if (smartbarEnabled) {
+                    when (smartbarLayout) {
+                        SmartbarLayout.SUGGESTIONS_ACTIONS_EXTENDED -> {
+                            if (extendedActionsExpanded) 2 else 1
+                        }
+                        else -> 1
+                    }
+                } else {
+                    0
+                }
+            }
+        }
+    }
+
     @Composable
     fun imeUiHeight(): Dp {
         return keyboardUiHeight() + smartbarUiHeight()
+    }
+
+    /**
+     * The same total, but as a shape rather than as what is currently on screen.
+     *
+     * For the views that size themselves to "as tall as the keyboard" without drawing the Smartbar:
+     * the transcribe view, the dictate layout and the GIF panel. On the dynamic total they would each
+     * grow by a row the instant a recording started, because that is when the strip acquires
+     * something to say, and shrink again when it finished. A view that changes height because a
+     * recording began is a view that jumps under the thumb at the exact moment it is being used.
+     */
+    @Composable
+    fun imeUiLayoutHeight(): Dp {
+        return keyboardUiHeight() + smartbarLayoutHeight()
     }
 
     /**
@@ -151,7 +220,9 @@ object FlorisImeSizing {
             } else {
                 0.dp
             }
-        return keyboardRowBaseHeight * rowCount.coerceAtLeast(4) + smartbarUiHeight() + promptRowHeight
+        // smartbarLayoutHeight, NOT smartbarUiHeight. A panel is as tall as the keyboard it replaces,
+        // and the keyboard's shape does not change because there is nothing to suggest right now.
+        return keyboardRowBaseHeight * rowCount.coerceAtLeast(4) + smartbarLayoutHeight() + promptRowHeight
     }
 }
 

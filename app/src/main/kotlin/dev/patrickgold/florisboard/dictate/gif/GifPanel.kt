@@ -176,7 +176,7 @@ fun GifPanel(
         modifier = modifier
             .fillMaxWidth()
             // Taller than a normal keyboard so more (and larger) GIFs are visible at once.
-            .height(FlorisImeSizing.imeUiHeight() + FlorisImeSizing.keyboardRowBaseHeight * 2),
+            .height(FlorisImeSizing.imeUiLayoutHeight() + FlorisImeSizing.keyboardRowBaseHeight * 2),
     ) {
         // Header: back, tappable search field, settings.
         SnyggRow(

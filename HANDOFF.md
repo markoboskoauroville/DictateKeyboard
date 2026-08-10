@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 155. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 156. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -141,6 +141,18 @@ inside it report *"@Composable invocations can only happen from the context of a
 function"*. Eleven errors, one cause, and none of the eleven names it. Compare whole stripped lines.
 `/home/claude/importcheck.py <files>` does this and also checks `getValue`/`setValue` for `by`
 delegates. Cost build 152.
+
+**A dynamic height belongs only where the thing is drawn.** The strip going dynamic at build 147 was
+correct for the typing view and leaked into three places that never draw a Smartbar at all. `Smartbar()`
+is called from `TextInputLayout` and **nowhere else**; the panels, the reader, the clipboard, media,
+history, the transcribe view and the GIF panel only ask `panelUiHeight`/`imeUiHeight` to answer *how
+tall is the keyboard I am replacing*. Feeding them the dynamic answer shrank the reader by a row
+precisely because a reader never has suggestions, and the reader then subtracts a further fixed
+`smartbarHeight` on top, which is two rows of page gone and the control row pushed off the bottom.
+There are now two functions and the distinction is the fix: `smartbarUiHeight`/`imeUiHeight` for what
+is on screen, `smartbarLayoutHeight`/`imeUiLayoutHeight` for what shape the keyboard is. Anything that
+does not call `Smartbar()` wants the second. Cost the reader between builds 147 and 156, and would
+have made the transcribe view jump a row at the instant a recording started.
 
 **Icon imports.** `Icons.Default.X` needs `...icons.filled.X`; `Icons.Outlined.X` needs
 `...icons.outlined.X`. Importing both `filled.X` and `outlined.X` is a name clash and will not

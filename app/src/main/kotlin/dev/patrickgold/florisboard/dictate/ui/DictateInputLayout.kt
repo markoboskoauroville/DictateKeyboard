@@ -83,7 +83,7 @@ fun DictateInputLayout(
         elementName = FlorisImeUi.Media.elementName,
         modifier = modifier
             .fillMaxWidth()
-            .height(FlorisImeSizing.imeUiHeight()),
+            .height(FlorisImeSizing.imeUiLayoutHeight()),
     ) {
         // Header: back to the typing keyboard + panel title.
         SnyggRow(

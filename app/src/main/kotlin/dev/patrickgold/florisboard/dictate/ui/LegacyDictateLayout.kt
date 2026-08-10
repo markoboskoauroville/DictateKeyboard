@@ -1394,7 +1394,7 @@ private fun LegacyNumberPadOverlay(onClose: () -> Unit) {
     val keyboardManager by context.keyboardManager()
     SnyggColumn(
         elementName = FlorisImeUi.Media.elementName,
-        modifier = Modifier.fillMaxWidth().height(FlorisImeSizing.imeUiHeight()).padding(horizontal = KeyMarginH, vertical = KeyMarginV),
+        modifier = Modifier.fillMaxWidth().height(FlorisImeSizing.imeUiLayoutHeight()).padding(horizontal = KeyMarginH, vertical = KeyMarginV),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().height(FlorisImeSizing.smartbarHeight),
