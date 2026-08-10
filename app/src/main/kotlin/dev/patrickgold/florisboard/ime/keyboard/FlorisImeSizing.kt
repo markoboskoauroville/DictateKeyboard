@@ -36,6 +36,7 @@ import dev.patrickgold.florisboard.ime.nlp.NlpInlineAutofill
 import dev.patrickgold.florisboard.ime.smartbar.ExtendedActionsPlacement
 import dev.patrickgold.florisboard.ime.smartbar.InlineSuggestionsChipMargin
 import dev.patrickgold.florisboard.ime.smartbar.SmartbarLayout
+import dev.patrickgold.florisboard.ime.smartbar.maSmartbarHasContent
 import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyboard
 import dev.patrickgold.florisboard.ime.window.LocalWindowController
 import dev.patrickgold.florisboard.keyboardManager
@@ -86,9 +87,18 @@ object FlorisImeSizing {
         val smartbarLayout by prefs.smartbar.layout.collectAsState()
         val extendedActionsExpanded by prefs.smartbar.extendedActionsExpanded.collectAsState()
         val extendedActionsPlacement by prefs.smartbar.extendedActionsPlacement.collectAsState()
-        return remember {
+        // MA TWIST: the strip only exists when it has something to say, so the height it reserves has
+        // to come and go with it. This is the OTHER half of the pair that must agree; see
+        // [maSmartbarHasContent], which is the single place that decides, and the fold at build 138,
+        // which is what happens when the two halves disagree.
+        val hasContent = maSmartbarHasContent()
+        // Keyed on hasContent deliberately. An unkeyed remember here would capture the value of a
+        // plain Boolean once and never see it change again, and the row would be stuck at whatever
+        // it was when the keyboard opened. The delegated preferences above get away with it because
+        // each of them is a State object being read live inside the lambda; a Boolean is not.
+        return remember(hasContent) {
             derivedStateOf {
-                if (smartbarEnabled) {
+                if (smartbarEnabled && hasContent) {
                     if (smartbarLayout == SmartbarLayout.SUGGESTIONS_ACTIONS_EXTENDED && extendedActionsExpanded &&
                         extendedActionsPlacement != ExtendedActionsPlacement.OVERLAY_APP_UI) {
                         2

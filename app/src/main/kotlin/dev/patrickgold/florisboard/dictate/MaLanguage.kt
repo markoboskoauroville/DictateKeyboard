@@ -62,8 +62,18 @@ object MaLanguage {
         return if (code == EN) EN else HR
     }
 
-    /** The two-letter badge shown wherever the language is displayed. */
-    fun badge(): String = active().uppercase()
+    /**
+     * The badge shown wherever the language is displayed: **HR** or **ENG**.
+     *
+     * Three letters for English and two for Croatian, which is deliberately uneven. `EN` and `HR`
+     * are the same shape and the same weight, so at a glance in the corner of a moving keyboard they
+     * read as "some code" rather than as a word, and telling them apart takes a moment of actual
+     * reading. `ENG` does not look like `HR`. Marko asked for these two spellings by name and this is
+     * why they are right.
+     *
+     * Display only. The stored codes stay `en` and `hr`, and nothing branches on this string.
+     */
+    fun badge(): String = if (active() == EN) "ENG" else "HR"
 
     /**
      * Sets the language for everything at once.

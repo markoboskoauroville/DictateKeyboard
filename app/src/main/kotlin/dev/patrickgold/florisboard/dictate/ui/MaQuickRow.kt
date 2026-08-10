@@ -51,7 +51,6 @@ import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.MaCase
 import dev.patrickgold.florisboard.dictate.MaLanguage
-import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.dictate.provider.ProviderRegistry
 import dev.patrickgold.florisboard.ime.input.InputShiftState
 import dev.patrickgold.florisboard.ime.keyboard.KeyboardMode
@@ -72,14 +71,18 @@ private fun maQuickAttributes(code: Int) = mapOf(
 )
 
 /**
- * The quick row of the transcribe view: one button per enabled dictation language, plus the current
+ * The quick row of the transcribe view: the language toggle, the four case buttons, and the current
  * transcription model as a dropdown.
  *
- * Before this, switching between Croatian and English meant tapping a single chip repeatedly to cycle
- * through the list, and changing model meant leaving the keyboard for the settings app entirely. Both
- * are checks worth making in the second before speaking, so both belong in the view where the speaking
- * happens. The languages come from what is enabled in settings, so this row is exactly as wide as the
- * user's own selection rather than a fixed set.
+ * Changing model used to mean leaving the keyboard for the settings app entirely, and the language
+ * meant tapping a chip repeatedly to cycle a list. Both are checks worth making in the second before
+ * speaking, so both belong in the view where the speaking happens.
+ *
+ * **One language key, not one per language.** It drew a button for every enabled language and lit
+ * the active one, which is a radio group drawn the expensive way: it spends the width of every
+ * option to say what one word already says. That shape is only right while there might be a third
+ * language. There are two and permanently two, so a toggle is the honest control, and the width it
+ * gives back goes to the keys either side of it on the narrowest surface in the app.
  */
 @Composable
 fun MaQuickRow(modifier: Modifier = Modifier) {
@@ -89,48 +92,42 @@ fun MaQuickRow(modifier: Modifier = Modifier) {
     val maContext = LocalContext.current
 
     val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
-    val selectionRaw by prefs.dictate.inputLanguages.collectAsState()
-    val selection = remember(selectionRaw) { DictateLanguages.parseSelection(selectionRaw) }
+    // The badge, through MaLanguage, so this row shows the same word as the recording bar and the
+    // suggestion strip. Anything that folds a third possibility back in is folding auto-detect back
+    // in, which was removed on purpose.
+    val languageBadge = remember(activeCode) { MaLanguage.badge() }
 
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Auto goes last, and says so in words. A globe means "language" in the abstract, not "work
-        // it out for me", and sitting first it read as the current choice rather than the fallback.
-        // The concrete languages come first because they are the deliberate act; auto is what you
-        // pick when you cannot be bothered to choose, which is exactly where the eye should land
-        // last.
-        val ordered = remember(selection) {
-            selection.filterNot { it.code == DictateLanguages.DETECT } +
-                selection.filter { it.code == DictateLanguages.DETECT }
-        }
-        ordered.forEach { lang ->
-            val isAuto = lang.code == DictateLanguages.DETECT
-            MaQuickKey(
-                selected = lang.code == activeCode,
-                // Through MaLanguage, not setLanguage: this row has to move the suggestion
-                // language with it, or the two drift apart again from the one place they are most
-                // obviously expected to agree.
-                onClick = { MaLanguage.set(maContext, lang.code) },
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-            ) { fg ->
-                if (isAuto) {
-                    Text(
-                        text = "AUTO",
-                        color = fg,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp,
-                    )
-                } else {
-                    Text(
-                        text = lang.shortCode.uppercase(),
-                        color = fg,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
-                    )
-                }
-            }
+        // ONE key, not one per language. This row used to draw a button for every enabled language
+        // and light the active one, which is a radio group drawn the expensive way: it spends the
+        // width of every option to say a thing that one word already says, on the narrowest surface
+        // in the app.
+        //
+        // It is only a radio group at all while there might be three of them. There are two, and
+        // permanently two, so the honest control is a toggle: it shows where you are and one tap is
+        // the only move available. Auto-detect went with the languages it belonged to.
+        //
+        // Through MaLanguage rather than setLanguage, because this has to move the suggestion
+        // language with it, or the two drift apart from the one place they are most obviously
+        // expected to agree.
+        //
+        // No selected state, and that is not an omission. A toggle showing HR is not "HR is on", it
+        // is "you are in HR"; lighting it would say the first, and then the eye asks what the off
+        // state means and there is no answer.
+        MaQuickKey(
+            selected = false,
+            onClick = { MaLanguage.toggle(maContext) },
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        ) { fg ->
+            Text(
+                text = languageBadge,
+                color = fg,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+            )
         }
         // Four case buttons, and they only ever act on text that already exists. They set nothing,
         // remember nothing, and have no on state: press one and the words in the field are rewritten

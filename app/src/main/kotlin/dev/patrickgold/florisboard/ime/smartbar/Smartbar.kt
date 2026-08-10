@@ -136,17 +136,30 @@ fun Smartbar() {
             if (showDictatePromptRow) {
                 DictatePromptRow(dictatePrompts)
             }
+            // MA TWIST: the strip exists only when it has something to say. Marko's ask, and the
+            // reason is one glance at the screenshot: a full row of a phone screen, above a keyboard
+            // that is already the bottom half of the display, holding a language badge and a stretch
+            // of nothing.
+            //
+            // NOT COMPOSED rather than hidden, and with no animation. The height it reserves is
+            // computed separately in FlorisImeSizing, from the same [maSmartbarHasContent], and the
+            // two have to change in the same frame. A fade against an instant height change is the
+            // build 138 fold bug in slow motion: the content goes and the space stays behind.
+            //
+            // The prompt row above is deliberately outside this. It has its own switch, its own
+            // height in panelUiHeight, and it is a row of controls rather than a row of answers.
+            val hasContent = maSmartbarHasContent()
             when (extendedActionsPlacement) {
                 ExtendedActionsPlacement.ABOVE_CANDIDATES -> {
                     SnyggColumn(FlorisImeUi.Smartbar.elementName) {
                         SmartbarSecondaryRow()
-                        SmartbarMainRow()
+                        if (hasContent) SmartbarMainRow()
                     }
                 }
 
                 ExtendedActionsPlacement.BELOW_CANDIDATES -> {
                     SnyggColumn(FlorisImeUi.Smartbar.elementName) {
-                        SmartbarMainRow()
+                        if (hasContent) SmartbarMainRow()
                         SmartbarSecondaryRow()
                     }
                 }
@@ -167,7 +180,7 @@ fun Smartbar() {
                         ) {
                             SmartbarSecondaryRow()
                         }
-                        SmartbarMainRow()
+                        if (hasContent) SmartbarMainRow()
                     }
                 }
             }
@@ -410,12 +423,15 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
                 // where it is the same size and colour as every other key. Both were spending the
                 // width of a suggestion each, on a strip whose whole job is showing suggestions.
                 //
-                // The badge stands down while dictating, so the recording bar gets the whole strip
-                // and its timer sits in the true centre of the screen. Anything at all to the left
-                // of the centre content shifts that centre right by its own width, and a stopwatch
-                // that is nearly centred reads as a mistake rather than as a measurement. Nothing is
-                // lost by hiding it: the language cannot be changed mid recording anyway, since
-                // volume down means cancel while a recording runs.
+                // The badge stands down while dictating, because the recording bar carries its own
+                // now and two of them would be two answers to one question. Anything at all to the
+                // left of the centre content also shifts that centre right by its own width, and a
+                // stopwatch that is nearly centred reads as a mistake rather than as a measurement.
+                //
+                // Since the strip itself now comes and goes, this badge is visible exactly while
+                // there are suggestions to sit beside, which is while typing. That is the moment the
+                // suggestion language matters, so the indicator is present precisely when it means
+                // something and gone when it would only be taking up a row.
                 val isDictatingNow = dictateState !is DictateController.UiState.Idle
                 if (!isDictatingNow) {
                     LanguageToggle()

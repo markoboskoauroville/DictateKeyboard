@@ -665,6 +665,68 @@ a key now goes through `MaKeyRingStore.currentKey` or `.keys` and gets one key.
 `maWithKeyFallback` is now unused and is marked superseded rather than deleted, in case anything
 outside this module still calls it.
 
+### The strip only exists when it has something to say: shipped at build 147
+
+Marko sent a screenshot of the keyboard with the suggestion strip holding the letters `EN` and
+nothing else, across a full row, on a phone, above a keyboard that is already the bottom half of the
+display. It now appears in exactly two cases: **there is a suggestion**, or **a recording is
+running**. Otherwise it is not composed and reserves no height.
+
+**The dangerous part is not the visibility, it is that two pieces of code decide this row.** The one
+that draws it, and `FlorisImeSizing.smartbarRowCountAsState`, which reserves its height. This project
+has already paid for those disagreeing, at build 138 on the keyboard fold: the keys stopped being
+drawn while the arithmetic went on counting four rows, so the keys vanished and the space stayed.
+So `maSmartbarHasContent()` is a single composable both callers read, and anything that changes when
+the strip appears changes there and nowhere else.
+
+For the same reason **there is no animation on this row.** A 200 ms fade against a height that
+changes in one frame is that same disagreement in slow motion, seen as a band of nothing while the
+fade finishes. It appears and disappears with its height, in the same frame.
+
+Two traps met on the way:
+
+- **`remember { derivedStateOf { … } }` with no keys**, which is how `smartbarRowCountAsState` was
+  already written. It works there because every value read inside is a delegated `State` object read
+  live. A plain `Boolean` captured the same way is frozen at first composition and the row sticks at
+  whatever it was when the keyboard opened. The new key is passed as a `remember` key for exactly
+  this reason; do not tidy it away.
+- **No early return above a composable call** in `maSmartbarHasContent`. Every flow is read
+  unconditionally before anything is decided, because an early return changes the slot count of the
+  composition.
+- The prompt row is deliberately **outside** this. It has its own switch and its own term in
+  `panelUiHeight`, and it is a row of controls rather than a row of answers.
+
+A consequence worth knowing rather than discovering: the language badge lives on this strip, so in
+the keyboard view it is visible exactly while there are suggestions beside it, which is while typing.
+That is the moment the suggestion language matters. When idle there is no badge, and the language is
+still switched by volume down, or in the transcribe view.
+
+### One language toggle, everywhere: shipped at build 147
+
+`MaLanguage.badge()` now returns **HR** or **ENG**, and Marko asked for those two spellings by name.
+`EN` and `HR` are the same shape and the same weight, so in the corner of a moving keyboard they read
+as "some code" and telling them apart takes a moment of real reading. `ENG` does not look like `HR`.
+Display only; the stored codes stay `en` and `hr` and nothing branches on the string.
+
+- **The recording bar now carries the language**, inside the centred group and immediately before the
+  meter. While a recording ran there was nothing on screen saying which language it would be
+  transcribed as, which is the one moment the answer matters: by the time a transcript comes back in
+  the wrong language the speaking is already done. It is **inside** the centred group rather than out
+  at an edge, because a badge on the left pushes the stopwatch off centre by its own width and a
+  nearly centred stopwatch reads as a mistake. Tappable, since it cannot be reached any other way
+  mid recording: volume down means cancel while a recording runs.
+- **The transcribe view's quick row is one key, not one per language.** It drew a button per enabled
+  language and lit the active one, which is a radio group drawn the expensive way: it spends the
+  width of every option to say what one word already says. That shape is only right while a third
+  language might appear, and there are two, permanently. Auto-detect went with the languages it
+  belonged to.
+- **The toggle has no selected state**, deliberately. A toggle showing HR is not "HR is on", it is
+  "you are in HR". Lighting it would say the first, and then the eye asks what the unlit state means
+  and there is no answer.
+
+**The bin stays.** Marko started to ask for it to be removed from the keyboard view and changed his
+mind inside the same sentence. It was not touched.
+
 ### Next: retranscribe
 
 Robust sending is done. What remains of that item is the manual half: a circular back-arrow, in

@@ -103,6 +103,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.dictate.MaLanguage
 import dev.patrickgold.florisboard.dictate.DictateController
 import dev.patrickgold.florisboard.dictate.DictateLanguages
 import dev.patrickgold.florisboard.dictate.DictateRecordingAnimation
@@ -250,6 +251,22 @@ private fun RecordingContent(state: DictateController.UiState.Recording) {
                 }
             }
         }
+        // The language, inside the centred group and immediately before the meter.
+        //
+        // Marko asked for it: while a recording is running there was nothing on screen saying which
+        // language it would be transcribed as, and that is the one moment the answer matters, since
+        // by the time the transcript comes back in the wrong language the speaking is already done.
+        //
+        // Here rather than out at an edge because the group is centred as a whole. A badge on the
+        // left would push the stopwatch off centre by its own width, and a stopwatch that is nearly
+        // centred reads as a mistake rather than as a measurement. Inside the group it travels with
+        // it and the group stays centred.
+        //
+        // Tappable, because a language noticed as wrong is a language worth fixing on the spot. It
+        // cannot be reached any other way mid recording: volume down means cancel while a recording
+        // runs, so the key that switches language when idle is doing something else here.
+        MaRecordingLanguage()
+        Spacer(modifier = Modifier.width(6.dp))
         // MA TWIST: oscilloscope behind, braille spinner and stopwatch in front.
         MaRecordingScope(paused = state.paused, frozen = ptt.discarding, elapsedMs = elapsedMs)
         // Segmented mode: how many cut segments are transcribing in the background right now.
@@ -437,6 +454,34 @@ private fun RecordingAudioDot(paused: Boolean, frozen: Boolean = false) {
  * subset. Auto-detect is shown as a globe; any other language as its short code (DE, EN, …). The
  * choice only matters at transcription time, so switching mid-recording is fine.
  */
+/**
+ * HR or ENG, shown while recording, and one tap moves to the other.
+ *
+ * One toggle rather than one button per language, which is what the rest of this app now does too.
+ * There are exactly two languages and there permanently will be, so a row of buttons where only one
+ * can be on is a radio group drawn the expensive way: it costs the width of every option to say a
+ * thing a single word already says.
+ *
+ * Written as text at the strip's own scale rather than as another round icon key. The buttons either
+ * side of the meter are actions, and a state readout that looks like them invites being pressed by
+ * mistake while the finger is going for send.
+ */
+@Composable
+private fun MaRecordingLanguage() {
+    val prefs by FlorisPreferenceStore
+    val context = LocalContext.current
+    // Read through the preference so it recomposes when the language is changed anywhere else, and
+    // through MaLanguage so the string is the same one every other surface shows.
+    val activeCode by prefs.dictate.activeInputLanguage.collectAsState()
+    val badge = remember(activeCode) { MaLanguage.badge() }
+    SnyggText(
+        text = badge,
+        modifier = Modifier
+            .clickable { MaLanguage.toggle(context) }
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    )
+}
+
 @Composable
 private fun LanguageChip() {
     val prefs by FlorisPreferenceStore
