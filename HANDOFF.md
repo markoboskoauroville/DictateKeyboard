@@ -1,6 +1,6 @@
 # TTT&LLL — handoff and development plan
 
-Written at build 88, updated at build 143. Sixteen builds went by without an update once, so
+Written at build 88, updated at build 144. Sixteen builds went by without an update once, so
 check `git log -- HANDOFF.md` against `git log` before trusting it. Read this first, then
 `git log --oneline -20` to see anything newer.
 
@@ -614,6 +614,41 @@ light ends up above a key nothing will ever use.
 
 Fourteen tests in `MaKeyRingTest.kt`, all pure Kotlin and run in the sandbox. The two that matter
 most are `aDeadConnectionNeverFlagsAKey` and `everyKeyFlaggedStillTriesThemAll`.
+
+### The ring covers every provider, shipped at build 144
+
+Build 143 put Speechify on the ring. This puts **everything** on it: transcription, the segmented
+path, realtime, the sync warm-up and rewording. `MaKeyRingStore` was already keyed by provider id, so
+generalising it was mostly a matter of finding the call sites, and finding them turned up a bug that
+predates all of this.
+
+**Several paths were sending the whole keyring as one credential.** `account.apiKey` holds every key
+separated by newlines, and `transcribeSegmentRaw`, `requestRewordRaw`, `warmSync` and the realtime
+open all passed that field straight into a client. With one key stored it worked perfectly. With two
+it sent both as a single header value, and the service answered with a complaint about a line break,
+which is the failure `MaKeys.tidyError` already had a friendly sentence for: *"That key contains a
+line break. Re-import it from your file."* The sentence was treating a symptom. Anything reaching for
+a key now goes through `MaKeyRingStore.currentKey` or `.keys` and gets one key.
+
+- **Rewording is on the ring now too.** It used to take whatever was in the field and fail outright
+  when that key was refused, which on a keyring of ten was a strange thing to do while dictation
+  happily rolled to the next one.
+- **`MaKeyRing.run` is `inline`**, so the block may suspend. Half the call sites are inside suspend
+  functions and half are not; an inline lambda satisfies both without a second copy of the logic,
+  and a second copy is exactly how the two would drift apart.
+- **`MaKeyRingStore.bind` is called once from `FlorisApplication.onCreate`** with the application
+  context. The ring is needed from a dozen places that were never handed a Context and have no
+  business acquiring one. Every accessor tolerates nothing being bound: no memory, which degrades to
+  the old walk-from-the-top rather than to a crash.
+- **A key borrowed from the transcription account is flagged under the transcription account**, since
+  rewording falls back to it when its own field is blank. Flagging it under rewording would put the
+  verdict on a row Marko never looks at.
+- **`realtimeApiForActiveAccount` still reads the raw field**, deliberately: it asks only whether any
+  key exists at all, and the ring may legitimately have flagged all of them without that meaning
+  realtime is unavailable.
+
+`maWithKeyFallback` is now unused and is marked superseded rather than deleted, in case anything
+outside this module still calls it.
 
 ### Next: retranscribe
 

@@ -224,7 +224,10 @@ object MaKeyRing {
      *
      * @return the block's result and the updated ring, which the caller persists.
      */
-    fun <T> run(
+    // Inline so the block may suspend. Half the call sites in DictateController are inside suspend
+    // functions and half are not, and an inline lambda satisfies both without a second copy of this
+    // logic. A second copy is exactly how the two would drift apart later.
+    inline fun <T> run(
         keys: List<String>,
         ring: Ring,
         now: Long = System.currentTimeMillis(),

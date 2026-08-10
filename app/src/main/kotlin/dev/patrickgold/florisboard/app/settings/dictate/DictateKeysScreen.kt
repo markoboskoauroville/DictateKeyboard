@@ -280,11 +280,19 @@ fun DictateKeysScreen() = FlorisScreen {
                                 trustUserCerts = prefs.dictate.trustUserCertificates.get(),
                             )
                             .validateKey()
+                        MaKeyRingStore.onSuccess(context, preset.id, key)
                         KeyStatus(
                             KeyHealth.WORKING,
                             if (count >= 0) "works, $count models" else "works",
                         )
                     } catch (e: DictateApiException) {
+                        // Same ring as Speechify, same rules, every provider. A verdict reached here
+                        // is the one the dictation and rewording paths will act on, because there is
+                        // only one place holding it.
+                        MaKeyRingStore.onFailure(
+                            context, preset.id, key, e.kind,
+                            MaKeys.tidyError(e.message, ""),
+                        )
                         when (e.kind) {
                             DictateApiException.Kind.INVALID_API_KEY ->
                                 KeyStatus(KeyHealth.REJECTED, "rejected by the service")

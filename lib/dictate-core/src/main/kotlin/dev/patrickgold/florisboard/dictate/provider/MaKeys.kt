@@ -271,6 +271,11 @@ internal val KEY_PROBLEMS = setOf(
 /**
  * Runs [block] with each key in turn, moving on when a key is rejected or out of quota.
  *
+ * **Superseded by [MaKeyRing.run] at build 144 and kept only so nothing outside this module breaks.**
+ * The difference is memory: this walks the list from the top on every call, so a keyring whose first
+ * few keys are dead pays those failed round trips before every recording, forever. Anything new goes
+ * through the ring.
+ *
  * Anything else, a timeout or a network drop, is thrown immediately: trying a second key against a
  * dead connection only makes the user wait twice for the same failure. If every key is refused the
  * last exception is thrown, so the message the user sees is a real one.

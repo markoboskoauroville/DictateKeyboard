@@ -90,8 +90,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import dev.patrickgold.florisboard.dictate.audio.MaEncoder
 import dev.patrickgold.florisboard.dictate.audio.MaResample
+import dev.patrickgold.florisboard.dictate.provider.MaKeyRing
 import dev.patrickgold.florisboard.dictate.provider.MaKeys
-import dev.patrickgold.florisboard.dictate.provider.maWithKeyFallback
 
 /**
  * Orchestrates the dictation flow that fuses the recording, the provider layer and the editor: tap
@@ -1418,7 +1418,10 @@ object DictateController {
                     ): TranscriptionResult {
                         // MA TWIST: the key field may hold several keys, one per line. A rejected or
                         // exhausted key rolls to the next one; anything else fails straight away.
-                        val maKeys = MaKeys.split(apiKey)
+                        // In RING ORDER: the key that worked last time first, the ones the service
+                        // has refused skipped entirely. A keyring whose first few keys are dead used
+                        // to pay those failed round trips before every single recording.
+                        val maKeys = MaKeyRingStore.keys(account.providerId, apiKey)
                         // How long was spoken, and how much is going up. The raw WAV size is gone:
                         // it was there to prove compression was happening, which is settled now, and
                         // it crowded out the one number that means something while waiting, which is
@@ -1436,32 +1439,43 @@ object DictateController {
                         } else {
                             "sending $maSize"
                         }
-                        return maWithKeyFallback(
-                            maKeys,
-                            onKeyRejected = { index, total, reason ->
-                                _maStatus.value = "K${index}_$total $reason, K${index + 1}"
-                            },
-                        ) { maKey ->
-                            OpenAiCompatibleClient.from(
-                                sendPreset, maKey,
-                                // Sync has its own host and is never user-editable, so an override
-                                // belonging to the account would point it at the wrong one.
-                                baseUrlOverride = if (fast) null else baseUrlOverrideFor(account),
-                                proxy = prefs.dictate.dictateProxyConfig(),
-                                // Single-call multimodal (issue #130): route audio through chat/completions.
-                                useChatAudio = chatAudio,
-                                trustUserCerts = prefs.dictate.trustUserCertificates.get(),
-                            ).transcribe(
-                                request.copy(audioFile = sendFile, model = sendModel),
-                                onRetry = { attempt ->
-                                    // Named as waiting rather than as retrying, because that is what
-                                    // is actually happening for the next several seconds and a line
-                                    // that says "retrying" while nothing moves reads as a hang.
-                                    _maStatus.value = "no answer, waiting to retry, attempt $attempt"
-                                    _state.value = UiState.Transcribing(attempt)
-                                },
-                            )
+                        val ring = MaKeyRingStore.load(account.providerId)
+                        var rolled = 0
+                        val outcome = try {
+                            MaKeyRing.run(maKeys, ring) { maKey ->
+                                rolled++
+                                if (rolled > 1) {
+                                    _maStatus.value = "K${rolled - 1}_${maKeys.size} failed, K$rolled"
+                                }
+                                OpenAiCompatibleClient.from(
+                                    sendPreset, maKey,
+                                    // Sync has its own host and is never user-editable, so an override
+                                    // belonging to the account would point it at the wrong one.
+                                    baseUrlOverride = if (fast) null else baseUrlOverrideFor(account),
+                                    proxy = prefs.dictate.dictateProxyConfig(),
+                                    // Single-call multimodal (issue #130): route audio through chat/completions.
+                                    useChatAudio = chatAudio,
+                                    trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+                                ).transcribe(
+                                    request.copy(audioFile = sendFile, model = sendModel),
+                                    onRetry = { attempt ->
+                                        // Named as waiting rather than as retrying, because that is what
+                                        // is actually happening for the next several seconds and a line
+                                        // that says "retrying" while nothing moves reads as a hang.
+                                        _maStatus.value = "no answer, waiting to retry, attempt $attempt"
+                                        _state.value = UiState.Transcribing(attempt)
+                                    },
+                                )
+                            }
+                        } catch (e: MaKeyRing.NoKeyLeft) {
+                            // Every key was tried. Persist what the walk learned before failing, or
+                            // the very next recording pays to discover the same thing again.
+                            MaKeyRingStore.save(account.providerId, e.ring)
+                            throw e.last
+                                ?: DictateApiException(DictateApiException.Kind.INVALID_API_KEY, "No API key set")
                         }
+                        MaKeyRingStore.save(account.providerId, outcome.second)
+                        return outcome.first
                     }
 
                     try {
@@ -1736,6 +1750,8 @@ object DictateController {
     private fun realtimeApiForActiveAccount(): RealtimeApi? {
         if (!prefs.dictate.realtimeTranscription.get()) return null
         val account = transcriptionAccount()
+        // The raw field on purpose: this only asks whether any key exists at all, and the ring can
+        // legitimately have flagged every one of them without that meaning realtime is unavailable.
         if (account.apiKey.isBlank()) return null
         val preset = presetFor(account)
         return if (preset.supportsRealtime) preset.realtimeApi else null
@@ -1839,7 +1855,13 @@ object DictateController {
                 // The model is language-specific, so the input-language pref is irrelevant here.
                 LocalRealtimeSession(localModelDir, callbacks)
             } else {
-                RealtimeClient.open(api!!, account.apiKey, model, language, callbacks)
+                RealtimeClient.open(
+                    api!!,
+                    MaKeyRingStore.currentKey(account.providerId, account.apiKey),
+                    model,
+                    language,
+                    callbacks,
+                )
             }
         }.getOrElse { realtimeFailed = true; null } ?: return null
         realtimeSession = session
@@ -2172,7 +2194,11 @@ object DictateController {
         // from it. Fails open (transcribes) if the check can't run, so real speech is never dropped.
         if (prefs.dictate.skipSilentRecordings.get() && !SpeechGate.hasSpeech(appContext, wav)) return null
         val account = transcriptionAccount()
-        val apiKey = account.apiKey
+        // ONE key, chosen by the ring. This field holds every key separated by newlines, so passing
+        // it straight through sent all of them as a single credential and the service answered with
+        // a complaint about a line break in the header. That worked for as long as there was only
+        // ever one key in it.
+        val apiKey = MaKeyRingStore.currentKey(account.providerId, account.apiKey)
         val preset = presetFor(account)
         val model = transcriptionModelFor(appContext, account, preset, "gpt-4o-mini-transcribe")
         val language = prefs.dictate.activeInputLanguage.get().takeIf { it != DictateLanguages.DETECT }
@@ -3243,18 +3269,26 @@ object DictateController {
     ): String {
         val account = rewordingAccount()
         // Blank rewording key falls back to the transcription account's key (legacy "reuse" behavior).
-        val apiKey = account.apiKey.ifBlank { transcriptionAccount().apiKey }
+        // Through the ring in both cases, and under the id of whichever account the key came from,
+        // so a key borrowed from transcription is flagged where its owner will see it.
+        val ringId = if (account.apiKey.isNotBlank()) account.providerId else transcriptionAccount().providerId
+        val stored = account.apiKey.ifBlank { transcriptionAccount().apiKey }
+        val apiKey = MaKeyRingStore.currentKey(ringId, stored)
         if (apiKey.isBlank() && requiresKey(account)) {
             throw DictateApiException(DictateApiException.Kind.INVALID_API_KEY, "No API key set")
         }
         val preset = presetFor(account)
         val model = account.chatModel.ifBlank { preset.defaultChatModel ?: "gpt-4o-mini" }
-        val client = OpenAiCompatibleClient.from(
-            preset, apiKey,
-            baseUrlOverride = baseUrlOverrideFor(account),
-            proxy = prefs.dictate.dictateProxyConfig(),
-            trustUserCerts = prefs.dictate.trustUserCertificates.get(),
-        )
+        // Built per key inside the ring walk below, because the key is what it is built with. Kept as
+        // a lambda rather than a value so a roll to the next key really does mean a new client.
+        val clientFor: (String) -> OpenAiCompatibleClient = { key ->
+            OpenAiCompatibleClient.from(
+                preset, key,
+                baseUrlOverride = baseUrlOverrideFor(account),
+                proxy = prefs.dictate.dictateProxyConfig(),
+                trustUserCerts = prefs.dictate.trustUserCertificates.get(),
+            )
+        }
         // Reasoning effort for reasoning models (issue #141); a per-prompt override wins over the global
         // setting (#155). OFF → null → field omitted. CUSTOM (#186) uses a user-entered wire value —
         // the per-prompt one when the override itself is CUSTOM, else the global custom value.
@@ -3269,11 +3303,23 @@ object DictateController {
         } else {
             effort.wire
         }
-        val result = client.complete(
-            ChatRequest.ofUser(model, userContent, reasoningEffort = reasoningWire),
-        ).text.trim()
+        // Rewording gets the same ring as everything else. It used to take whatever was in the key
+        // field and fail outright if that key was refused, which on a keyring of ten was a strange
+        // thing to do while dictation happily rolled to the next one.
+        val ring = MaKeyRingStore.load(ringId)
+        val outcome = try {
+            MaKeyRing.run(MaKeyRingStore.keys(ringId, stored).ifEmpty { listOf(apiKey) }, ring) { key ->
+                clientFor(key).complete(
+                    ChatRequest.ofUser(model, userContent, reasoningEffort = reasoningWire),
+                ).text.trim()
+            }
+        } catch (e: MaKeyRing.NoKeyLeft) {
+            MaKeyRingStore.save(ringId, e.ring)
+            throw e.last ?: DictateApiException(DictateApiException.Kind.INVALID_API_KEY, "No API key set")
+        }
+        MaKeyRingStore.save(ringId, outcome.second)
         // Lifetime statistics (issue #142): every rewording/prompt pass funnels through here.
-        return result
+        return outcome.first
     }
 
     private fun systemPrompt(): String = when (prefs.dictate.systemPromptSelection.get()) {
@@ -3460,7 +3506,7 @@ object DictateController {
             runCatching {
                 OpenAiCompatibleClient.from(
                     ProviderRegistry.ASSEMBLYAI_SYNC,
-                    account.apiKey,
+                    MaKeyRingStore.currentKey(account.providerId, account.apiKey),
                     proxy = prefs.dictate.dictateProxyConfig(),
                     trustUserCerts = prefs.dictate.trustUserCertificates.get(),
                 ).warmSync()

@@ -78,6 +78,9 @@ class FlorisApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         FlorisApplicationReference = WeakReference(this)
+        // The key ring is read before every call that needs an API key, from places that were never
+        // handed a Context. Bound here, once, with the application context.
+        dev.patrickgold.florisboard.dictate.MaKeyRingStore.bind(this)
         try {
             Flog.install(
                 context = this,
