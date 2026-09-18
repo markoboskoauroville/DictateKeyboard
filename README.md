@@ -1,3 +1,5 @@
+### [Download the latest build](https://github.com/markoboskoauroville/DictateKeyboard/releases/latest)
+
 # Voice Type
 
 Voice typing keyboard for Android, by Marko Boško, Mantra Productions.
